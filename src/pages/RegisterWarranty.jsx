@@ -4,7 +4,7 @@ import API from "../api/axios";
 import QRScanner from "../components/QRScanner";
 import Navbar from "../layouts/CustomerNavbar";
 import Footer from "../layouts/Footer";
-import { ArrowLeft, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ShieldCheck, User, Mail, Phone, Calendar, RefreshCcw } from "lucide-react";
 
 const RegisterWarranty = () => {
   const navigate = useNavigate();
@@ -37,17 +37,8 @@ const RegisterWarranty = () => {
     setIsScanning(false);
   };
 
-  const handleManualSubmit = (e) => {
-    e.preventDefault();
-    if (manualSerial) {
-      setSerialNumber(manualSerial);
-      setIsScanning(false);
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
       await API.post("/register", { ...form, serialNumber });
       alert("Warranty Registered Successfully");
@@ -58,120 +49,150 @@ const RegisterWarranty = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans antialiased">
       <Navbar />
       
-      <div className="flex-grow py-12 px-4">
-        <div className="max-w-lg mx-auto bg-white shadow-xl rounded-2xl overflow-hidden">
-          <div className="bg-blue-600 p-6 text-white text-center relative">
-            <button 
-              onClick={() => navigate(-1)}
-              className="absolute left-4 top-1/2 -translate-y-1/2 p-2 hover:bg-white/10 rounded-full transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <h2 className="text-2xl font-bold">Register Warranty</h2>
-            <p className="text-blue-100 mt-1">Protect your investment today</p>
-          </div>
+      <div className="flex-grow py-16 px-4">
+        <div className="max-w-2xl mx-auto">
+          
+          {/* Back Button & Title */}
+          <button 
+            onClick={() => navigate(-1)}
+            className="group flex items-center gap-2 text-slate-500 hover:text-blue-600 transition-colors mb-8 font-semibold text-sm"
+          >
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            Back to Dashboard
+          </button>
 
-          <div className="p-8">
-            {isScanning && !serialNumber ? (
-              <div className="space-y-4">
-                <QRScanner onScanSuccess={handleScanSuccess} />
-                
-                <div className="text-center text-gray-500 font-medium">OR</div>
-                
-                <form onSubmit={handleManualSubmit} className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Enter Serial Number Manually"
-                    className="flex-1 border-2 border-gray-100 rounded-xl p-3 focus:border-blue-500 outline-none transition-all"
-                    value={manualSerial}
-                    onChange={(e) => setManualSerial(e.target.value)}
-                  />
-                  <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-md active:scale-95">
-                    Submit
-                  </button>
-                </form>
+          <div className="bg-white shadow-xl shadow-slate-200/60 rounded-3xl overflow-hidden border border-slate-100">
+            {/* Header Section */}
+            <div className="bg-slate-900 p-8 text-white relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/20 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+              <div className="relative z-10 flex items-center gap-4">
+                <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-900/20">
+                  <ShieldCheck className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold tracking-tight">Activate Warranty</h2>
+                  <p className="text-slate-400 text-sm">Official Product Registration Portal</p>
+                </div>
               </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">Product Serial Number</span>
+            </div>
+
+            <div className="p-8 md:p-10">
+              {isScanning && !serialNumber ? (
+                <div className="space-y-6">
+                  <div className="text-center space-y-2 mb-4">
+                    <h3 className="text-lg font-bold text-slate-800">Scan Product QR Code</h3>
+                    <p className="text-sm text-slate-500">Position the QR code within the frame to automatically detect your serial number.</p>
+                  </div>
+                  <div className="rounded-2xl overflow-hidden border-2 border-dashed border-slate-200 bg-slate-50">
+                    <QRScanner onScanSuccess={handleScanSuccess} />
+                  </div>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  
+                  {/* Serial Number Display Card */}
+                  <div className="bg-blue-50/50 rounded-2xl p-6 border border-blue-100/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 block mb-1">Registered Serial</span>
+                      <div className="flex items-center gap-2">
+                        <code className="text-xl font-mono font-bold text-slate-800 tracking-wider">
+                          {serialNumber}
+                        </code>
+                        <CheckCircle2 className="text-emerald-500 w-5 h-5" />
+                      </div>
+                    </div>
                     <button 
                       type="button" 
                       onClick={() => { setSerialNumber(""); setIsScanning(true); }}
-                      className="text-blue-600 text-xs font-bold hover:underline"
+                      className="flex items-center gap-2 px-4 py-2 bg-white border border-blue-200 rounded-xl text-blue-600 text-xs font-bold hover:bg-blue-600 hover:text-white transition-all shadow-sm"
                     >
-                      Change / Re-scan
+                      <RefreshCcw className="w-3 h-3" />
+                      Re-scan Code
                     </button>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <input
-                      type="text"
-                      value={serialNumber}
-                      readOnly
-                      className="text-lg font-mono font-black text-blue-800 bg-transparent outline-none flex-1"
-                    />
-                    <CheckCircle2 className="text-green-500 w-5 h-5 ml-2" />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Full Name */}
+                    <div className="space-y-2 md:col-span-2">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Full Name</label>
+                      <div className="relative group">
+                        <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                        <input
+                          type="text"
+                          name="customerName"
+                          placeholder="Enter your full name"
+                          required
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pl-11 pr-4 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-slate-800"
+                          onChange={handleChange}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Phone Number */}
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Phone Number</label>
+                      <div className="relative group">
+                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                        <input
+                          type="tel"
+                          name="phone"
+                          placeholder="+1 (555) 000-0000"
+                          required
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pl-11 pr-4 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-slate-800"
+                          onChange={handleChange}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Purchase Date */}
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Purchase Date</label>
+                      <div className="relative group">
+                        <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors pointer-events-none" />
+                        <input
+                          type="date"
+                          name="purchaseDate"
+                          required
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pl-11 pr-4 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-slate-800"
+                          onChange={handleChange}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Email */}
+                    <div className="space-y-2 md:col-span-2">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Email Address</label>
+                      <div className="relative group">
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                        <input
+                          type="email"
+                          name="email"
+                          placeholder="john@example.com"
+                          required
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pl-11 pr-4 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-slate-800"
+                          onChange={handleChange}
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-[10px] text-blue-400 mt-1 font-medium italic">Verified via QR Scan</div>
-                </div>
 
-                <div className="space-y-1">
-                  <label className="text-sm font-semibold text-gray-700 ml-1">Full Name</label>
-                  <input
-                    type="text"
-                    name="customerName"
-                    placeholder="John Doe"
-                    required
-                    className="w-full border-2 border-gray-100 rounded-xl p-3 focus:border-blue-500 outline-none transition-all"
-                    onChange={handleChange}
-                  />
-                </div>
+                  <button 
+                    type="submit"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold text-base shadow-lg shadow-blue-200 hover:shadow-blue-300 transition-all active:scale-[0.98] mt-4 flex items-center justify-center gap-2"
+                  >
+                    Confirm Registration
+                    <CheckCircle2 className="w-5 h-5" />
+                  </button>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-sm font-semibold text-gray-700 ml-1">Phone Number</label>
-                    <input
-                      type="text"
-                      name="phone"
-                      placeholder="+1 (555) 000-0000"
-                      required
-                      className="w-full border-2 border-gray-100 rounded-xl p-3 focus:border-blue-500 outline-none transition-all"
-                      onChange={handleChange}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-sm font-semibold text-gray-700 ml-1">Purchase Date</label>
-                    <input
-                      type="date"
-                      name="purchaseDate"
-                      required
-                      className="w-full border-2 border-gray-100 rounded-xl p-3 focus:border-blue-500 outline-none transition-all"
-                      onChange={handleChange}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-sm font-semibold text-gray-700 ml-1">Email Address</label>
-                  <input
-                    type="email"
-                    name="email"
-                    placeholder="john@example.com"
-                    required
-                    className="w-full border-2 border-gray-100 rounded-xl p-3 focus:border-blue-500 outline-none transition-all"
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <button className="w-full bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-xl font-extrabold text-lg shadow-lg hover:shadow-blue-200 transition-all active:scale-95 mt-4">
-                  Confirm Registration
-                </button>
-              </form>
-            )}
+                  <p className="text-center text-[11px] text-slate-400">
+                    By submitting, you agree to our Terms of Service and Privacy Policy regarding product protection.
+                  </p>
+                </form>
+              )}
+            </div>
           </div>
         </div>
       </div>

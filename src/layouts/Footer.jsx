@@ -7,94 +7,132 @@ import {
   Mail, 
   Phone, 
   MapPin, 
-  ArrowUpRight 
+  ArrowUpRight,
+  ShieldCheck
 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   const footerLinks = [
     {
-      title: "Navigation",
+      title: "Platform",
       links: [
-        { name: "Home", href: "/customer-home" },
-        { name: "Register Warranty", href: "/register-warranty" },
-        { name: "Support Tickets", href: "#" },
-        { name: "Admin Login", href: "/admin-login" },
+        { name: "Customer Home", href: "/customer-home" },
+        { name: "Warranty Portal", href: "/register-warranty" },
+        { name: "Support Desk", href: "#" },
       ]
     },
     {
-      title: "Contact Us",
+      title: "Connect",
       links: [
-        { name: "support@digitalpress.com", href: "mailto:support@digitalpress.com", icon: <Mail className="w-4 h-4" /> },
+        { name: "support@perfectdigital.com", href: "mailto:support@perfectdigital.com", icon: <Mail className="w-4 h-4" /> },
         { name: "+1 (555) 000-1234", href: "tel:+15550001234", icon: <Phone className="w-4 h-4" /> },
-        { name: "123 Tech Avenue, Digital City", href: "#", icon: <MapPin className="w-4 h-4" /> },
+        { name: "Global Headquarters", href: "#", icon: <MapPin className="w-4 h-4" /> },
       ]
     }
   ];
 
   return (
-    <footer className="bg-gray-900 text-gray-300 pt-16 pb-8">
+    <footer className="bg-slate-950 text-slate-400 pt-20 pb-10 border-t border-slate-900">
       <div className="container mx-auto px-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mb-20">
           
           {/* Brand Section */}
-          <div className="md:col-span-2 space-y-6">
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center font-black text-white text-xl">
-                P
+          <div className="md:col-span-5 space-y-8">
+            <Link to="/customer-home" className="flex items-center gap-3 group w-fit">
+              <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center transition-transform group-hover:rotate-6">
+                <ShieldCheck className="w-6 h-6 text-white" />
               </div>
-              <span className="text-2xl font-black text-white tracking-tighter">
-                PERFECT<span className="text-blue-500">DIGITAL</span>
-              </span>
-            </div>
-            <p className="text-gray-400 max-w-sm leading-relaxed">
-              Leading the way in digital printing technology. Our warranty tracking system ensures your investment is always protected and supported by our expert team.
+              <div className="flex flex-col">
+                <span className="text-xl font-bold text-white tracking-tight leading-none">
+                  Perfect<span className="text-blue-500">Digital</span>
+                </span>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mt-1">
+                  Established 1998
+                </span>
+              </div>
+            </Link>
+            
+            <p className="text-slate-400 max-w-sm text-sm leading-relaxed">
+              The industry benchmark for digital infrastructure and warranty management. 
+              We empower businesses through reliable hardware protection and world-class 
+              technical support ecosystems.
             </p>
-            <div className="flex gap-4">
+
+            <div className="flex gap-3">
               {[Facebook, Twitter, Instagram, Linkedin].map((Icon, i) => (
-                <a 
+                <motion.a 
                   key={i} 
+                  whileHover={{ y: -3 }}
                   href="#" 
-                  className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all"
+                  className="w-10 h-10 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center hover:border-blue-500 hover:text-white transition-colors"
                 >
-                  <Icon className="w-5 h-5" />
-                </a>
+                  <Icon className="w-4 h-4" />
+                </motion.a>
               ))}
             </div>
           </div>
 
           {/* Links Sections */}
-          {footerLinks.map((section, idx) => (
-            <div key={idx} className="space-y-6">
-              <h4 className="text-white font-bold uppercase tracking-widest text-sm">
-                {section.title}
+          <div className="md:col-span-7 grid grid-cols-2 md:grid-cols-3 gap-8">
+            {footerLinks.map((section, idx) => (
+              <div key={idx} className="space-y-6">
+                <h4 className="text-white font-bold text-xs uppercase tracking-[0.15em]">
+                  {section.title}
+                </h4>
+                <ul className="space-y-4 text-sm">
+                  {section.links.map((link, i) => (
+                    <li key={i}>
+                      <a 
+                        href={link.href} 
+                        className="group flex items-center gap-2 hover:text-blue-400 transition-colors"
+                      >
+                        {link.icon ? (
+                          <span className="text-slate-600 group-hover:text-blue-400 transition-colors">
+                            {link.icon}
+                          </span>
+                        ) : null}
+                        <span>{link.name}</span>
+                        {!link.icon && (
+                          <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-all -translate-x-1 group-hover:translate-x-0" />
+                        )}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+
+            {/* Newsletter / Status Section */}
+            <div className="space-y-6 col-span-2 md:col-span-1">
+              <h4 className="text-white font-bold text-xs uppercase tracking-[0.15em]">
+                System Status
               </h4>
-              <ul className="space-y-4">
-                {section.links.map((link, i) => (
-                  <li key={i}>
-                    <a 
-                      href={link.href} 
-                      className="group flex items-center gap-2 hover:text-white transition-all"
-                    >
-                      {link.icon}
-                      <span>{link.name}</span>
-                      {!link.icon && <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-all translate-y-1 group-hover:translate-y-0" />}
-                    </a>
-                  </li>
-                ))}
-              </ul>
+              <div className="p-4 rounded-xl bg-slate-900/50 border border-slate-800 flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                  <span className="text-xs text-emerald-500 font-bold uppercase">All Systems Operational</span>
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  Global support servers are active. Average ticket response: 12m.
+                </p>
+              </div>
             </div>
-          ))}
+          </div>
         </div>
 
         {/* Bottom Bar */}
-        <div className="pt-8 border-t border-gray-800 flex flex-col md:flex-row justify-between items-center gap-4 text-sm">
-          <p>© {currentYear} Perfect Digital Press. All rights reserved.</p>
-          <div className="flex gap-8">
-            <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
-            <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
-            <a href="#" className="hover:text-white transition-colors">Cookie Policy</a>
+        <div className="pt-10 border-t border-slate-900 flex flex-col md:flex-row justify-between items-center gap-6 text-[12px] font-medium tracking-wide">
+          <div className="text-slate-500">
+            © {currentYear} Perfect Digital Press International Ltd.
+          </div>
+          
+          <div className="flex flex-wrap justify-center gap-x-8 gap-y-2">
+            <a href="#" className="hover:text-blue-400 transition-colors">Compliance</a>
+            <a href="#" className="hover:text-blue-400 transition-colors">Privacy Architecture</a>
+            <a href="#" className="hover:text-blue-400 transition-colors">Global Terms</a>
           </div>
         </div>
       </div>
