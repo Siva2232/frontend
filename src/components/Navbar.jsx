@@ -8,13 +8,16 @@ import {
   LogOut, 
   ShieldCheck, 
   ChevronDown,
-  UserCircle 
+  UserCircle,
+  Menu,
+  X 
 } from "lucide-react";
 
 const Navbar = () => {
   const { admin, logout } = useContext(AuthContext);
   const location = useLocation();
   const [profileOpen, setProfileOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isActive = (path) => location.pathname === path;
 
@@ -69,8 +72,11 @@ const Navbar = () => {
             {/* Profile Dropdown Area */}
             <div className="relative">
               <button
-                onClick={() => setProfileOpen(!profileOpen)}
-                className="flex items-center gap-3 pl-2 pr-1 py-1 rounded-full border border-slate-800 bg-slate-900 hover:bg-slate-800 transition-all active:scale-95"
+                onClick={() => {
+                  setProfileOpen(!profileOpen);
+                  if (mobileMenuOpen) setMobileMenuOpen(false);
+                }}
+                className="flex items-center gap-3 pl-2 pr-1 py-1 rounded-full border border-slate-800 bg-slate-900 hover:bg-slate-800 transition-all active:scale-95 px-3 sm:px-2"
               >
                 <div className="w-7 h-7 bg-blue-600/10 rounded-full flex items-center justify-center">
                   <UserCircle className="w-5 h-5 text-blue-500" />
@@ -103,9 +109,58 @@ const Navbar = () => {
                 </>
               )}
             </div>
+
+            {/* Mobile Menu Toggle */}
+            <button
+              onClick={() => {
+                setMobileMenuOpen(!mobileMenuOpen);
+                if (profileOpen) setProfileOpen(false);
+              }}
+              className="md:hidden p-2 rounded-xl border border-slate-800 bg-slate-900 text-slate-400 hover:text-white transition-all active:scale-95"
+            >
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
           </div>
         )}
       </div>
+
+      {/* Mobile Sidebar Navigation */}
+      {mobileMenuOpen && admin && (
+        <div className="md:hidden border-t border-slate-800 bg-slate-900 animate-in slide-in-from-top duration-300">
+          <div className="px-6 py-4 space-y-2">
+            {navLinks.map((link) => (
+              <Link
+                key={link.name}
+                to={link.path}
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center gap-4 px-5 py-4 rounded-2xl text-base font-bold transition-all ${
+                  isActive(link.path)
+                    ? "bg-blue-600/10 text-blue-400 border border-blue-600/20"
+                    : "text-slate-400 hover:bg-slate-800/50 hover:text-white border border-transparent"
+                }`}
+              >
+                <div className={`${isActive(link.path) ? "text-blue-500" : "text-slate-500"}`}>
+                  {link.icon}
+                </div>
+                {link.name}
+              </Link>
+            ))}
+            
+            <div className="pt-4 border-t border-slate-800">
+              <button
+                onClick={() => {
+                  logout();
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-base font-bold text-red-400 hover:bg-red-500/10 transition-all border border-transparent"
+              >
+                <LogOut className="w-5 h-5" />
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </nav>
   );
 };
