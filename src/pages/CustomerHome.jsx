@@ -119,7 +119,7 @@ const CustomerSupport = () => {
         </div>
 
         {/* ======================= MINIMALIST FOOTER CONTENT ======================= */}
-        <div className="mt-20 grid lg:grid-cols-2 gap-20">
+        <div className="mt-12 md:mt-20 grid grid-cols-1 lg:grid-cols-2 gap-10 md:gap-20">
           <div>
             <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-black mb-8 border-b border-black pb-2 inline-block">Frequently Asked</h2>
             <div className="space-y-6">
@@ -143,9 +143,9 @@ const CustomerSupport = () => {
             </div>
           </div>
 
-          <div className="bg-zinc-50 p-10 flex flex-col justify-center items-center text-center border border-zinc-100">
+          <div className="bg-zinc-50 p-8 md:p-10 flex flex-col justify-center items-center text-center border border-zinc-100 mb-8 lg:mb-0">
              <p className="text-[10px] font-black uppercase tracking-widest mb-2">Live Status</p>
-             <p className="text-3xl font-bold tracking-tighter mb-6">TECH-SUPPORT ONLINE</p>
+             <p className="text-2xl md:text-3xl font-bold tracking-tighter mb-6">TECH-SUPPORT ONLINE</p>
              <button className="px-8 py-3 bg-black text-white text-[10px] font-bold uppercase tracking-widest hover:bg-zinc-800 transition-colors">
                Start Live Chat
              </button>
