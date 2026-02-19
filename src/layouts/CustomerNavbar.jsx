@@ -65,14 +65,6 @@ const CustomerNavbar = () => {
           >
             Support
           </a>
-          <Link 
-            to="/admin-login" 
-            onClick={() => setIsOpen(false)}
-            className="flex items-center gap-2 text-lg font-bold text-blue-600 pt-4 border-t border-gray-50"
-          >
-            <User className="w-5 h-5" />
-            Admin Login
-          </Link>
         </div>
       )}
     </nav>
