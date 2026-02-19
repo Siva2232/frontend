@@ -1,148 +1,154 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ShieldCheck, Ticket, MapPin, ArrowRight, CheckCircle2, Gauge, MousePointer2 } from "lucide-react";
+import { 
+  ShieldCheck, 
+  Ticket, 
+  MessageSquare, 
+  Search, 
+  LifeBuoy, 
+  ChevronRight,
+  ArrowUpRight
+} from "lucide-react";
 import Navbar from "../layouts/CustomerNavbar";
 import Footer from "../layouts/Footer";
-
-const CustomerHome = () => {
+import image from "../assets/image.png"
+const CustomerSupport = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const serial = searchParams.get("serial");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [openFaq, setOpenFaq] = useState(null);
 
-  const cards = [
+  const faqs = [
     {
-      title: "Warranty Registration",
-      description: "Secure your automotive investment. Activate your official warranty in seconds.",
-      icon: <ShieldCheck className="w-8 h-8 text-black" />,
-      action: () => navigate(`/register-warranty?serial=${serial || ""}`),
+      question: "Where is my serial number?",
+      answer: "Your serial number is located on a silver sticker at the back of the product or on the original packaging label near the barcode."
     },
     {
-      title: "Technical Support",
-      description: "Need installation help? Our master technicians are available 24/7.",
-      icon: <Ticket className="w-8 h-8 text-black" />,
-      action: () => alert("Support Ticket System coming soon!"),
+      question: "Warranty claim requirements",
+      answer: "To submit a claim, you'll need your serial number, proof of purchase (invoice/receipt), and clear photos of the defect if visible."
     },
+    {
+      question: "Firmware update instructions",
+      answer: "Navigate to the Technical section, download the latest firmware file for your model, and follow the provided step-by-step PDF guide."
+    }
+  ];
+
+  const supportCategories = [
+    {
+      title: "Warranty",
+      description: "Submit a claim or check coverage.",
+      icon: <ShieldCheck className="w-5 h-5" />,
+      link: `/register-warranty?serial=${serial || ""}`
+    },
+    {
+      title: "Technical",
+      description: "Manuals and troubleshooting.",
+      icon: <LifeBuoy className="w-5 h-5" />,
+      link: "#"
+    },
+    {
+      title: "Tickets",
+      description: "View history and updates.",
+      icon: <Ticket className="w-5 h-5" />,
+      link: "#"
+    },
+    {
+      title: "Live Chat",
+      description: "Talk to a master technician.",
+      icon: <MessageSquare className="w-5 h-5" />,
+      link: "#"
+    }
   ];
 
   return (
-    <div className="min-h-screen bg-white font-sans antialiased text-zinc-900">
+    <div className="min-h-screen bg-white font-sans antialiased text-black">
       <Navbar />
 
-      {/* ======================= COMPACT & HIGH-END HERO ======================= */}
-      <section className="relative py-12 lg:py-20 border-b border-zinc-100 bg-zinc-50/30">
+      {/* ======================= CLEAN B&W ULTRA-THIN BANNER ======================= */}
+    <div className="w-full h-55 md:h-60 overflow-hidden relative border-b">
+  <img 
+    src={image} 
+    alt="Technical"
+    className="w-full h-full object-cover"
+  />
+</div>
+      {/* ======================= PURE WHITE HERO SECTION ======================= */}
+      <section className="bg-white border-b border-zinc-100 py-10">
         <div className="max-w-7xl mx-auto px-6 lg:px-12">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            
-            {/* Content Side */}
-            <div className="order-2 lg:order-1 space-y-8">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-black text-white">
-                <Gauge className="w-3 h-3" />
-                <span className="text-[9px] font-black uppercase tracking-[0.3em]">
-                  {serial ? `Serial Verified: ${serial}` : "Authentic Car Care"}
-                </span>
-              </div>
-              
-              <h1 className="text-5xl md:text-7xl font-bold tracking-tighter leading-[0.95] text-black">
-                PRECISION <br />
-                <span className="text-zinc-400 font-light italic">ACCESSORIES</span>
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-400 mb-2">Support Portal</p>
+              <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">
+                HOW CAN WE <span className="italic font-light">HELP?</span>
               </h1>
-              
-              <p className="text-zinc-500 text-lg font-light leading-relaxed max-w-sm">
-                Advanced support and warranty management for the modern driver. Excellence in every detail.
-              </p>
-
-              <div className="flex flex-wrap gap-4 pt-4">
-                <button 
-                  onClick={() => navigate(`/register-warranty?serial=${serial || ""}`)}
-                  className="group px-10 py-5 bg-black text-white text-[11px] font-bold uppercase tracking-[0.2em] transition-all hover:bg-zinc-800 flex items-center gap-4"
-                >
-                  {serial ? "Register Now" : "Secure Product"}
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-2 transition-transform" />
-                </button>
-              </div>
             </div>
 
-            {/* Image Side - Live High-Resolution Car Accessory */}
-            <div className="order-1 lg:order-2 relative group">
-              <div className="relative overflow-hidden rounded-2xl shadow-2xl bg-zinc-200">
-                <img 
-                  src="https://images.pexels.com/photos/358070/pexels-photo-358070.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" 
-                  alt="Luxury Car Interior"
-                  className="w-full h-[400px] object-cover grayscale transition-all duration-700 group-hover:grayscale-0 group-hover:scale-105"
-                />
-                {/* Subtle Overlay Label */}
-                <div className="absolute bottom-4 left-4 backdrop-blur-md bg-white/10 border border-white/20 p-3 rounded-lg">
-                  <p className="text-white text-[10px] font-bold tracking-widest uppercase italic">Elite Series</p>
-                </div>
-              </div>
-              
-              {/* Decorative Background Frame */}
-              <div className="absolute -top-4 -right-4 w-24 h-24 border-t-2 border-r-2 border-zinc-200 -z-10 group-hover:border-black transition-colors duration-500" />
+            {/* Ultra Slim Search */}
+            <div className="w-full md:w-96 relative">
+              <Search className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 text-black" />
+              <input 
+                type="text"
+                placeholder="SEARCH TOPICS..."
+                className="w-full pl-8 pr-4 py-2 bg-transparent border-b border-zinc-200 focus:border-black outline-none transition-all text-xs font-bold uppercase tracking-widest"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
             </div>
-
           </div>
         </div>
       </section>
 
-      {/* Quick Access Grid */}
-      <main className="max-w-7xl mx-auto px-6 lg:px-12 py-24">
-        <div className="grid md:grid-cols-2 gap-12 lg:gap-24">
-          {cards.map((card, index) => (
+      {/* ======================= COMPACT GRID ======================= */}
+      <main className="max-w-7xl mx-auto px-6 lg:px-12 py-12">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-zinc-100 border border-zinc-100">
+          {supportCategories.map((cat, i) => (
             <div 
-              key={index} 
-              className="group p-10 border border-zinc-100 bg-white hover:border-black transition-all duration-500 relative"
+              key={i}
+              onClick={() => cat.link !== "#" && navigate(cat.link)}
+              className="p-6 md:p-8 bg-white hover:bg-black hover:text-white transition-all cursor-pointer group"
             >
-              <div className="mb-8 w-14 h-14 border border-zinc-200 flex items-center justify-center group-hover:bg-black transition-all duration-500">
-                <div className="group-hover:invert transition-all">
-                  {card.icon}
-                </div>
-              </div>
-              <h3 className="text-3xl font-bold tracking-tighter mb-4 uppercase text-black">{card.title}</h3>
-              <p className="text-zinc-500 font-light mb-10 leading-relaxed">
-                {card.description}
+              <div className="mb-6">{cat.icon}</div>
+              <h3 className="text-xs font-bold uppercase tracking-widest mb-2">{cat.title}</h3>
+              <p className="text-zinc-500 group-hover:text-zinc-400 text-[11px] font-light leading-relaxed mb-4">
+                {cat.description}
               </p>
-              <button 
-                onClick={card.action}
-                className="inline-flex items-center gap-3 text-[10px] font-black uppercase tracking-widest border-b-2 border-black pb-1 hover:text-zinc-400 hover:border-zinc-400 transition-all"
-              >
-                Launch Portal <MousePointer2 className="w-3 h-3" />
-              </button>
-              
-              <span className="absolute top-6 right-8 text-6xl font-black text-zinc-50 opacity-0 group-hover:opacity-100 transition-opacity">
-                0{index + 1}
-              </span>
+              <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
           ))}
         </div>
 
-        {/* Showroom/Map Section */}
-        <div className="mt-32 pt-24 border-t border-zinc-100">
-          <div className="flex flex-col lg:flex-row gap-16">
-            <div className="lg:w-1/3">
-              <h2 className="text-4xl font-bold tracking-tighter uppercase mb-6 text-black">Find Our <br/>Showroom.</h2>
-              <p className="text-zinc-400 font-light mb-8 italic">Experience premium fitting and technical diagnostics in person.</p>
-              <div className="space-y-6">
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-zinc-300 mb-1">Location</p>
-                  <p className="text-sm font-medium">Melbourne Flagship Center, VIC</p>
+        {/* ======================= MINIMALIST FOOTER CONTENT ======================= */}
+        <div className="mt-20 grid lg:grid-cols-2 gap-20">
+          <div>
+            <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-black mb-8 border-b border-black pb-2 inline-block">Frequently Asked</h2>
+            <div className="space-y-6">
+              {faqs.map((faq, idx) => (
+                <div key={idx} className="border-b border-zinc-100 pb-4">
+                  <div 
+                    onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
+                    className="flex items-center justify-between group cursor-pointer"
+                  >
+                    <span className="text-sm font-medium hover:italic transition-all">{faq.question}</span>
+                    <div className="h-[1px] flex-grow mx-4 bg-zinc-50" />
+                    <ChevronRight className={`w-4 h-4 transition-transform duration-300 ${openFaq === idx ? 'rotate-90' : ''}`} />
+                  </div>
+                  {openFaq === idx && (
+                    <div className="mt-4 text-sm text-black font-normal leading-relaxed animate-in fade-in slide-in-from-top-2 duration-300">
+                      {faq.answer}
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-zinc-300 mb-1">Operating Hours</p>
-                  <p className="text-sm font-medium">09:00 — 18:00 (Mon - Sat)</p>
-                </div>
-              </div>
+              ))}
             </div>
-            
-            <div className="lg:w-2/3 h-[450px] bg-zinc-100 rounded-xl overflow-hidden grayscale contrast-125 border border-zinc-100 shadow-xl group">
-              <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3151.83543450937!2d144.95373531531675!3d-37.81627977975171!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x6ad642af0f11fd81%3A0x5045675218ce6e0!2sMelbourne%20VIC%2C%20Australia!5e0!3m2!1sen!2sus!4v1700000000000"
-                width="100%"
-                height="100%"
-                style={{ border: 0 }}
-                loading="lazy"
-                className="opacity-80 group-hover:opacity-100 transition-opacity"
-              />
-            </div>
+          </div>
+
+          <div className="bg-zinc-50 p-10 flex flex-col justify-center items-center text-center border border-zinc-100">
+             <p className="text-[10px] font-black uppercase tracking-widest mb-2">Live Status</p>
+             <p className="text-3xl font-bold tracking-tighter mb-6">TECH-SUPPORT ONLINE</p>
+             <button className="px-8 py-3 bg-black text-white text-[10px] font-bold uppercase tracking-widest hover:bg-zinc-800 transition-colors">
+               Start Live Chat
+             </button>
           </div>
         </div>
       </main>
@@ -152,4 +158,4 @@ const CustomerHome = () => {
   );
 };
 
-export default CustomerHome;
+export default CustomerSupport;

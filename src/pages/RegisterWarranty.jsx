@@ -5,14 +5,14 @@ import QRScanner from "../components/QRScanner";
 import WarrantyCertificate from "../components/WarrantyCertificate";
 import Navbar from "../layouts/CustomerNavbar";
 import Footer from "../layouts/Footer";
-import { ArrowLeft, CheckCircle2, ShieldCheck, User, Mail, Phone, Calendar, RefreshCcw } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ShieldCheck, User, Mail, Phone, Calendar, RefreshCcw, Camera, QrCode } from "lucide-react";
 
 const RegisterWarranty = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [serialNumber, setSerialNumber] = useState("");
   const [manualSerial, setManualSerial] = useState("");
-  const [isScanning, setIsScanning] = useState(true);
+  const [isScanning, setIsScanning] = useState(false);
   const [registeredData, setRegisteredData] = useState(null);
 
   useEffect(() => {
@@ -79,11 +79,11 @@ const RegisterWarranty = () => {
           
           {/* Back Button & Title */}
           <button 
-            onClick={() => navigate(-1)}
+            onClick={() => navigate("/customer-home")}
             className="group flex items-center gap-2 text-slate-500 hover:text-blue-600 transition-colors mb-8 font-semibold text-sm"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            Back to Dashboard
+            Back to Home
           </button>
 
           <div className="bg-white shadow-xl shadow-slate-200/60 rounded-3xl overflow-hidden border border-slate-100">
@@ -102,15 +102,42 @@ const RegisterWarranty = () => {
             </div>
 
             <div className="p-8 md:p-10">
-              {isScanning && !serialNumber ? (
-                <div className="space-y-6">
-                  <div className="text-center space-y-2 mb-4">
-                    <h3 className="text-lg font-bold text-slate-800">Scan Product QR Code</h3>
-                    <p className="text-sm text-slate-500">Position the QR code within the frame to automatically detect your serial number.</p>
-                  </div>
-                  <div className="rounded-2xl overflow-hidden border-2 border-dashed border-slate-200 bg-slate-50">
-                    <QRScanner onScanSuccess={handleScanSuccess} />
-                  </div>
+              {!serialNumber ? (
+                <div className="flex flex-col items-center justify-center space-y-6 py-8">
+                  {!isScanning ? (
+                    <div className="text-center space-y-6 max-w-sm">
+                      <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-2 animate-pulse">
+                        <QrCode className="w-10 h-10 text-blue-600" />
+                      </div>
+                      <div className="space-y-2">
+                        <h3 className="text-xl font-bold text-slate-800">Scan Product QR</h3>
+                        <p className="text-sm text-slate-500">To activate your warranty, please scan the QR code located on your product box or certificate.</p>
+                      </div>
+                      <button 
+                        onClick={() => setIsScanning(true)}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl font-bold text-lg shadow-lg shadow-blue-200 transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
+                      >
+                        <Camera className="w-6 h-6" />
+                        Scan QR Code
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="w-full space-y-6">
+                      <div className="text-center space-y-2 mb-4">
+                        <h3 className="text-lg font-bold text-slate-800">Align QR Code</h3>
+                        <p className="text-sm text-slate-500">Center the QR code in the window below</p>
+                      </div>
+                      <div className="rounded-2xl overflow-hidden border-2 border-dashed border-slate-200 bg-slate-50 relative min-h-[300px] flex items-center justify-center">
+                        <QRScanner onScanSuccess={handleScanSuccess} />
+                      </div>
+                      <button 
+                        onClick={() => setIsScanning(false)}
+                        className="text-slate-400 text-sm font-semibold hover:text-red-500 transition-colors mx-auto block"
+                      >
+                        Cancel Scanning
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">

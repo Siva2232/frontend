@@ -114,7 +114,7 @@ const Customers = () => {
                           <div>
                             <div className="font-bold text-slate-900 text-sm tracking-tight">{c.customerName}</div>
                             <div className="flex items-center gap-1 text-[11px] text-blue-600 font-semibold bg-blue-50 px-2 py-0.5 rounded-full mt-1 w-fit">
-                              Verified Account
+                              Warranty Registered
                             </div>
                           </div>
                         </div>
