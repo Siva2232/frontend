@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import API from "../api/axios";
 import QRScanner from "../components/QRScanner";
+import WarrantyCertificate from "../components/WarrantyCertificate";
 import Navbar from "../layouts/CustomerNavbar";
 import Footer from "../layouts/Footer";
 import { ArrowLeft, CheckCircle2, ShieldCheck, User, Mail, Phone, Calendar, RefreshCcw } from "lucide-react";
@@ -12,6 +13,7 @@ const RegisterWarranty = () => {
   const [serialNumber, setSerialNumber] = useState("");
   const [manualSerial, setManualSerial] = useState("");
   const [isScanning, setIsScanning] = useState(true);
+  const [registeredData, setRegisteredData] = useState(null);
 
   useEffect(() => {
     const serialFromUrl = searchParams.get("serial");
@@ -40,13 +42,33 @@ const RegisterWarranty = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await API.post("/register", { ...form, serialNumber });
-      alert("Warranty Registered Successfully");
-      navigate("/customer-home");
+      const { data } = await API.post("/register", { ...form, serialNumber });
+      setRegisteredData(data.registration);
+      // Removed the alert/navigate since we'll show the certificate now
     } catch (err) {
       alert(err.response?.data?.message || "Registration failed");
     }
   };
+
+  if (registeredData) {
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans antialiased">
+        <Navbar />
+        <div className="flex-grow py-16 px-4">
+          <WarrantyCertificate registration={registeredData} />
+          <div className="max-w-4xl mx-auto mt-8 text-center print:hidden">
+            <button
+              onClick={() => navigate("/customer-home")}
+              className="text-slate-500 hover:text-blue-600 font-bold transition-colors"
+            >
+              Return to Home
+            </button>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans antialiased">
