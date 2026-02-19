@@ -1,13 +1,11 @@
 import { useEffect } from "react";
-import { Html5QrcodeScanner } from "html5-qrcode";
+import { Html5Qrcode } from "html5-qrcode";
 
 const QRScanner = ({ onScanSuccess }) => {
   useEffect(() => {
-    const scanner = new Html5QrcodeScanner(
-      "reader",
-      { fps: 10, qrbox: 250 },
-      false
-    );
+    const html5QrCode = new Html5Qrcode("reader");
+    
+    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
 
     const onScan = (decodedText) => {
       const trimmedText = decodedText.trim();
@@ -32,27 +30,33 @@ const QRScanner = ({ onScanSuccess }) => {
       // Clean up serial if it has prefix
       serial = serial.replace("SERIAL:", "");
       
-      onScanSuccess(serial);
-      scanner.clear().catch(error => {
-        console.error("Failed to clear scanner:", error);
+      html5QrCode.stop().then(() => {
+        onScanSuccess(serial);
+      }).catch(err => {
+        console.error("Error stopping scanner", err);
+        onScanSuccess(serial);
       });
     };
 
-    scanner.render(onScan, (error) => {
-      // Supress noisy console errors from html5-qrcode
-      // console.warn(error);
+    // Start with back camera by default
+    html5QrCode.start(
+      { facingMode: "environment" }, 
+      config, 
+      onScan
+    ).catch((err) => {
+      console.error("Scanner start error:", err);
     });
 
     return () => {
-      scanner.clear().catch(error => {
-        console.error("Cleanup failed:", error);
-      });
+      if (html5QrCode.isScanning) {
+        html5QrCode.stop().catch(err => console.error("Cleanup error:", err));
+      }
     };
   }, []); // Empty dependency array to run once on mount
 
   return (
     <div className="w-full flex justify-center">
-      <div id="reader" className="w-full max-w-md" />
+      <div id="reader" className="w-full max-w-md overflow-hidden rounded-2xl" />
     </div>
   );
 };
