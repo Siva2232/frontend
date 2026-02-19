@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "https://webbackend-fsxr.onrender.com/api",
+  baseURL: "/api",
 });
 
 // Automatically attach token if available
