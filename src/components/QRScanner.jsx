@@ -1,65 +1,76 @@
-import { useEffect } from "react";
-import { Html5QrcodeScanner } from "html5-qrcode";
+import { useEffect, useRef } from "react";
+import { Html5Qrcode } from "html5-qrcode";
 
 const QRScanner = ({ onScanSuccess }) => {
-  useEffect(() => {
-    const scanner = new Html5QrcodeScanner(
-      "reader",
-      { fps: 10, qrbox: 250 },
-      false
-    );
+  const scannerRef = useRef(null);
 
-    const onScan = (decodedText) => {
-      const trimmedText = decodedText.trim();
-      console.log("Scanned text:", trimmedText);
-      
-      try {
-        // If it's a URL, extract the serial parameter
-        if (trimmedText.startsWith("http")) {
-          const url = new URL(trimmedText);
-          const serial = url.searchParams.get("serial");
-          
-          if (serial) {
-            // Check if we are already on a page with this serial to avoid loops
-            const currentParams = new URLSearchParams(window.location.search);
-            if (currentParams.get("serial") === serial && window.location.pathname.includes("customer-home")) {
-              console.log("Already on customer-home with this serial");
+  useEffect(() => {
+    const html5QrCode = new Html5Qrcode("reader");
+    scannerRef.current = html5QrCode;
+
+    const config = { fps: 10, qrbox: 250 };
+    
+    // Start scanning with strict back-camera constraint
+    html5QrCode.start(
+      { facingMode: { exact: "environment" } },
+      config,
+      (decodedText) => {
+        const trimmedText = decodedText.trim();
+        console.log("Scanned text:", trimmedText);
+        
+        try {
+          if (trimmedText.startsWith("http")) {
+            const url = new URL(trimmedText);
+            const serial = url.searchParams.get("serial");
+            
+            if (serial) {
+              const currentParams = new URLSearchParams(window.location.search);
+              if (currentParams.get("serial") === serial && window.location.pathname.includes("register-warranty")) {
+                console.log("Already on register-warranty with this serial");
+                return;
+              }
+              window.location.href = trimmedText;
               return;
             }
-
-            // Redirect to the customer home page provided in the QR
-            window.location.href = trimmedText;
-            return;
           }
+        } catch (e) {
+          console.error("URL parsing failed", e);
         }
-      } catch (e) {
-        console.error("URL parsing failed", e);
+
+        const serial = trimmedText.replace("SERIAL:", "");
+        onScanSuccess(serial);
+        
+        // Stop and clear after success
+        html5QrCode.stop().catch(err => console.error("Error stopping scanner", err));
+      },
+      (errorMessage) => {
+        // Suppress noise
       }
-
-      // Fallback for old/simple formats or non-URL serials
-      const serial = trimmedText.replace("SERIAL:", "");
-      
-      onScanSuccess(serial);
-      scanner.clear().catch(error => {
-        console.error("Failed to clear scanner:", error);
-      });
-    };
-
-    scanner.render(onScan, (error) => {
-      // Supress noisy console errors from html5-qrcode
-      // console.warn(error);
+    ).catch((err) => {
+      console.error("Unable to start scanning", err);
+      // Fallback if 'exact' is too strict for some browsers
+      html5QrCode.start({ facingMode: "environment" }, config, (text) => onScanSuccess(text.trim()));
     });
 
     return () => {
-      scanner.clear().catch(error => {
-        console.error("Cleanup failed:", error);
-      });
+      if (scannerRef.current && scannerRef.current.isScanning) {
+        scannerRef.current.stop().catch(err => console.error("Cleanup failed", err));
+      }
     };
-  }, []); // Empty dependency array to run once on mount
+  }, []);
 
   return (
     <div className="w-full flex justify-center">
-      <div id="reader" className="w-full max-w-md" />
+      <div id="reader" className="w-full max-w-md overflow-hidden rounded-xl" />
+      <style>{`
+        #reader__dashboard, #reader__camera_selection {
+          display: none !important;
+        }
+        #reader video {
+          border-radius: 12px;
+          object-fit: cover;
+        }
+      `}</style>
     </div>
   );
 };

@@ -10,7 +10,8 @@ import {
   ChevronDown,
   UserCircle,
   Menu,
-  X 
+  X,
+  Zap
 } from "lucide-react";
 
 const Navbar = () => {
@@ -28,134 +29,137 @@ const Navbar = () => {
   ];
 
   return (
-    <nav className="bg-slate-900 border-b border-slate-800 sticky top-0 z-[100]">
-      <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+    <nav className="bg-black border-b border-zinc-800 sticky top-0 z-[100] backdrop-blur-md bg-black/95">
+      <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
         
-        {/* Brand/Logo */}
-        <Link to="/dashboard" className="flex items-center gap-3 group">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-900/20 group-hover:bg-blue-500 transition-colors">
-            <ShieldCheck className="w-5 h-5 text-white" />
+        {/* Brand/Logo - High Contrast */}
+        <Link to="/dashboard" className="flex items-center gap-4 group">
+          <div className="w-10 h-10 bg-white rounded-none flex items-center justify-center rotate-45 group-hover:rotate-0 transition-all duration-500 shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+            <ShieldCheck className="w-6 h-6 text-black -rotate-45 group-hover:rotate-0 transition-all duration-500" />
           </div>
           <div className="hidden sm:block">
-            <h1 className="text-sm font-bold text-white tracking-tight leading-none">
-              Admin<span className="text-blue-500">Console</span>
+            <h1 className="text-lg font-black text-white tracking-tighter leading-none uppercase">
+              Admin<span className="text-zinc-500">Node</span>
             </h1>
-            <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider mt-0.5">
+            <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-[0.3em] mt-1">
               Perfect Digital Press
             </p>
           </div>
         </Link>
 
         {admin && (
-          <div className="flex items-center gap-2 md:gap-8">
-            {/* Main Navigation Links */}
-            <div className="hidden md:flex items-center gap-1">
+          <div className="flex items-center gap-4 lg:gap-10">
+            {/* Main Navigation - Minimalist */}
+            <div className="hidden md:flex items-center gap-2">
               {navLinks.map((link) => (
                 <Link
                   key={link.name}
                   to={link.path}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                  className={`relative flex items-center gap-2 px-5 py-2 text-[11px] uppercase tracking-[0.2em] font-bold transition-all duration-300 ${
                     isActive(link.path)
-                      ? "bg-slate-800 text-blue-400 shadow-inner"
-                      : "text-slate-400 hover:text-white hover:bg-slate-800/50"
+                      ? "text-white"
+                      : "text-zinc-500 hover:text-zinc-200"
                   }`}
                 >
+                  {isActive(link.path) && (
+                    <span className="absolute inset-0 bg-zinc-800/50 rounded-lg -z-10 animate-in fade-in duration-500" />
+                  )}
                   {link.icon}
                   {link.name}
                 </Link>
               ))}
             </div>
 
-            {/* Divider */}
-            <div className="hidden md:block h-6 w-[1px] bg-slate-800" />
+            {/* Vertical Divider */}
+            <div className="hidden md:block h-8 w-[1px] bg-zinc-800" />
 
-            {/* Profile Dropdown Area */}
+            {/* Profile Area */}
             <div className="relative">
               <button
                 onClick={() => {
                   setProfileOpen(!profileOpen);
                   if (mobileMenuOpen) setMobileMenuOpen(false);
                 }}
-                className="flex items-center gap-3 pl-2 pr-1 py-1 rounded-full border border-slate-800 bg-slate-900 hover:bg-slate-800 transition-all active:scale-95 px-3 sm:px-2"
+                className="flex items-center gap-3 p-1.5 pr-4 rounded-full border border-zinc-800 hover:border-zinc-400 transition-all active:scale-95 bg-zinc-900/50"
               >
-                <div className="w-7 h-7 bg-blue-600/10 rounded-full flex items-center justify-center">
-                  <UserCircle className="w-5 h-5 text-blue-500" />
+                <div className="w-8 h-8 bg-white flex items-center justify-center rounded-full">
+                  <UserCircle className="w-5 h-5 text-black" />
                 </div>
-                <span className="text-xs font-bold text-slate-300 hidden lg:block">Administrator</span>
-                <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${profileOpen ? 'rotate-180' : ''}`} />
+                <div className="hidden lg:block text-left">
+                  <p className="text-[10px] font-black text-white leading-none uppercase tracking-widest">Admin</p>
+                  <p className="text-[9px] text-zinc-500 font-medium">Session Active</p>
+                </div>
+                <ChevronDown className={`w-3 h-3 text-zinc-500 transition-transform duration-300 ${profileOpen ? 'rotate-180' : ''}`} />
               </button>
 
-              {/* Minimal Dropdown Menu */}
+              {/* Premium Dropdown */}
               {profileOpen && (
                 <>
-                  <div 
-                    className="fixed inset-0 z-10" 
-                    onClick={() => setProfileOpen(false)} 
-                  />
-                  <div className="absolute right-0 mt-3 w-48 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl z-20 py-2 animate-in fade-in zoom-in-95 duration-200">
-                    <div className="px-4 py-2 border-b border-slate-800 mb-1">
-                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.1em]">Signed in as</p>
+                  <div className="fixed inset-0 z-10" onClick={() => setProfileOpen(false)} />
+                  <div className="absolute right-0 mt-4 w-60 bg-black border border-zinc-800 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-20 overflow-hidden animate-in slide-in-from-top-2 duration-200">
+                    <div className="px-5 py-4 border-b border-zinc-800 bg-zinc-900/30">
+                      <p className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-1">Authenticated As</p>
                       <p className="text-xs font-bold text-white truncate">admin@perfectdigital.com</p>
                     </div>
                     
-                    <button
-                      onClick={logout}
-                      className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-red-400 hover:bg-red-500/10 transition-colors"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      Sign Out
-                    </button>
+                    <div className="p-2">
+                      <button
+                        onClick={logout}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-500/10 transition-colors rounded-lg"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Terminals / Sign Out
+                      </button>
+                    </div>
                   </div>
                 </>
               )}
             </div>
 
-            {/* Mobile Menu Toggle */}
+            {/* Mobile Toggle */}
             <button
               onClick={() => {
                 setMobileMenuOpen(!mobileMenuOpen);
                 if (profileOpen) setProfileOpen(false);
               }}
-              className="md:hidden p-2 rounded-xl border border-slate-800 bg-slate-900 text-slate-400 hover:text-white transition-all active:scale-95"
+              className="md:hidden p-3 border border-zinc-800 text-white hover:bg-zinc-800 transition-all"
             >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         )}
       </div>
 
-      {/* Mobile Sidebar Navigation */}
+      {/* Mobile Sidebar */}
       {mobileMenuOpen && admin && (
-        <div className="md:hidden border-t border-slate-800 bg-slate-900 animate-in slide-in-from-top duration-300">
-          <div className="px-6 py-4 space-y-2">
+        <div className="md:hidden border-t border-zinc-800 bg-black animate-in slide-in-from-right duration-500 h-screen">
+          <div className="px-6 py-10 space-y-4">
             {navLinks.map((link) => (
               <Link
                 key={link.name}
                 to={link.path}
                 onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center gap-4 px-5 py-4 rounded-2xl text-base font-bold transition-all ${
+                className={`flex items-center gap-6 px-6 py-5 border ${
                   isActive(link.path)
-                    ? "bg-blue-600/10 text-blue-400 border border-blue-600/20"
-                    : "text-slate-400 hover:bg-slate-800/50 hover:text-white border border-transparent"
-                }`}
+                    ? "bg-white text-black border-white"
+                    : "text-zinc-500 border-zinc-900 hover:border-zinc-700"
+                } transition-all`}
               >
-                <div className={`${isActive(link.path) ? "text-blue-500" : "text-slate-500"}`}>
-                  {link.icon}
-                </div>
-                {link.name}
+                {link.icon}
+                <span className="text-xs font-black uppercase tracking-[0.3em]">{link.name}</span>
               </Link>
             ))}
             
-            <div className="pt-4 border-t border-slate-800">
+            <div className="pt-10">
               <button
                 onClick={() => {
                   logout();
                   setMobileMenuOpen(false);
                 }}
-                className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-base font-bold text-red-400 hover:bg-red-500/10 transition-all border border-transparent"
+                className="w-full flex items-center justify-center gap-4 px-6 py-5 bg-red-600/10 text-red-500 text-xs font-black uppercase tracking-widest"
               >
                 <LogOut className="w-5 h-5" />
-                Sign Out
+                Disconnect Session
               </button>
             </div>
           </div>
