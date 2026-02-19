@@ -4,7 +4,6 @@ import {
   ShieldCheck, 
   Ticket, 
   MessageSquare, 
-  Search, 
   LifeBuoy, 
   ChevronRight,
   ArrowUpRight
@@ -16,7 +15,6 @@ const CustomerSupport = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const serial = searchParams.get("serial");
-  const [searchQuery, setSearchQuery] = useState("");
   const [openFaq, setOpenFaq] = useState(null);
 
   const faqs = [
@@ -83,18 +81,6 @@ const CustomerSupport = () => {
                 HOW CAN WE <span className="italic font-light">HELP?</span>
               </h1>
             </div>
-
-            {/* Ultra Slim Search */}
-            <div className="w-full md:w-96 relative">
-              <Search className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 text-black" />
-              <input 
-                type="text"
-                placeholder="SEARCH TOPICS..."
-                className="w-full pl-8 pr-4 py-2 bg-transparent border-b border-zinc-200 focus:border-black outline-none transition-all text-xs font-bold uppercase tracking-widest"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
           </div>
         </div>
       </section>
@@ -106,14 +92,21 @@ const CustomerSupport = () => {
             <div 
               key={i}
               onClick={() => cat.link !== "#" && navigate(cat.link)}
-              className="p-6 md:p-8 bg-white hover:bg-black hover:text-white transition-all cursor-pointer group"
+              className="p-6 md:p-8 bg-white hover:bg-black hover:text-white transition-all cursor-pointer group flex flex-col justify-between"
             >
-              <div className="mb-6">{cat.icon}</div>
-              <h3 className="text-xs font-bold uppercase tracking-widest mb-2">{cat.title}</h3>
-              <p className="text-zinc-500 group-hover:text-zinc-400 text-[11px] font-light leading-relaxed mb-4">
-                {cat.description}
-              </p>
-              <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div>
+                <div className="mb-6">{cat.icon}</div>
+                <h3 className="text-xs font-bold uppercase tracking-widest mb-2">{cat.title}</h3>
+                <p className="text-zinc-500 group-hover:text-zinc-400 text-[11px] font-light leading-relaxed mb-6">
+                  {cat.description}
+                </p>
+              </div>
+              <div className="flex items-center justify-between mt-4">
+                <div className="px-5 py-2.5 border border-black group-hover:border-white text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2">
+                  Access Portal
+                  <ArrowUpRight className="w-3 h-3 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                </div>
+              </div>
             </div>
           ))}
         </div>
