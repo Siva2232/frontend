@@ -31,13 +31,6 @@ const CustomerNavbar = () => {
           <a href="#" className="text-sm font-bold text-gray-600 hover:text-blue-600 transition-colors">
             SUPPORT
           </a>
-          <Link 
-            to="/admin-login" 
-            className="flex items-center gap-2 bg-gray-50 text-gray-600 px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-50 hover:text-blue-600 transition-all border border-gray-200"
-          >
-            <User className="w-4 h-4" />
-            ADMIN LOGIN
-          </Link>
         </div>
 
         {/* Mobile Menu Button */}
