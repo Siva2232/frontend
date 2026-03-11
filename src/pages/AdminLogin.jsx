@@ -3,6 +3,7 @@ import { AuthContext } from "../Context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import Footer from "../layouts/Footer";
 import Navbar from "../layouts/CustomerNavbar";
+import toast from "react-hot-toast";
 
 const AdminLogin = () => {
   const { login } = useContext(AuthContext);
@@ -18,9 +19,10 @@ const AdminLogin = () => {
     const res = await login(form.email, form.password);
     setLoading(false);
     if (res.success) {
+      toast.success("Welcome, Admin!");
       navigate("/dashboard");
     } else {
-      alert(res.message);
+      toast.error(res.message);
     }
   };
 

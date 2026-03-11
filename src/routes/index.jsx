@@ -7,6 +7,7 @@ import AdminLogin from "../pages/AdminLogin";
 import Dashboard from "../pages/Dashboard";
 import Products from "../pages/Products";
 import Customers from "../pages/Customers";
+import ServiceTracker from "../pages/ServiceTracker";
 
 /* Components */
 import ProtectedRoute from "../components/ProtectedRoute";
@@ -46,6 +47,15 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute>
             <Customers />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/services"
+        element={
+          <ProtectedRoute>
+            <ServiceTracker />
           </ProtectedRoute>
         }
       />

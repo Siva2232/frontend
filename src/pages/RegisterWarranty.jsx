@@ -5,7 +5,8 @@ import QRScanner from "../components/QRScanner";
 import WarrantyCertificate from "../components/WarrantyCertificate";
 import Navbar from "../layouts/CustomerNavbar";
 import Footer from "../layouts/Footer";
-import { ArrowLeft, CheckCircle2, ShieldCheck, User, Mail, Phone, Calendar, RefreshCcw, Camera, QrCode } from "lucide-react";
+import toast from "react-hot-toast";
+import { ArrowLeft, CheckCircle2, ShieldCheck, User, Mail, Phone, Calendar, RefreshCcw, Camera, QrCode, Hash, ShoppingBag } from "lucide-react";
 
 const RegisterWarranty = () => {
   const navigate = useNavigate();
@@ -27,6 +28,8 @@ const RegisterWarranty = () => {
     customerName: "",
     phone: "",
     email: "",
+    modelNumber: "",
+    purchaseShopName: "",
     purchaseDate: "",
   });
 
@@ -41,12 +44,16 @@ const RegisterWarranty = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("submitting form", { ...form, serialNumber });
     try {
       const { data } = await API.post("/register", { ...form, serialNumber });
+      console.log("registration response", data);
+      toast.success("Warranty registered successfully!");
       setRegisteredData(data.registration);
       // Removed the alert/navigate since we'll show the certificate now
     } catch (err) {
-      alert(err.response?.data?.message || "Registration failed");
+      console.error("submit error", err);
+      toast.error(err.response?.data?.message || "Registration failed");
     }
   };
 
@@ -205,6 +212,7 @@ const RegisterWarranty = () => {
                           type="date"
                           name="purchaseDate"
                           required
+                          max={new Date().toISOString().split("T")[0]}
                           className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pl-11 pr-4 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-slate-800"
                           onChange={handleChange}
                         />
@@ -220,6 +228,37 @@ const RegisterWarranty = () => {
                           type="email"
                           name="email"
                           placeholder="john@example.com"
+                          required
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pl-11 pr-4 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-slate-800"
+                          onChange={handleChange}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Product Model Number */}
+                    <div className="space-y-2 md:col-span-2">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Product Model Number</label>
+                      <div className="relative group">
+                        <Hash className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                        <input
+                          type="text"
+                          name="modelNumber"
+                          placeholder="Enter product model number (e.g. ABC-123)"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pl-11 pr-4 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-slate-800"
+                          onChange={handleChange}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Shop Name */}
+                    <div className="space-y-2 md:col-span-2">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Purchase Shop Name</label>
+                      <div className="relative group">
+                        <ShoppingBag className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                        <input
+                          type="text"
+                          name="purchaseShopName"
+                          placeholder="Enter shop or dealer name"
                           required
                           className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pl-11 pr-4 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-slate-800"
                           onChange={handleChange}
