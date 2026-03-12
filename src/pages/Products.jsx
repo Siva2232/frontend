@@ -3,7 +3,8 @@ import API from "../api/axios";
 import Navbar from "../components/Navbar";
 import LabelCard from "../components/LabelCard";
 import Footer from "../layouts/Footer";
-import toast from "react-hot-toast";
+import ConfirmationModal from "../components/ConfirmationModal";
+import { useToast } from "../components/Toast";
 import { 
   Package, 
   Calendar, 
@@ -26,6 +27,7 @@ import {
 } from "lucide-react";
 
 const Products = () => {
+  const { show, showSuccess, showError } = useToast();
   const [activeMode, setActiveMode] = useState("single"); // 'single' or 'bulk'
   const [form, setForm] = useState({
     productName: "",
@@ -54,6 +56,15 @@ const Products = () => {
   const [products, setProducts] = useState([]);
   const [selectedQR, setSelectedQR] = useState(null);
   const [isBulkPrintOpen, setIsBulkPrintOpen] = useState(false);
+
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+    type: "info",
+    confirmText: "Proceed"
+  });
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -88,52 +99,90 @@ const Products = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError("");
-    setSuccess(false);
+    
+    setConfirmModal({
+      isOpen: true,
+      title: "Create Product?",
+      message: `Do you want to create a new registration for "${form.productName}"? This action will generate a new unique QR code.`,
+      type: "info",
+      confirmText: "Create Now",
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        setLoading(true);
+        setError("");
+        setSuccess(false);
 
-    try {
-      const { data } = await API.post("/products", form);
-      setQr(data.qrCodeUrl);
-      setSuccess(true);
-      toast.success("Product created successfully!");
-      fetchProducts(); 
-    } catch (err) {
-      console.error("Error creating product:", err);
-      const msg = err.response?.data?.message || "Connection failed. Ensure backend is running.";
-      setError(msg);
-      toast.error(msg);
-    } finally {
-      setLoading(false);
-    }
+        try {
+          const { data } = await API.post("/products", form);
+          setQr(data.qrCodeUrl);
+          setSuccess(true);
+          showSuccess("Product created successfully!");
+          setForm({
+            productName: "",
+            modelNumber: "",
+            serialNumber: "",
+            manufactureDate: new Date().toISOString().split('T')[0],
+            warrantyPeriodMonths: 12,
+          });
+          fetchProducts(); 
+        } catch (err) {
+          console.error("Error creating product:", err);
+          const msg = err.response?.data?.message || "Connection failed. Ensure backend is running.";
+          setError(msg);
+          showError(msg);
+        } finally {
+          setLoading(false);
+        }
+      }
+    });
   };
 
   const handleBulkSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError("");
-    setBulkResults(null);
+    
+    setConfirmModal({
+      isOpen: true,
+      title: "Bulk Generation Alert",
+      message: `You are about to generate ${bulkForm.count} unique QR labels for "${bulkForm.productName}". This will add these serial numbers to the database. Proceed?`,
+      type: "warning",
+      confirmText: "Generate Bulk",
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        setLoading(true);
+        setError("");
+        setBulkResults(null);
 
-    try {
-      const { data } = await API.post("/products/bulk", bulkForm);
-      setBulkResults(data.products);
-      toast.success(data.message);
-      fetchProducts();
-      setIsBulkPrintOpen(true); // Open bulk print view automatically
-    } catch (err) {
-      const msg = err.response?.data?.message || "Bulk generation failed";
-      setError(msg);
-      toast.error(msg);
-    } finally {
-      setLoading(false);
-    }
+        try {
+          const { data } = await API.post("/products/bulk", bulkForm);
+          setBulkResults(data.products);
+          showSuccess(data.message);
+          setBulkForm({
+            productName: "",
+            modelNumber: "",
+            manufactureDate: new Date().toISOString().split('T')[0],
+            warrantyPeriodMonths: 12,
+            prefix: "SN-",
+            startNumber: 1,
+            count: 10,
+          });
+          fetchProducts();
+          setIsBulkPrintOpen(true); // Open bulk print view automatically
+        } catch (err) {
+          const msg = err.response?.data?.message || "Bulk generation failed";
+          setError(msg);
+          showError(msg);
+        } finally {
+          setLoading(false);
+        }
+      }
+    });
   };
 
   // helper for printing a single product label and auto-triggering print
   const _printIndividualLabel = (product) => {
     const printWindow = window.open('', '_blank', 'width=300,height=200');
     if (!printWindow) {
-      toast.error("Pop-up blocked. Please allow pop-ups for this site.");
+      showError("Pop-up blocked. Please allow pop-ups for this site.");
       return;
     }
 
@@ -249,7 +298,7 @@ const Products = () => {
 
     const printWindow = window.open('', '_blank', 'width=400,height=600');
     if (!printWindow) {
-      toast.error("Pop-up blocked. Please allow pop-ups for this site.");
+      showError("Pop-up blocked. Please allow pop-ups for this site.");
       return;
     }
 
@@ -305,7 +354,7 @@ const Products = () => {
 
     const printWindow = window.open('', '_blank', 'width=500,height=650');
     if (!printWindow) {
-      toast.error("Pop-up blocked. Please allow pop-ups for this site.");
+      showError("Pop-up blocked. Please allow pop-ups for this site.");
       return;
     }
 
@@ -1070,6 +1119,17 @@ const Products = () => {
       <div className="print:hidden">
         <Footer />
       </div>
+
+      <ConfirmationModal 
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        type={confirmModal.type}
+        confirmText={confirmModal.confirmText}
+        isLoading={loading}
+      />
     </div>
   );
 };

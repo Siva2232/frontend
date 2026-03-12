@@ -1,147 +1,194 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { 
-  ShieldCheck, 
-  Ticket, 
-  MessageSquare, 
-  LifeBuoy, 
-  ChevronRight,
-  ArrowUpRight
+import {
+  ShieldCheck,
+  MessageCircle,
+  ArrowUpRight,
+  Headphones,
 } from "lucide-react";
 import Navbar from "../layouts/CustomerNavbar";
 import Footer from "../layouts/Footer";
-import image from "../assets/image.png"
-const CustomerSupport = () => {
+import heroImage from "../assets/image.png";
+
+const supportCategories = [
+  {
+    title: "Warranty Claim",
+    description: "Register or check your warranty status",
+    icon: ShieldCheck,
+    color: "from-amber-500/10 to-amber-600/5",
+    link: (serial) => `/register-warranty?serial=${serial || ""}`,
+  },
+  {
+    title: "WhatsApp Support",
+    description: "Chat with our team instantly",
+    icon: MessageCircle,
+    color: "from-green-500/10 to-emerald-600/5",
+    link: () => "https://wa.me/919876543210?text=Hello%2C+I+need+help+with+my+Lancaster+product", // ← CHANGE THIS NUMBER
+    highlight: true,
+  },
+];
+
+const faqs = [
+  {
+    question: "Where can I find my product serial number?",
+    answer:
+      "The serial number is printed on a silver sticker on the back of the device or on the original packaging near the barcode.",
+  },
+  {
+    question: "What documents do I need for a warranty claim?",
+    answer:
+      "You'll need your serial number, proof of purchase (invoice or receipt), and if applicable — clear photos showing the issue.",
+  },
+  {
+    question: "How do I update the device firmware?",
+    answer:
+      "Contact us on WhatsApp — our team will guide you through the update process for your model.",
+  },
+];
+
+export default function CustomerSupport() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const serial = searchParams.get("serial");
   const [openFaq, setOpenFaq] = useState(null);
 
-  const faqs = [
-    {
-      question: "Where is my serial number?",
-      answer: "Your serial number is located on a silver sticker at the back of the product or on the original packaging label near the barcode."
-    },
-    {
-      question: "Warranty claim requirements",
-      answer: "To submit a claim, you'll need your serial number, proof of purchase (invoice/receipt), and clear photos of the defect if visible."
-    },
-    {
-      question: "Firmware update instructions",
-      answer: "Navigate to the Technical section, download the latest firmware file for your model, and follow the provided step-by-step PDF guide."
-    }
-  ];
-
-  const supportCategories = [
-    {
-      title: "Warranty",
-      description: "Submit a claim or check coverage.",
-      icon: <ShieldCheck className="w-5 h-5" />,
-      link: `/register-warranty?serial=${serial || ""}`
-    },
-    {
-      title: "Technical",
-      description: "Manuals and troubleshooting.",
-      icon: <LifeBuoy className="w-5 h-5" />,
-      link: "#"
-    },
-    {
-      title: "Tickets",
-      description: "View history and updates.",
-      icon: <Ticket className="w-5 h-5" />,
-      link: "#"
-    },
-    {
-      title: "Live Chat",
-      description: "Talk to a master technician.",
-      icon: <MessageSquare className="w-5 h-5" />,
-      link: "#"
-    }
-  ];
-
   return (
-    <div className="min-h-screen bg-white font-sans antialiased text-black">
+    <div className="min-h-screen bg-white">
       <Navbar />
 
-      {/* ======================= CLEAN B&W ULTRA-THIN BANNER ======================= */}
-    <div className="w-full h-55 md:h-60 overflow-hidden relative border-b">
-  <img 
-    src={image} 
-    alt="Technical"
-    className="w-full h-full object-cover"
-  />
-</div>
-      {/* ======================= PURE WHITE HERO SECTION ======================= */}
-      <section className="bg-white border-b border-zinc-100 py-10">
-        <div className="max-w-7xl mx-auto px-6 lg:px-12">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-400 mb-2">Support Portal</p>
-              <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">
-                HOW CAN WE <span className="italic font-light">HELP?</span>
-              </h1>
-            </div>
+      {/* Hero Banner */}
+      <div className="relative h-[45vh] min-h-[380px] md:h-[55vh] overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent z-10" />
+        <img
+          src={heroImage}
+          alt="Lancaster Support"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 z-20 flex items-end pb-16 md:pb-24">
+          <div className="max-w-7xl mx-auto px-6 lg:px-12 w-full">
+            <p className="text-amber-400/90 text-xs md:text-sm font-semibold tracking-[0.25em] uppercase mb-3">
+              Lancaster Support
+            </p>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-white tracking-tight leading-tight">
+              How can we <span className="text-amber-400">assist</span> you today?
+            </h1>
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* ======================= COMPACT GRID ======================= */}
-      <main className="max-w-7xl mx-auto px-6 lg:px-12 py-12">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-zinc-100 border border-zinc-100">
-          {supportCategories.map((cat, i) => (
-            <div 
-              key={i}
-              onClick={() => cat.link !== "#" && navigate(cat.link)}
-              className="p-6 md:p-8 bg-white hover:bg-black hover:text-white transition-all cursor-pointer group flex flex-col justify-between"
+      <main className="max-w-7xl mx-auto px-6 lg:px-12 py-16 md:py-20 lg:py-24">
+        {/* Support Categories – now only 2 cards */}
+        <div className="grid sm:grid-cols-1 lg:grid-cols-2 gap-6 md:gap-10 max-w-4xl mx-auto">
+          {supportCategories.map((cat) => (
+            <a
+              key={cat.title}
+              href={cat.link(serial)}
+              target={cat.link().startsWith("http") ? "_blank" : undefined}
+              rel={cat.link().startsWith("http") ? "noopener noreferrer" : undefined}
+              onClick={(e) => {
+                if (cat.link(serial) !== "#" && !cat.link().startsWith("http")) {
+                  e.preventDefault();
+                  navigate(cat.link(serial));
+                }
+              }}
+              className={`
+                group relative overflow-hidden rounded-2xl border border-gray-100 
+                bg-gradient-to-br ${cat.color} p-8 md:p-10 transition-all duration-300
+                hover:shadow-xl hover:shadow-black/5 hover:-translate-y-1 cursor-pointer
+                ${cat.highlight ? "ring-2 ring-green-400/50 shadow-green-600/15 scale-[1.02]" : ""}
+              `}
             >
-              <div>
-                <div className="mb-6">{cat.icon}</div>
-                <h3 className="text-xs font-bold uppercase tracking-widest mb-2">{cat.title}</h3>
-                <p className="text-zinc-500 group-hover:text-zinc-400 text-[11px] font-light leading-relaxed mb-6">
-                  {cat.description}
-                </p>
-              </div>
-              <div className="flex items-center justify-between mt-4">
-                <div className="px-5 py-2.5 border border-black group-hover:border-white text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2">
-                  Access Portal
-                  <ArrowUpRight className="w-3 h-3 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+              <div className="mb-6">
+                <div
+                  className={`
+                    inline-flex h-14 w-14 items-center justify-center rounded-xl 
+                    bg-gradient-to-br from-gray-900 to-gray-800 text-white shadow-lg
+                    transition-transform group-hover:scale-110
+                  `}
+                >
+                  <cat.icon size={28} strokeWidth={2} />
                 </div>
               </div>
-            </div>
+
+              <h3 className="text-2xl font-bold text-gray-900 mb-3 group-hover:text-green-700 transition-colors">
+                {cat.title}
+              </h3>
+              <p className="text-gray-600 text-base leading-relaxed mb-10 group-hover:text-gray-700">
+                {cat.description}
+              </p>
+
+              <div className="flex items-center gap-2.5 text-sm font-semibold uppercase tracking-wider text-gray-600 group-hover:text-green-600 transition-colors">
+                Access now
+                <ArrowUpRight size={16} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+              </div>
+            </a>
           ))}
         </div>
 
-        {/* ======================= MINIMALIST FOOTER CONTENT ======================= */}
-        <div className="mt-12 md:mt-20 grid grid-cols-1 lg:grid-cols-2 gap-10 md:gap-20">
-          <div>
-            <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-black mb-8 border-b border-black pb-2 inline-block">Frequently Asked</h2>
-            <div className="space-y-6">
-              {faqs.map((faq, idx) => (
-                <div key={idx} className="border-b border-zinc-100 pb-4">
-                  <div 
-                    onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
-                    className="flex items-center justify-between group cursor-pointer"
-                  >
-                    <span className="text-sm font-medium hover:italic transition-all">{faq.question}</span>
-                    <div className="h-[1px] flex-grow mx-4 bg-zinc-50" />
-                    <ChevronRight className={`w-4 h-4 transition-transform duration-300 ${openFaq === idx ? 'rotate-90' : ''}`} />
-                  </div>
-                  {openFaq === idx && (
-                    <div className="mt-4 text-sm text-black font-normal leading-relaxed animate-in fade-in slide-in-from-top-2 duration-300">
-                      {faq.answer}
-                    </div>
-                  )}
-                </div>
-              ))}
+        {/* WhatsApp-focused quick help section */}
+        <div className="mt-20 lg:mt-28">
+          <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-10 md:p-14 lg:p-16 text-white flex flex-col items-center text-center shadow-2xl shadow-black/25 max-w-4xl mx-auto">
+            <div className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center mb-8">
+              <MessageCircle size={40} className="text-green-400" />
             </div>
-          </div>
 
-          <div className="bg-zinc-50 p-8 md:p-10 flex flex-col justify-center items-center text-center border border-zinc-100 mb-8 lg:mb-0">
-             <p className="text-[10px] font-black uppercase tracking-widest mb-2">Live Status</p>
-             <p className="text-2xl md:text-3xl font-bold tracking-tighter mb-6">TECH-SUPPORT ONLINE</p>
-             <button className="px-8 py-3 bg-black text-white text-[10px] font-bold uppercase tracking-widest hover:bg-zinc-800 transition-colors">
-               Start Live Chat
-             </button>
+            <p className="text-green-400/90 text-sm font-semibold uppercase tracking-widest mb-4">
+              Fastest Way to Get Help
+            </p>
+
+            <h3 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-6">
+              Message us on WhatsApp
+            </h3>
+
+            <p className="text-gray-200 text-lg md:text-xl max-w-lg mb-10 leading-relaxed">
+              Get real-time help from our support team — usually within minutes
+            </p>
+
+            <a
+              href="https://wa.me/919876543210?text=Hello%2C+I+need+help+with+my+Lancaster+product"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-12 py-6 bg-green-600 hover:bg-green-500 text-white font-bold text-lg md:text-xl rounded-2xl transition-all shadow-xl shadow-green-700/40 hover:shadow-green-600/50 active:scale-95"
+            >
+              Open WhatsApp Chat
+            </a>
+          </div>
+        </div>
+
+        {/* FAQ section */}
+        <div className="mt-20 lg:mt-28">
+          <h2 className="text-sm md:text-base font-semibold uppercase tracking-[0.25em] text-gray-500 mb-10 pb-3 border-b border-gray-200 inline-block">
+            Frequently Asked Questions
+          </h2>
+
+          <div className="space-y-8 max-w-3xl">
+            {faqs.map((faq, i) => (
+              <div
+                key={i}
+                className="border-b border-gray-100 pb-7 last:border-none"
+              >
+                <button
+                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                  className="w-full flex items-center justify-between text-left group"
+                >
+                  <span className="text-xl font-semibold text-gray-900 group-hover:text-green-700 transition-colors">
+                    {faq.question}
+                  </span>
+                  <ArrowUpRight
+                    className={`text-gray-400 transition-transform duration-300 flex-shrink-0 ml-6 ${
+                      openFaq === i ? "rotate-45 text-green-600" : ""
+                    }`}
+                    size={22}
+                  />
+                </button>
+
+                {openFaq === i && (
+                  <div className="mt-5 text-gray-600 leading-relaxed text-lg animate-in fade-in slide-in-from-top-2 duration-300">
+                    {faq.answer}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       </main>
@@ -149,6 +196,4 @@ const CustomerSupport = () => {
       <Footer />
     </div>
   );
-};
-
-export default CustomerSupport;
+}

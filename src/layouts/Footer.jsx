@@ -38,10 +38,10 @@ const Footer = () => {
     {
       title: "Platform",
       links: [
-        { name: "Customer Home", href: "/customer-home" },
+        { name: "Home", href: "/customer-home" },
         { name: "Warranty Portal", href: "/register-warranty" },
-        { name: "Support Desk", href: "#" },
-        { name: "Developer API", href: "#" },
+        // { name: "Support Desk", href: "#" },
+        // { name: "Developer API", href: "#" },
       ]
     },
     {
@@ -79,7 +79,7 @@ const Footer = () => {
                 </div>
                 <div className="flex flex-col">
                   <span className="text-2xl font-bold text-white tracking-tight leading-none">
-                    Perfect<span className="text-blue-400">Digital</span>
+                    Lancaster<span className="text-blue-400"></span>
                   </span>
                   <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mt-1.5">
                     Est. 1998

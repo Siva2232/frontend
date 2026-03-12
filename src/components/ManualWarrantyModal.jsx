@@ -2,9 +2,10 @@
 import { useState } from "react";
 import API from "../api/axios";
 import { Users, ShoppingBag, X, Save } from "lucide-react";
-import toast from "react-hot-toast";
+import { useToast } from "./Toast";
 
 const ManualWarrantyModal = ({ isOpen, onClose, onSuccess }) => {
+  const { show, showSuccess, showError } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newCustomer, setNewCustomer] = useState({
     customerName: "",
@@ -38,12 +39,12 @@ const ManualWarrantyModal = ({ isOpen, onClose, onSuccess }) => {
         purchaseShopName: "",
         purchaseDate: ""
       });
-      toast.success("Customer registered successfully!");
+      showSuccess("Customer registered successfully!");
       onSuccess();
       onClose();
     } catch (error) {
       console.error("Error adding customer:", error);
-      toast.error(error.response?.data?.message || "Failed to add customer. Ensure Serial Number exists.");
+      showError(error.response?.data?.message || "Failed to add customer. Ensure Serial Number exists.");
     } finally {
       setIsSubmitting(false);
     }

@@ -2,81 +2,81 @@ import { useContext, useState, useEffect, useRef } from "react";
 import { AuthContext } from "../Context/AuthContext";
 import API from "../api/axios";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import toast from "react-hot-toast";
-import { 
-  LayoutDashboard, 
-  Box, 
-  Users, 
-  LogOut, 
-  ShieldCheck, 
+import { useToast } from "./Toast";
+import {
+  LayoutDashboard,
+  Box,
+  Users,
+  LogOut,
+  ShieldCheck,
   ChevronDown,
   UserCircle,
   Menu,
   X,
-  Zap,
-  Wrench,
   Bell,
-  Trash2
+  Wrench,
 } from "lucide-react";
 
 const Navbar = () => {
   const { admin, logout } = useContext(AuthContext);
+  const { show, showSuccess, showError } = useToast();
   const location = useLocation();
   const navigate = useNavigate();
+
   const [profileOpen, setProfileOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
-  // Notification States
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const firstFetch = useRef(true); // avoids toast on initial mount
+
   const notificationRef = useRef(null);
 
-  // Close dropdown when clicking outside
+  // Close dropdowns on outside click
   useEffect(() => {
-    function handleClickOutside(event) {
+    const handleClickOutside = (event) => {
       if (notificationRef.current && !notificationRef.current.contains(event.target)) {
         setNotificationOpen(false);
       }
-    }
+    };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Poll for unread notifications every 10 seconds
+  // Poll unread count
   useEffect(() => {
     if (!admin) return;
 
     const fetchUnread = async () => {
       try {
         const { data } = await API.get("/notifications/unread");
-        // If count increased, show toast
-        setUnreadCount(prev => {
-          if (data.count > prev) {
-             toast("New Notification!", { icon: "🔔" });
+        setUnreadCount((prev) => {
+          // skip toast on the very first fetch after mount
+          if (!firstFetch.current && data.count > prev) {
+            show("New Notification!", "info");
           }
+          firstFetch.current = false;
           return data.count;
         });
       } catch (err) {
-        console.error("Failed to fetch notifications");
+        console.error("Failed to fetch unread count");
       }
     };
 
-    fetchUnread(); // Initial fetch
-    const interval = setInterval(fetchUnread, 10000); // Poll every 10s
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 10000);
     return () => clearInterval(interval);
   }, [admin]);
 
   const fetchNotifications = async () => {
     try {
-       const { data } = await API.get("/notifications?limit=20");
-       setNotifications(data.notifications);
-    } catch(err) {
-       console.error(err);
+      const { data } = await API.get("/notifications?limit=20");
+      setNotifications(data.notifications || []);
+    } catch (err) {
+      console.error(err);
     }
   };
 
-  // Fetch full list when opening dropdown
   useEffect(() => {
     if (notificationOpen && admin) {
       fetchNotifications();
@@ -87,10 +87,10 @@ const Navbar = () => {
     try {
       await API.put("/notifications/all/read");
       setUnreadCount(0);
-      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-      toast.success("All marked as read");
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      showSuccess("All marked as read");
     } catch (err) {
-       console.error(err);
+      console.error(err);
     }
   };
 
@@ -98,276 +98,315 @@ const Navbar = () => {
     e.stopPropagation();
     try {
       await API.delete(`/notifications/${id}`);
-      setNotifications(prev => prev.filter(n => n._id !== id));
-      toast.success("Notification cleared");
+      setNotifications((prev) => prev.filter((n) => n._id !== id));
+      if (unreadCount > 0) setUnreadCount((c) => c - 1);
+      showSuccess("Notification removed");
     } catch (err) {
-      toast.error("Failed to clear");
+      showError("Failed to remove");
     }
   };
-  
+
   const handleNotificationClick = async (n) => {
-    // Mark as read specifically
     if (!n.isRead) {
       try {
         await API.put(`/notifications/${n._id}/read`);
-        setUnreadCount(prev => Math.max(0, prev - 1));
-        setNotifications(prev => prev.map(notif => notif._id === n._id ? { ...notif, isRead: true } : notif));
-      } catch (err) { console.error(err); }
+        setUnreadCount((prev) => Math.max(0, prev - 1));
+        setNotifications((prev) =>
+          prev.map((notif) => (notif._id === n._id ? { ...notif, isRead: true } : notif))
+        );
+      } catch (err) {
+        console.error(err);
+      }
     }
-    
+
     setNotificationOpen(false);
-    
-    // Navigate based on type
-    if (n.type === 'SERVICE_UPDATE') {
-       navigate('/services');
+
+    if (n.type === "SERVICE_UPDATE") {
+      navigate("/services");
     } else {
-       navigate('/customers');
+      navigate("/customers");
     }
   };
 
   const isActive = (path) => location.pathname === path;
 
   const navLinks = [
-    { name: "Dashboard", path: "/dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
-    { name: "Products", path: "/products", icon: <Box className="w-4 h-4" /> },
-    { name: "Customers", path: "/customers", icon: <Users className="w-4 h-4" /> },
-    { name: "Services", path: "/services", icon: <Wrench className="w-4 h-4" /> },
+    { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
+    { name: "Products", path: "/products", icon: Box },
+    { name: "Customers", path: "/customers", icon: Users },
+    { name: "Services", path: "/services", icon: Wrench },
   ];
 
   return (
-    <nav className="bg-black border-b border-zinc-800 sticky top-0 z-[100] backdrop-blur-md bg-black/95">
-      <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-        
-        {/* Brand/Logo - High Contrast */}
-        <Link to="/dashboard" className="flex items-center gap-4 group">
-          <div className="w-10 h-10 bg-white rounded-none flex items-center justify-center rotate-45 group-hover:rotate-0 transition-all duration-500 shadow-[0_0_20px_rgba(255,255,255,0.1)]">
-            <ShieldCheck className="w-6 h-6 text-black -rotate-45 group-hover:rotate-0 transition-all duration-500" />
-          </div>
-          <div className="hidden sm:block">
-            <h1 className="text-lg font-black text-white tracking-tighter leading-none uppercase">
-              Lan<span className="text-zinc-500">caster</span>
-            </h1>
-            <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-[0.3em] mt-1">
-              Admin panel
-            </p>
-          </div>
-        </Link>
+    <nav className="bg-neutral-950/95 border-b border-neutral-900/80 backdrop-blur-xl sticky top-0 z-50">
+      <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+        <div className="flex h-16 items-center justify-between">
 
-        {admin && (
-          <div className="flex items-center gap-4 lg:gap-10">
-            {/* Main Navigation - Minimalist */}
-            <div className="hidden md:flex items-center gap-2">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.name}
-                  to={link.path}
-                  className={`relative flex items-center gap-2 px-5 py-2 text-[11px] uppercase tracking-[0.2em] font-bold transition-all duration-300 ${
-                    isActive(link.path)
-                      ? "text-white"
-                      : "text-zinc-500 hover:text-zinc-200"
-                  }`}
-                >
-                  {isActive(link.path) && (
-                    <span className="absolute inset-0 bg-zinc-800/50 rounded-lg -z-10 animate-in fade-in duration-500" />
-                  )}
-                  {link.icon}
-                  {link.name}
-                </Link>
-              ))}
+          {/* Logo */}
+          <Link to="/dashboard" className="flex items-center gap-3 group">
+            <div className="relative">
+              <div className="size-9 rounded-xl bg-white/95 flex items-center justify-center shadow-lg shadow-black/40 transition-all group-hover:scale-110 group-hover:rotate-3 duration-300">
+                <ShieldCheck className="size-5 text-neutral-950" />
+              </div>
+              <div className="absolute -inset-1 rounded-xl bg-gradient-to-br from-blue-500/20 to-violet-500/10 opacity-0 group-hover:opacity-100 blur transition-opacity duration-500" />
             </div>
 
-            {/* Vertical Divider */}
-            <div className="hidden md:block h-8 w-[1px] bg-zinc-800" />
-            
-            {/* Notifications */}
-            <div ref={notificationRef} className="relative">
-              <button
-                onClick={() => {
-                  setNotificationOpen(!notificationOpen);
-                  if (profileOpen) setProfileOpen(false);
-                }}
-                className="group relative flex items-center justify-center w-8 h-8 rounded-full border border-zinc-800 hover:border-zinc-500 hover:bg-zinc-900 transition-all text-zinc-500 hover:text-white"
-              >
-                <Bell className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500 border-2 border-black"></span>
-                  </span>
-                )}
-              </button>
+            <div className="hidden sm:block">
+              <h1 className="text-xl font-black tracking-tight text-white">
+                Lancaster
+                <span className="text-neutral-500">.</span>
+              </h1>
+              <p className="text-[10px] font-medium uppercase tracking-widest text-neutral-600 mt-0.5">
+                Admin
+              </p>
+            </div>
+          </Link>
 
-              {notificationOpen && (
-                <div className="absolute right-0 mt-6 w-80 bg-black border border-zinc-800 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-20 overflow-hidden animate-in slide-in-from-top-2 duration-200">
-                  <div className="flex justify-between items-center p-4 border-b border-zinc-900 bg-zinc-900/30">
-                    <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Updates</h3>
-                    {unreadCount > 0 && (
-                      <button onClick={markAllRead} className="text-[10px] font-bold text-blue-500 hover:text-blue-400 transition-colors uppercase tracking-wider">
-                        Mark all read
-                      </button>
-                    )}
-                  </div>
-                  
-                  <div className="max-h-[320px] overflow-y-auto custom-scrollbar">
-                    {notifications.length === 0 ? (
-                      <div className="py-12 px-6 text-center flex flex-col items-center">
-                        <div className="w-10 h-10 bg-zinc-900 rounded-full flex items-center justify-center mb-3">
-                          <Bell className="w-4 h-4 text-zinc-600" />
-                        </div>
-                        <p className="text-xs text-zinc-500 font-medium">No new notifications</p>
-                      </div>
-                    ) : (
-                      <div className="divide-y divide-zinc-900">
-                      {notifications.map((n) => (
-                        <div 
-                          key={n._id} 
-                          onClick={() => handleNotificationClick(n)}
-                          className={`p-4 hover:bg-zinc-900/50 transition-colors group relative cursor-pointer ${!n.isRead ? 'bg-blue-900/10' : ''}`}
+          {admin && (
+            <div className="flex items-center gap-4 lg:gap-6">
+
+              {/* Desktop Nav */}
+              <div className="hidden md:flex items-center gap-1.5">
+                {navLinks.map((link) => {
+                  const Icon = link.icon;
+                  const active = isActive(link.path);
+                  return (
+                    <Link
+                      key={link.name}
+                      to={link.path}
+                      className={`
+                        group relative flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium transition-all
+                        ${active
+                          ? "text-white"
+                          : "text-neutral-400 hover:text-neutral-200"
+                        }
+                      `}
+                    >
+                      {active && (
+                        <span className="absolute inset-0 rounded-lg bg-white/5 border border-white/10 -z-10" />
+                      )}
+                      <Icon className="size-4 opacity-80 group-hover:opacity-100 transition-opacity" />
+                      {link.name}
+                    </Link>
+                  );
+                })}
+              </div>
+
+              {/* Notification Bell */}
+              <div ref={notificationRef} className="relative">
+                <button
+                  onClick={() => setNotificationOpen(!notificationOpen)}
+                  className={`
+                    relative flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-800
+                    hover:border-neutral-600 hover:bg-neutral-900/60 transition-all
+                    ${notificationOpen ? "bg-neutral-900/70 border-neutral-600" : ""}
+                  `}
+                >
+                  <Bell className="size-4.5 text-neutral-400" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex size-4">
+                      <span className="absolute inline-flex size-full animate-ping rounded-full bg-sky-400 opacity-60" />
+                      <span className="relative inline-flex size-4 items-center justify-center rounded-full bg-sky-500 text-[9px] font-bold text-white border-2 border-neutral-950">
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                      </span>
+                    </span>
+                  )}
+                </button>
+
+                {/* Notification Dropdown */}
+                {notificationOpen && (
+                  <div className="absolute right-0 mt-3 w-96 origin-top-right rounded-xl border border-neutral-800 bg-neutral-950/95 backdrop-blur-xl shadow-2xl shadow-black/60 ring-1 ring-black/70 animate-in fade-in zoom-in-95 duration-150 max-h-[80vh] flex flex-col">
+                    <div className="flex items-center justify-between border-b border-neutral-900/80 px-5 py-3.5">
+                      <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-400">
+                        Notifications
+                      </h3>
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={markAllRead}
+                          className="text-xs font-medium text-sky-400 hover:text-sky-300 transition-colors"
                         >
-                          <div className="flex justify-between items-start mb-2 pr-4">
-                            <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider border ${
-                              n.type === 'REGISTRATION' ? 'border-emerald-900/30 text-emerald-500 bg-emerald-500/5' : 
-                              n.type === 'SERVICE_UPDATE' ? 'border-amber-900/30 text-amber-500 bg-amber-500/5' :
-                              'border-zinc-800 text-zinc-500 bg-zinc-900'
-                            }`}>
-                              {n.type === 'REGISTRATION' && <ShieldCheck className="w-2.5 h-2.5"/>}
-                              {n.type === 'SERVICE_UPDATE' && <Wrench className="w-2.5 h-2.5"/>}
-                              {n.type?.replace('_', ' ')}
-                            </span>
-                            <span className="text-[9px] text-zinc-600 font-mono font-bold">
-                              {new Date(n.createdAt).toLocaleDateString()}
-                            </span>
-                          </div>
-                          <p className={`text-xs leading-relaxed font-medium transition-colors ${!n.isRead ? 'text-zinc-100' : 'text-zinc-500 group-hover:text-zinc-300'}`}>
-                            {n.message}
-                          </p>
-                          
-                          <button 
-                            onClick={(e) => clearNotification(e, n._id)}
-                            className="absolute right-2 top-2 p-1.5 rounded-full text-zinc-600 hover:text-red-500 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all"
-                            title="Clear"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
+                          Mark all read
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-16 text-neutral-500">
+                          <Bell className="size-8 mb-3 opacity-40" />
+                          <p className="text-sm">No notifications yet</p>
                         </div>
-                      ))}
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="p-2 bg-zinc-950 border-t border-zinc-900 flex justify-between">
-                    <button className="flex-1 py-2 text-[10px] font-bold text-zinc-600 hover:text-zinc-300 uppercase tracking-[0.2em] transition-colors rounded hover:bg-zinc-900">
-                      View All
-                    </button>
-                     <button 
-                       onClick={async () => {
-                          if (!confirm("Clear all notification history?")) return;
+                      ) : (
+                        notifications.map((n) => (
+                          <div
+                            key={n._id}
+                            onClick={() => handleNotificationClick(n)}
+                            className={`
+                              group relative flex flex-col gap-1.5 border-b border-neutral-900/60 px-5 py-4 cursor-pointer
+                              hover:bg-neutral-900/60 transition-colors
+                              ${!n.isRead ? "bg-sky-950/30" : ""}
+                            `}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span
+                                className={`
+                                  inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide
+                                  ${n.type === "REGISTRATION"
+                                    ? "bg-emerald-950/40 text-emerald-400 border border-emerald-900/30"
+                                    : n.type === "SERVICE_UPDATE"
+                                    ? "bg-amber-950/40 text-amber-400 border border-amber-900/30"
+                                    : "bg-neutral-800/60 text-neutral-300 border border-neutral-700/40"}
+                                `}
+                              >
+                                {n.type === "REGISTRATION" && <ShieldCheck className="size-3" />}
+                                {n.type === "SERVICE_UPDATE" && <Wrench className="size-3" />}
+                                {n.type?.replace("_", " ")}
+                              </span>
+
+                              <time className="text-[10px] text-neutral-600 font-mono">
+                                {new Date(n.createdAt).toLocaleDateString()}
+                              </time>
+                            </div>
+
+                            <p className={`text-sm leading-relaxed ${!n.isRead ? "text-neutral-100" : "text-neutral-400 group-hover:text-neutral-200"}`}>
+                              {n.message}
+                            </p>
+
+                            <button
+                              onClick={(e) => clearNotification(e, n._id)}
+                              className="absolute right-3 top-3 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-full hover:bg-red-950/40 text-neutral-500 hover:text-red-400"
+                            >
+                              <X className="size-3.5" />
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    <div className="border-t border-neutral-900/80 p-3 flex gap-2">
+                      <button className="flex-1 rounded-lg py-2.5 text-xs font-medium text-neutral-400 hover:bg-neutral-900/70 transition-colors">
+                        View All
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (!window.confirm("Clear all notification history?")) return;
                           try {
                             await API.delete("/notifications/all");
                             setNotifications([]);
                             setUnreadCount(0);
-                            toast.success("History cleared");
-                          } catch (e) { console.error(e); }
-                       }}
-                       className="px-3 py-2 text-[10px] font-bold text-zinc-700 hover:text-red-500 uppercase tracking-widest transition-colors rounded hover:bg-zinc-900"
-                     >
-                      Clear
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Profile Area */}
-            <div className="relative">
-              <button
-                onClick={() => {
-                  setProfileOpen(!profileOpen);
-                  if (mobileMenuOpen) setMobileMenuOpen(false);
-                }}
-                className="flex items-center gap-3 p-1.5 pr-4 rounded-full border border-zinc-800 hover:border-zinc-400 transition-all active:scale-95 bg-zinc-900/50"
-              >
-                <div className="w-8 h-8 bg-white flex items-center justify-center rounded-full">
-                  <UserCircle className="w-5 h-5 text-black" />
-                </div>
-                <div className="hidden lg:block text-left">
-                  <p className="text-[10px] font-black text-white leading-none uppercase tracking-widest">Admin</p>
-                  <p className="text-[9px] text-zinc-500 font-medium">Session Active</p>
-                </div>
-                <ChevronDown className={`w-3 h-3 text-zinc-500 transition-transform duration-300 ${profileOpen ? 'rotate-180' : ''}`} />
-              </button>
-
-              {/* Premium Dropdown */}
-              {profileOpen && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setProfileOpen(false)} />
-                  <div className="absolute right-0 mt-4 w-60 bg-black border border-zinc-800 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-20 overflow-hidden animate-in slide-in-from-top-2 duration-200">
-                    <div className="px-5 py-4 border-b border-zinc-800 bg-zinc-900/30">
-                      <p className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-1">Authenticated As</p>
-                      <p className="text-xs font-bold text-white truncate">admin@perfectdigital.com</p>
-                    </div>
-                    
-                    <div className="p-2">
-                      <button
-                        onClick={() => {
-                          logout();
-                          toast.success("Signed out successfully");
+                            showSuccess("History cleared");
+                          } catch {
+                            showError("Failed to clear history");
+                          }
                         }}
-                        className="w-full flex items-center gap-3 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-500/10 transition-colors rounded-lg"
+                        className="rounded-lg px-4 py-2.5 text-xs font-medium text-red-400/80 hover:bg-red-950/40 hover:text-red-300 transition-colors"
                       >
-                        <LogOut className="w-4 h-4" />
-                        Terminals / Sign Out
+                        Clear All
                       </button>
                     </div>
                   </div>
-                </>
-              )}
-            </div>
+                )}
+              </div>
 
-            {/* Mobile Toggle */}
-            <button
-              onClick={() => {
-                setMobileMenuOpen(!mobileMenuOpen);
-                if (profileOpen) setProfileOpen(false);
-              }}
-              className="md:hidden p-3 border border-zinc-800 text-white hover:bg-zinc-800 transition-all"
-            >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
-          </div>
-        )}
+              {/* Profile Button */}
+              <div className="relative">
+                <button
+                  onClick={() => setProfileOpen(!profileOpen)}
+                  className={`
+                    flex items-center gap-3 rounded-full border border-neutral-800 px-3 py-1.5
+                    hover:border-neutral-600 hover:bg-neutral-900/50 transition-all
+                    ${profileOpen ? "bg-neutral-900/60 border-neutral-600" : ""}
+                  `}
+                >
+                  <div className="size-8 rounded-full bg-gradient-to-br from-neutral-200 to-neutral-400 flex items-center justify-center shadow-inner">
+                    <UserCircle className="size-5 text-neutral-900" />
+                  </div>
+                  <div className="hidden lg:block text-left">
+                    <p className="text-xs font-semibold text-white leading-none">Admin</p>
+                    <p className="text-[10px] text-neutral-500 mt-0.5">Active</p>
+                  </div>
+                  <ChevronDown
+                    className={`size-4 text-neutral-500 transition-transform ${profileOpen ? "rotate-180" : ""}`}
+                  />
+                </button>
+
+                {profileOpen && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setProfileOpen(false)} />
+                    <div className="absolute right-0 mt-3 w-64 rounded-xl border border-neutral-800 bg-neutral-950/95 backdrop-blur-xl shadow-2xl shadow-black/60 animate-in fade-in zoom-in-95 duration-150">
+                      <div className="px-5 py-4 border-b border-neutral-900/80">
+                        <p className="text-xs font-medium uppercase tracking-wider text-neutral-500 mb-1">
+                          Signed in as
+                        </p>
+                        <p className="text-sm font-semibold text-white truncate">
+                          admin@lancaster.com
+                        </p>
+                      </div>
+                      <div className="p-2">
+                        <button
+                          onClick={() => {
+                            logout();
+                            showSuccess("Signed out");
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-red-400 hover:bg-red-950/40 transition-colors"
+                        >
+                          <LogOut className="size-4" />
+                          Sign Out
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Mobile Menu Button */}
+              <button
+                className="md:hidden p-2 rounded-lg border border-neutral-800 hover:bg-neutral-900/60 transition-colors"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              >
+                {mobileMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Mobile Sidebar */}
+      {/* Mobile Menu */}
       {mobileMenuOpen && admin && (
-        <div className="md:hidden border-t border-zinc-800 bg-black animate-in slide-in-from-right duration-500 h-screen">
-          <div className="px-6 py-10 space-y-4">
-            {navLinks.map((link) => (
-              <Link
-                key={link.name}
-                to={link.path}
-                onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center gap-6 px-6 py-5 border ${
-                  isActive(link.path)
-                    ? "bg-white text-black border-white"
-                    : "text-zinc-500 border-zinc-900 hover:border-zinc-700"
-                } transition-all`}
-              >
-                {link.icon}
-                <span className="text-xs font-black uppercase tracking-[0.3em]">{link.name}</span>
-              </Link>
-            ))}
-            
-            <div className="pt-10">
+        <div className="md:hidden border-t border-neutral-900/80 bg-neutral-950/95 backdrop-blur-xl animate-in slide-in-from-top duration-300">
+          <div className="px-4 py-6 space-y-2">
+            {navLinks.map((link) => {
+              const Icon = link.icon;
+              const active = isActive(link.path);
+              return (
+                <Link
+                  key={link.name}
+                  to={link.path}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`
+                    flex items-center gap-4 px-5 py-4 rounded-xl font-medium text-sm
+                    ${active
+                      ? "bg-white/10 text-white border border-white/10"
+                      : "text-neutral-300 hover:bg-neutral-900/60 border border-transparent"}
+                    transition-all
+                  `}
+                >
+                  <Icon className="size-5 opacity-80" />
+                  {link.name}
+                </Link>
+              );
+            })}
+
+            <div className="pt-6">
               <button
                 onClick={() => {
                   logout();
                   setMobileMenuOpen(false);
                 }}
-                className="w-full flex items-center justify-center gap-4 px-6 py-5 bg-red-600/10 text-red-500 text-xs font-black uppercase tracking-widest"
+                className="w-full flex items-center justify-center gap-3 py-4 rounded-xl bg-gradient-to-r from-red-950/70 to-red-900/40 text-red-300 font-medium hover:from-red-900/70 hover:to-red-800/50 transition-all border border-red-900/40"
               >
-                <LogOut className="w-5 h-5" />
-                Disconnect Session
+                <LogOut className="size-5" />
+                Sign Out
               </button>
             </div>
           </div>

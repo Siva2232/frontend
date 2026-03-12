@@ -17,17 +17,23 @@ const Dashboard = () => {
     startDate: "",
     endDate: "",
   });
+  const [quickRange, setQuickRange] = useState("all"); // 'all', 'today','yesterday','week','month','year','custom'   
+
 
   useEffect(() => {
     fetchStats();
+    // Poll for the latest statistics every 30 seconds
+    const interval = setInterval(fetchStats, 30000);
+    return () => clearInterval(interval);
   }, []);
 
-  const fetchStats = async () => {
+  const fetchStats = async (overrideFilter) => {
     try {
-      setLoading(true);
+      if (overrideFilter) setLoading(true); // only block UI for preset changes
       const queryParams = new URLSearchParams();
-      if (filters.startDate) queryParams.append("startDate", filters.startDate);
-      if (filters.endDate) queryParams.append("endDate", filters.endDate);
+      const { startDate, endDate } = overrideFilter || filters;
+      if (startDate) queryParams.append("startDate", startDate);
+      if (endDate) queryParams.append("endDate", endDate);
 
       const { data } = await API.get(`/stats?${queryParams.toString()}`);
       setStats({
@@ -47,7 +53,49 @@ const Dashboard = () => {
 
   const handleFilterChange = (e) => {
     setFilters((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    setQuickRange('all'); // clear quick range when manual date changed
   };
+
+  // whenever quickRange updates, compute corresponding start/end
+  useEffect(() => {
+    if (quickRange === 'all') {
+      setFilters({ startDate: '', endDate: '' });
+      fetchStats({ startDate: '', endDate: '' });
+      return;
+    }
+    if (quickRange === 'custom') {
+      // keep whatever manual dates are set, don't auto-fetch
+      return;
+    }
+    const now = new Date();
+    let start = new Date(now);
+    let end = new Date(now);
+    switch (quickRange) {
+      case 'today':
+        break; // start/end today
+      case 'yesterday':
+        start.setDate(start.getDate() - 1);
+        end = new Date(start);
+        break;
+      case 'week':
+        start.setDate(start.getDate() - 7);
+        break;
+      case 'month':
+        start.setMonth(start.getMonth() - 1);
+        break;
+      case 'year':
+        start.setFullYear(start.getFullYear() - 1);
+        break;
+      default:
+        break;
+    }
+    const toISO = (d) => d.toISOString().split('T')[0];
+    const newFilters = { startDate: toISO(start), endDate: toISO(end) };
+    setFilters(newFilters);
+    // immediately fetch with calculated range
+    fetchStats(newFilters);
+  }, [quickRange]);
+
 
   const statCards = [
     {
@@ -139,6 +187,22 @@ const Dashboard = () => {
             
             {/* Filter Controls */}
             <div className="flex flex-wrap items-center gap-4 bg-slate-50 p-2 rounded-2xl border border-slate-100">
+              <div className="flex items-center gap-2 px-3">
+                <span className="text-[10px] font-black uppercase text-slate-400">Filter</span>
+                <select
+                  value={quickRange}
+                  onChange={(e) => setQuickRange(e.target.value)}
+                  className="text-xs font-bold text-slate-700 bg-transparent focus:outline-none cursor-pointer"
+                >
+                  <option value="all">All</option>
+                  <option value="today">Today</option>
+                  <option value="yesterday">Yesterday</option>
+                  <option value="week">Last 7d</option>
+                  <option value="month">Last 30d</option>
+                  <option value="year">Last Year</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </div>
               <div className="flex items-center gap-2 px-3">
                 <span className="text-[10px] font-black uppercase text-slate-400">Range</span>
                 <input 
