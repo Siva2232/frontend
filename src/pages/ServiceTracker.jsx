@@ -4,7 +4,7 @@ import API from '../api/axios';
 import Navbar from "../components/Navbar";
 import Footer from "../layouts/Footer";
 import ConfirmationModal from "../components/ConfirmationModal";
-import { Search, PenTool, CheckCircle,CheckCircle2, Clock, Calendar, PlusCircle, List } from 'lucide-react';
+import { Search, PenTool, CheckCircle,CheckCircle2, Clock, Calendar, PlusCircle, List, Loader2 } from 'lucide-react';
 import { useToast } from '../components/Toast';
 
 const ServiceTracker = () => {
@@ -49,6 +49,7 @@ const ServiceTracker = () => {
     // Auto search if query parameter exists
     const q = searchParams.get('q');
     if (q) {
+      setSearchQuery(q);
       // Small delay to ensure any internal state is ready if needed, 
       // or just call it directly if handleSearch is pure enough
       setTimeout(() => {
@@ -311,8 +312,13 @@ const ServiceTracker = () => {
         
         </div>
 
-        {data ? (
-          <div className="grid lg:grid-cols-3 gap-6">
+        {loading ? (
+          <div className="py-24 flex flex-col items-center justify-center">
+            <Loader2 className="w-12 h-12 text-blue-600 animate-spin mb-4" />
+            <p className="text-slate-500 font-medium animate-pulse">Retrieving tracking records...</p>
+          </div>
+        ) : data ? (
+          <div className="grid lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Left column - more compact */}
             <div className="space-y-6">
               <div className="bg-white rounded-2xl shadow-lg border border-slate-200/50 p-5">
@@ -424,14 +430,18 @@ const ServiceTracker = () => {
                         {record.status !== 'Returned' && (
                           <div className="mt-4 flex gap-2 flex-wrap">
                             <button
+                              disabled={record.status === 'Returned'}
                               onClick={() => handleUpdateStatus(record._id, 'Returned')}
-                              className="px-5 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg transition-colors"
+                              title={record.status === 'Returned' ? "Already returned to customer" : "Mark as returned"}
+                              className="px-5 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               Returned to Customer
                             </button>
                             <button
+                              disabled={record.status === 'In Progress'}
                               onClick={() => handleUpdateStatus(record._id, 'In Progress')}
-                              className="px-5 py-2 bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-semibold rounded-lg transition-colors"
+                              title={record.status === 'In Progress' ? "Now status in progress" : "Mark as in progress"}
+                              className="px-5 py-2 bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               In Progress
                             </button>

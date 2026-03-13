@@ -1,67 +1,78 @@
 import { Routes, Route, Navigate } from "react-router-dom";
+import { lazy, Suspense } from "react";
+import { Loader2 } from "lucide-react";
 
-/* Pages */
-import RegisterWarranty from "../pages/RegisterWarranty";
-import CustomerHome from "../pages/CustomerHome";
-import AdminLogin from "../pages/AdminLogin";
-import Dashboard from "../pages/Dashboard";
-import Products from "../pages/Products";
-import Customers from "../pages/Customers";
-import ServiceTracker from "../pages/ServiceTracker";
+/* Lazy Loaded Pages */
+const RegisterWarranty = lazy(() => import("../pages/RegisterWarranty"));
+const CustomerHome = lazy(() => import("../pages/CustomerHome"));
+const AdminLogin = lazy(() => import("../pages/AdminLogin"));
+const Dashboard = lazy(() => import("../pages/Dashboard"));
+const Products = lazy(() => import("../pages/Products"));
+const Customers = lazy(() => import("../pages/Customers"));
+const ServiceTracker = lazy(() => import("../pages/ServiceTracker"));
 
 /* Components */
 import ProtectedRoute from "../components/ProtectedRoute";
 
+const LoadingSpinner = () => (
+  <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
+    <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-4" />
+    <p className="text-gray-500 font-medium animate-pulse">Loading Application...</p>
+  </div>
+);
+
 export default function AppRoutes() {
   return (
-    <Routes>
-      {/* Public Routes */}
-      <Route path="/" element={<Navigate to="/customer-home" replace />} />
-      <Route path="/customer-home" element={<CustomerHome />} />
-      <Route path="/register-warranty" element={<RegisterWarranty />} />
+    <Suspense fallback={<LoadingSpinner />}>
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/" element={<Navigate to="/customer-home" replace />} />
+        <Route path="/customer-home" element={<CustomerHome />} />
+        <Route path="/register-warranty" element={<RegisterWarranty />} />
 
-      {/* Admin Login */}
-      <Route path="/admin-login" element={<AdminLogin />} />
+        {/* Admin Login */}
+        <Route path="/admin-login" element={<AdminLogin />} />
 
-      {/* Protected Admin Routes */}
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        }
-      />
+        {/* Protected Admin Routes */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/products"
-        element={
-          <ProtectedRoute>
-            <Products />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/products"
+          element={
+            <ProtectedRoute>
+              <Products />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/customers"
-        element={
-          <ProtectedRoute>
-            <Customers />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/customers"
+          element={
+            <ProtectedRoute>
+              <Customers />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/services"
-        element={
-          <ProtectedRoute>
-            <ServiceTracker />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/services"
+          element={
+            <ProtectedRoute>
+              <ServiceTracker />
+            </ProtectedRoute>
+          }
+        />
 
-      {/* Redirect unknown routes */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        {/* Redirect unknown routes */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   );
 }

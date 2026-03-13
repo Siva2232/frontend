@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import API from "../api/axios";
 import Navbar from "../components/Navbar";
 import Footer from "../layouts/Footer";
-import { Package, Users, ShieldCheck, Loader2, RefreshCw, Calendar, TrendingUp, Search } from "lucide-react";
+import { Package, Users, ShieldCheck, Loader2, RefreshCw, Calendar, TrendingUp, Search, MoreVertical, Eye, ClipboardList } from "lucide-react";
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     totalProducts: 0,
     registeredWarranties: 0,
@@ -13,6 +15,7 @@ const Dashboard = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [activeDropdown, setActiveDropdown] = useState(null);
   const [filters, setFilters] = useState({
     startDate: "",
     endDate: "",
@@ -266,6 +269,7 @@ const Dashboard = () => {
                     <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Product Model</th>
                     <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Serial Number</th>
                     <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Sync Date</th>
+                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -300,6 +304,36 @@ const Dashboard = () => {
                             year: 'numeric'
                           })}
                         </span>
+                      </td>
+                      <td className="px-8 py-5 text-right relative">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveDropdown(activeDropdown === reg._id ? null : reg._id);
+                            }}
+                            className="p-2 rounded-lg hover:bg-white text-slate-400 hover:text-slate-900 transition-colors shadow-sm border border-transparent hover:border-slate-200"
+                          >
+                            <MoreVertical size={16} />
+                          </button>
+
+                          {activeDropdown === reg._id && (
+                            <div className="absolute right-8 top-full mt-1 w-48 bg-white border border-slate-200 rounded-xl shadow-xl shadow-slate-200/40 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
+                              <button
+                                onClick={() => navigate(`/customers?search=${reg.serialNumber}`)}
+                                className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors group"
+                              >
+                                <Eye size={14} className="text-slate-400 group-hover:text-blue-600" />
+                                View Details
+                              </button>
+                              <button
+                                onClick={() => navigate(`/services?q=${reg.serialNumber}`)}
+                                className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-blue-600 hover:bg-blue-50 transition-colors group border-t border-slate-50"
+                              >
+                                <ClipboardList size={14} className="text-blue-400 group-hover:text-blue-600" />
+                                Track Service
+                              </button>
+                            </div>
+                          )}
                       </td>
                     </tr>
                   ))}

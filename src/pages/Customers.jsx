@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import API from "../api/axios";
 import Navbar from "../components/Navbar";
 import Footer from "../layouts/Footer";
@@ -40,6 +40,8 @@ const Customers = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
+  const [searchParams] = useSearchParams();
+
   const [isFilterSidebarOpen, setIsFilterSidebarOpen] = useState(false);
   const [filterType, setFilterType] = useState("all"); // all, active, expired
   const [dateFilter, setDateFilter] = useState("all"); // all, today, yesterday, week, month, year, custom
@@ -77,6 +79,13 @@ const Customers = () => {
   useEffect(() => {
     fetchRegistrations();
   }, []);
+
+  useEffect(() => {
+    const q = searchParams.get("search");
+    if (q) {
+      setSearchTerm(q);
+    }
+  }, [searchParams]);
 
   const filteredCustomers = customers.filter((c) => {
     // 1. Search text filter

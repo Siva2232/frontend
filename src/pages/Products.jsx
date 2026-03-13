@@ -7,6 +7,7 @@ import ConfirmationModal from "../components/ConfirmationModal";
 import { useToast } from "../components/Toast";
 import { 
   Package, 
+  Search,
   Calendar, 
   Hash, 
   CheckCircle2, 
@@ -54,6 +55,7 @@ const Products = () => {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
   const [products, setProducts] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [selectedQR, setSelectedQR] = useState(null);
   const [isBulkPrintOpen, setIsBulkPrintOpen] = useState(false);
 
@@ -81,17 +83,31 @@ const Products = () => {
     }
   };
 
+  // Filter Logic
+  const filteredProducts = products.filter((p) => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      p.productName?.toLowerCase().includes(searchLower) ||
+      p.modelNumber?.toLowerCase().includes(searchLower) ||
+      p.serialNumber?.toLowerCase().includes(searchLower)
+    );
+  });
+
   // Pagination Logic
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = products.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(products.length / itemsPerPage);
+  const currentItems = filteredProducts.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
 
   const paginate = (pageNumber) => {
     if (pageNumber > 0 && pageNumber <= totalPages) {
       setCurrentPage(pageNumber);
     }
   };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   useEffect(() => {
     fetchProducts();
@@ -829,8 +845,21 @@ const Products = () => {
               <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Active Inventory</h2>
               <p className="text-slate-500 text-sm">Review and manage generated product assets.</p>
             </div>
-            <div className="bg-white border border-slate-200 text-slate-600 px-5 py-2 rounded-2xl font-bold text-xs shadow-sm">
-              Current Stock: <span className="text-blue-600 ml-1">{products.length} Units</span>
+            
+            <div className="flex flex-col sm:flex-row items-center gap-4 flex-1 max-w-2xl justify-end">
+              <div className="relative w-full sm:w-80">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Search products, models, serials..."
+                  className="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-200 rounded-2xl text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition-all shadow-sm"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <div className="bg-white border border-slate-200 text-slate-600 px-5 py-2.5 rounded-2xl font-bold text-xs shadow-sm whitespace-nowrap">
+                Current Stock: <span className="text-blue-600 ml-1">{products.length} Units</span>
+              </div>
             </div>
           </div>
 
@@ -855,14 +884,14 @@ const Products = () => {
                         <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Querying Inventory...</p>
                       </td>
                     </tr>
-                  ) : products.length === 0 ? (
+                  ) : filteredProducts.length === 0 ? (
                     <tr>
                       <td colSpan="6" className="px-8 py-20 text-center">
-                        <div className="text-slate-300 italic text-sm">Zero assets found in current database.</div>
+                        <div className="text-slate-300 italic text-sm">No assets match your search criteria.</div>
                       </td>
                     </tr>
                   ) : (
-                    products.map((p) => {
+                    currentItems.map((p) => {
                       const createdAt = new Date(p.createdAt);
                       const ninetyDaysLater = new Date(createdAt);
                       ninetyDaysLater.setDate(ninetyDaysLater.getDate() + 90);

@@ -13,7 +13,7 @@ import heroImage from "../assets/image.png";
 const supportCategories = [
   {
     title: "Warranty Claim",
-    description: "Register or check your warranty status",
+    description: "Register your warranty",
     icon: ShieldCheck,
     color: "from-amber-500/10 to-amber-600/5",
     link: (serial) => `/register-warranty?serial=${serial || ""}`,
@@ -118,7 +118,7 @@ export default function CustomerSupport() {
               </p>
 
               <div className="flex items-center gap-2.5 text-sm font-semibold uppercase tracking-wider text-gray-600 group-hover:text-green-600 transition-colors">
-                Access now
+               Click Now
                 <ArrowUpRight size={16} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
               </div>
             </a>
