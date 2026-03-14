@@ -1,6 +1,6 @@
 import { io } from "socket.io-client";
 
-const SOCKET_URL = import.meta.env.VITE_BACKEND_URL || "https://webbackend-oy71.onrender.com";
+const SOCKET_URL = import.meta.env.VITE_BACKEND_URL || "https://webbackend-cset.onrender.com";
 
 let socket = null;
 
