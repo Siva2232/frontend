@@ -3,7 +3,7 @@ import { AuthContext } from "../Context/AuthContext";
 import API from "../api/axios";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useToast } from "./Toast";
-import logo2 from "../assets/logo11.png";
+import Logo11 from "../assets/Logo11.png";
 import {
   LayoutDashboard,
   Box,
@@ -147,7 +147,7 @@ const Navbar = () => {
           <Link to="/dashboard" className="flex items-center gap-3 group">
             <div className="flex items-center justify-center rounded-2xl bg-white/5 border border-white/10 p-2 shadow-xl shadow-black/40 transition-all group-hover:scale-105 duration-300">
               <img
-                src={logo2}
+                src={logo11}
                 alt="Perfect Digital Logo"
                 className="h-10 sm:h-12 md:h-14 w-auto object-contain"
               />

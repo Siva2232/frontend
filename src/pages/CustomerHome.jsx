@@ -66,11 +66,11 @@ export default function CustomerSupport() {
         />
         <div className="absolute inset-0 z-20 flex items-end pb-16 md:pb-24">
           <div className="max-w-7xl mx-auto px-6 lg:px-12 w-full">
-            <p className="text-amber-400/90 text-xs md:text-sm font-semibold tracking-[0.25em] uppercase mb-3">
+            <p className="text-indigo-200/90 text-xs md:text-sm font-semibold tracking-[0.25em] uppercase mb-3">
               Lancaster Support
             </p>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-white tracking-tight leading-tight">
-              How can we <span className="text-amber-400">assist</span> you today?
+              How can we <span className="text-indigo-200">assist</span> you today?
             </h1>
           </div>
         </div>
