@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "https://webbackend-oy71.onrender.com/api"
+  baseURL: import.meta.env.VITE_API_URL || "https://webbackend-p11g.onrender.com/api"
 });
 
 // Automatically attach token if available
