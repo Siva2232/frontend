@@ -17,8 +17,8 @@ const LabelCard = ({ product, small = false, className = "" }) => {
 
   const qrStyle = small
     ? {
-        width: "15mm",
-        height: "15mm",
+        width: "14mm",
+        height: "14mm",
       }
     : {
         width: "160px",
@@ -27,12 +27,48 @@ const LabelCard = ({ product, small = false, className = "" }) => {
 
   return (
     <div
-      className={`flex items-center bg-white border border-dashed border-gray-300 overflow-hidden ${className}`}
+      className={`flex items-center justify-between bg-white overflow-hidden ${className}`}
       style={containerStyle}
     >
-      {/* QR */}
+      {/* TEXT SIDE */}
+      <div className="flex flex-col justify-center leading-tight pl-[2mm] pr-[1mm] overflow-hidden">
+        
+        <span
+          style={{
+            fontSize: small ? "11px" : "16px",
+            fontWeight: "700",
+          }}
+          className="truncate"
+        >
+          {product.productName}
+        </span>
+
+        <span
+          style={{
+            fontSize: small ? "10px" : "14px",
+            fontWeight: "700",
+          }}
+          className="truncate"
+        >
+          {product.serialNumber}
+        </span>
+
+        {product.modelNumber && (
+          <span
+            style={{
+              fontSize: small ? "10px" : "14px",
+              fontWeight: "700",
+            }}
+            className="truncate"
+          >
+            {product.modelNumber}
+          </span>
+        )}
+      </div>
+
+      {/* QR SIDE */}
       <div
-        className="flex items-center justify-center"
+        className="flex items-center justify-center pr-[1mm]"
         style={qrStyle}
       >
         <img
@@ -40,35 +76,6 @@ const LabelCard = ({ product, small = false, className = "" }) => {
           alt="QR"
           className="w-full h-full object-contain"
         />
-      </div>
-
-      {/* Text */}
-      <div className="flex flex-col justify-center ml-2 leading-tight overflow-hidden">
-        <span
-          className={`font-bold ${
-            small ? "text-[6pt]" : "text-base"
-          } truncate`}
-        >
-          {product.productName}
-        </span>
-
-        <span
-          className={`font-bold ${
-            small ? "text-[5pt]" : "text-sm"
-          } truncate`}
-        >
-          {product.serialNumber}
-        </span>
-
-        {product.modelNumber && (
-          <span
-            className={`font-bold ${
-              small ? "text-[5pt]" : "text-sm"
-            } truncate`}
-          >
-            {product.modelNumber}
-          </span>
-        )}
       </div>
     </div>
   );
