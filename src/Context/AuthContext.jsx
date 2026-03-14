@@ -1,10 +1,9 @@
 import { createContext, useState, useEffect } from "react";
 import axios from "axios";
+import API from "../api/axios";
 
 export const AuthContext = createContext();
 
-// const API_URL = "https://localhost:5000/api";
-const API_URL = "https://localhost:5000/api";
 export const AuthProvider = ({ children }) => {
   const [admin, setAdmin] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -24,7 +23,7 @@ export const AuthProvider = ({ children }) => {
   // Login
   const login = async (email, password) => {
     try {
-      const { data } = await axios.post(`${API_URL}/auth/login`, {
+      const { data } = await API.post("/auth/login", {
         email,
         password,
       });
@@ -38,7 +37,7 @@ export const AuthProvider = ({ children }) => {
       console.error("Login error:", error);
       let message = "Login failed";
       if (!error.response) {
-        message = "Server is not responding. Please make sure the backend is running on port 5000.";
+        message = "Server is not responding. Please make sure the backend API is reachable.";
       } else {
         message = error.response.data?.message || "Invalid credentials";
       }
