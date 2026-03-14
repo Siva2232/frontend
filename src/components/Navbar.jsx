@@ -147,7 +147,7 @@ const Navbar = () => {
           <Link to="/dashboard" className="flex items-center gap-3 group">
             <div className="flex items-center justify-center rounded-2xl bg-white/5 border border-white/10 p-2 shadow-xl shadow-black/40 transition-all group-hover:scale-105 duration-300">
               <img
-                src={logo11}
+                src={Logo11}
                 alt="Perfect Digital Logo"
                 className="h-10 sm:h-12 md:h-14 w-auto object-contain"
               />
