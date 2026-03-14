@@ -3,7 +3,7 @@ import { AuthContext } from "../Context/AuthContext";
 import API from "../api/axios";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useToast } from "./Toast";
-import Logo11 from "../assets/Logo11.png";
+import logo2 from "../assets/logo2.png";
 import {
   LayoutDashboard,
   Box,
@@ -52,7 +52,6 @@ const Navbar = () => {
       try {
         const { data } = await API.get("/notifications/unread");
         setUnreadCount((prev) => {
-          // skip toast on the very first fetch after mount
           if (!firstFetch.current && data.count > prev) {
             show("New Notification!", "info");
           }
@@ -67,7 +66,7 @@ const Navbar = () => {
     fetchUnread();
     const interval = setInterval(fetchUnread, 10000);
     return () => clearInterval(interval);
-  }, [admin]);
+  }, [admin, show]);
 
   const fetchNotifications = async () => {
     try {
@@ -139,35 +138,63 @@ const Navbar = () => {
   ];
 
   return (
-    <nav className="bg-neutral-950/95 border-b border-neutral-900/80 backdrop-blur-xl sticky top-0 z-50">
-      <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+    <nav className="bg-neutral-950/95 border-b border-neutral-800/70 backdrop-blur-xl sticky top-0 z-50">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
 
-          {/* Logo */}
-          <Link to="/dashboard" className="flex items-center gap-3 group">
-            <div className="flex items-center justify-center rounded-2xl bg-white/5 border border-white/10 p-2 shadow-xl shadow-black/40 transition-all group-hover:scale-105 duration-300">
+          {/* ─── Modern Premium Logo Area ─── */}
+          <Link
+            to="/dashboard"
+            className="flex items-center gap-3 sm:gap-3.5 group"
+            aria-label="Perfect Digital Dashboard"
+          >
+           <div
+  className={`
+    relative flex items-center justify-center
+    p-2.5 sm:p-3
+    transition-all duration-300 ease-out
+    group-hover:scale-[1.05]
+  `}
+>
+              {/* Subtle shine overlay on hover */}
+              <div className="absolute inset-0 bg-gradient-to-tr from-white/8 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+
               <img
-                src={Logo11}
+                src={logo2}
                 alt="Perfect Digital Logo"
-                className="h-10 sm:h-12 md:h-14 w-auto object-contain"
+                className="h-9 sm:h-10 md:h-11 lg:h-12 w-auto object-contain transition-all duration-300 group-hover:brightness-110 group-hover:contrast-110"
+                onError={(e) => {
+                  e.target.style.display = "none";
+                  const fallback = e.target.nextElementSibling;
+                  if (fallback) fallback.style.display = "flex";
+                }}
               />
+
+              {/* Fallback if logo image fails to load */}
+              <div
+                className="hidden size-10 sm:size-11 items-center justify-center text-xl font-bold text-neutral-300 bg-neutral-800/40 rounded-lg"
+              >
+                PD
+              </div>
             </div>
 
-            {/* <div className="hidden sm:block">
-              <h1 className="text-xl font-black tracking-tight text-white leading-none">
-                Lancaster
-              </h1>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-500/80 mt-1">
-                Security Systems
-              </p>
+            {/* Brand name – modern & clean (very popular in 2025–2026 admin panels) */}
+            {/* <div className="hidden sm:flex flex-col leading-tight">
+              <span className="text-lg font-bold tracking-tight text-white">
+                Perfect
+                <span className="text-sky-400 font-extrabold">Digital</span>
+              </span>
+              <span className="text-[10px] sm:text-xs font-medium tracking-widest uppercase text-neutral-500 mt-0.5">
+                Admin Panel
+              </span>
             </div> */}
           </Link>
 
           {admin && (
             <div className="flex items-center gap-4 lg:gap-6">
 
-              {/* Desktop Nav */}
-              <div className="hidden md:flex items-center gap-1.5">
+              {/* Desktop Navigation */}
+              <div className="hidden md:flex items-center gap-1">
                 {navLinks.map((link) => {
                   const Icon = link.icon;
                   const active = isActive(link.path);
@@ -176,17 +203,17 @@ const Navbar = () => {
                       key={link.name}
                       to={link.path}
                       className={`
-                        group relative flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium transition-all
+                        group relative flex items-center gap-2.5 px-4 py-2 text-sm font-medium transition-all duration-200
                         ${active
                           ? "text-white"
-                          : "text-neutral-400 hover:text-neutral-200"
+                          : "text-neutral-400 hover:text-neutral-100"
                         }
                       `}
                     >
                       {active && (
-                        <span className="absolute inset-0 rounded-lg bg-white/5 border border-white/10 -z-10" />
+                        <span className="absolute inset-0 rounded-lg bg-white/5 border border-white/10 -z-10 animate-pulse-slow" />
                       )}
-                      <Icon className="size-4 opacity-80 group-hover:opacity-100 transition-opacity" />
+                      <Icon className="size-4.5 opacity-80 group-hover:opacity-100 transition-opacity" />
                       {link.name}
                     </Link>
                   );
@@ -199,14 +226,14 @@ const Navbar = () => {
                   onClick={() => setNotificationOpen(!notificationOpen)}
                   className={`
                     relative flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-800
-                    hover:border-neutral-600 hover:bg-neutral-900/60 transition-all
-                    ${notificationOpen ? "bg-neutral-900/70 border-neutral-600" : ""}
+                    hover:border-neutral-600 hover:bg-neutral-900/60 transition-all duration-200
+                    ${notificationOpen ? "bg-neutral-900/70 border-neutral-600 shadow-inner" : ""}
                   `}
                 >
                   <Bell className="size-4.5 text-neutral-400" />
                   {unreadCount > 0 && (
                     <span className="absolute -top-1 -right-1 flex size-4">
-                      <span className="absolute inline-flex size-full animate-ping rounded-full bg-sky-400 opacity-60" />
+                      <span className="absolute inline-flex size-full animate-ping rounded-full bg-sky-400 opacity-70" />
                       <span className="relative inline-flex size-4 items-center justify-center rounded-full bg-sky-500 text-[9px] font-bold text-white border-2 border-neutral-950">
                         {unreadCount > 9 ? "9+" : unreadCount}
                       </span>
@@ -214,7 +241,7 @@ const Navbar = () => {
                   )}
                 </button>
 
-                {/* Notification Dropdown */}
+                {/* Notification Dropdown – unchanged but kept for completeness */}
                 {notificationOpen && (
                   <div className="absolute right-0 mt-3 w-96 origin-top-right rounded-xl border border-neutral-800 bg-neutral-950/95 backdrop-blur-xl shadow-2xl shadow-black/60 ring-1 ring-black/70 animate-in fade-in zoom-in-95 duration-150 max-h-[80vh] flex flex-col">
                     <div className="flex items-center justify-between border-b border-neutral-900/80 px-5 py-3.5">
@@ -244,8 +271,8 @@ const Navbar = () => {
                             onClick={() => handleNotificationClick(n)}
                             className={`
                               group relative flex flex-col gap-1.5 border-b border-neutral-900/60 px-5 py-4 cursor-pointer
-                              hover:bg-neutral-900/60 transition-colors
-                              ${!n.isRead ? "bg-sky-950/30" : ""}
+                              hover:bg-neutral-900/60 transition-colors duration-150
+                              ${!n.isRead ? "bg-sky-950/25" : ""}
                             `}
                           >
                             <div className="flex items-center justify-between">
@@ -315,11 +342,11 @@ const Navbar = () => {
                   onClick={() => setProfileOpen(!profileOpen)}
                   className={`
                     flex items-center gap-3 rounded-full border border-neutral-800 px-3 py-1.5
-                    hover:border-neutral-600 hover:bg-neutral-900/50 transition-all
-                    ${profileOpen ? "bg-neutral-900/60 border-neutral-600" : ""}
+                    hover:border-neutral-600 hover:bg-neutral-900/50 transition-all duration-200
+                    ${profileOpen ? "bg-neutral-900/60 border-neutral-600 shadow-inner" : ""}
                   `}
                 >
-                  <div className="size-8 rounded-full bg-gradient-to-br from-neutral-200 to-neutral-400 flex items-center justify-center shadow-inner">
+                  <div className="size-8 rounded-full bg-gradient-to-br from-neutral-300 to-neutral-500 flex items-center justify-center shadow-inner">
                     <UserCircle className="size-5 text-neutral-900" />
                   </div>
                   <div className="hidden lg:block text-left">
@@ -327,7 +354,7 @@ const Navbar = () => {
                     <p className="text-[10px] text-neutral-500 mt-0.5">Active</p>
                   </div>
                   <ChevronDown
-                    className={`size-4 text-neutral-500 transition-transform ${profileOpen ? "rotate-180" : ""}`}
+                    className={`size-4 text-neutral-500 transition-transform duration-200 ${profileOpen ? "rotate-180" : ""}`}
                   />
                 </button>
 
@@ -389,7 +416,7 @@ const Navbar = () => {
                     ${active
                       ? "bg-white/10 text-white border border-white/10"
                       : "text-neutral-300 hover:bg-neutral-900/60 border border-transparent"}
-                    transition-all
+                    transition-all duration-200
                   `}
                 >
                   <Icon className="size-5 opacity-80" />
