@@ -12,7 +12,7 @@ import heroImage from "../assets/image.png";
 
 const supportCategories = [
   {
-    title: "Warranty Claim",
+    title: "Warranty Registration",
     description: "Register your warranty",
     icon: ShieldCheck,
     color: "from-amber-500/10 to-amber-600/5",
@@ -126,7 +126,7 @@ export default function CustomerSupport() {
         </div>
 
         {/* WhatsApp-focused quick help section */}
-        <div className="mt-20 lg:mt-28">
+        {/* <div className="mt-20 lg:mt-28">
           <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-10 md:p-14 lg:p-16 text-white flex flex-col items-center text-center shadow-2xl shadow-black/25 max-w-4xl mx-auto">
             <div className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center mb-8">
               <MessageCircle size={40} className="text-green-400" />
@@ -153,15 +153,17 @@ export default function CustomerSupport() {
               Open WhatsApp Chat
             </a>
           </div>
-        </div>
+        </div> */}
 
         {/* FAQ section */}
         <div className="mt-20 lg:mt-28">
-          <h2 className="text-sm md:text-base font-semibold uppercase tracking-[0.25em] text-gray-500 mb-10 pb-3 border-b border-gray-200 inline-block">
-            Frequently Asked Questions
-          </h2>
+          <div className="mx-auto max-w-3xl mb-10 pb-3 border-b border-gray-200">
+            <h2 className="text-center text-sm md:text-base font-semibold uppercase tracking-[0.25em] text-gray-500">
+              Frequently Asked Questions
+            </h2>
+          </div>
 
-          <div className="space-y-8 max-w-3xl">
+          <div className="space-y-8 max-w-3xl mx-auto">
             {faqs.map((faq, i) => (
               <div
                 key={i}

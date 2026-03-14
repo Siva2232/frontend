@@ -1,7 +1,8 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { ShieldCheck, Menu, X, ArrowUpRight, Headphones } from "lucide-react";
 import { useState, useEffect } from "react";
-
+import Logo11 from "../assets/Logo11.png";
+import { FaWhatsapp } from "react-icons/fa";
 const CustomerNavbar = () => {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
@@ -42,22 +43,21 @@ const CustomerNavbar = () => {
             className="flex items-center gap-3 group"
             aria-label="Home"
           >
-            <div className={`
-              flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl 
-              bg-gradient-to-br from-indigo-600 to-blue-700 
-              text-white shadow-md transition-all duration-300
-              group-hover:scale-105 group-hover:shadow-indigo-500/30
-            `}>
-              <ShieldCheck className="h-5 w-5 sm:h-6 sm:w-6" strokeWidth={2.2} />
+            <div className="flex items-center">
+              <img 
+                src={Logo11} 
+                alt="Perfect Digital Logo" 
+                className="h-10 sm:h-12 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+              />
             </div>
-            <div className="flex flex-col leading-tight">
+            {/* <div className="flex flex-col leading-tight">
               <span className="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900">
                 Perfect<span className="text-indigo-600">Digital</span>
               </span>
               <span className="text-[10px] sm:text-xs font-semibold text-slate-500 tracking-wider uppercase">
                 Customer Portal
               </span>
-            </div>
+            </div> */}
           </Link>
 
           {/* Desktop Navigation */}
@@ -96,8 +96,8 @@ const CustomerNavbar = () => {
                 active:scale-[0.97]
               `}
             >
-              <Headphones className="h-4 w-4" />
-              Live Support
+              <FaWhatsapp className="h-4 w-4" />
+              Support
               <ArrowUpRight className="h-4 w-4 opacity-80 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
             </a>
           </div>

@@ -1,8 +1,9 @@
 import { useState, useContext } from "react";
 import { AuthContext } from "../Context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import Footer from "../layouts/Footer";
-import Navbar from "../layouts/CustomerNavbar";
+// import Footer from "../layouts/Footer";
+// import Navbar from "../layouts/CustomerNavbar";
+import logo2 from "../assets/logo2.png";
 import { useToast } from "../components/Toast";
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 
@@ -33,22 +34,27 @@ const AdminLogin = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 to-gray-100/80">
-      <Navbar />
+      {/* <Navbar /> */}
 
       <main className="flex-grow flex items-center justify-center px-5 py-12 sm:py-16">
         <div className="w-full max-w-md">
           {/* Card */}
           <div className="bg-white/95 backdrop-blur-xl shadow-2xl rounded-3xl border border-gray-200/60 overflow-hidden">
+          
             {/* Header / Branding */}
             <div className="px-8 pt-10 pb-6 bg-gradient-to-br from-slate-900 to-slate-800 text-white text-center">
-              <div className="mx-auto mb-5 w-20 h-20 rounded-2xl bg-amber-500/20 flex items-center justify-center border border-amber-400/30 shadow-lg">
-                <span className="text-4xl font-black tracking-tight text-amber-400">L</span>
+              {/* <p className="mt-2 text-slate-300 font-medium">Admin Portal</p> */}
+              <div className="mx-auto mb-5 h-12 sm:h-14 md:h-16 flex items-center justify-center">
+                <img
+                  src={logo2}
+                  alt="Perfect Digital Logo"
+                  className="h-12 sm:h-14 md:h-16 w-auto object-contain transform transition-transform duration-300 hover:scale-105"
+                />
               </div>
-              <h1 className="text-3xl font-extrabold tracking-tight">Lancaster</h1>
-              <p className="mt-2 text-slate-300 font-medium">Admin Portal</p>
-              <p className="mt-1.5 text-sm text-slate-400">
-                Secure access to warranty management
-              </p>
+              {/* <h1 className="text-3xl font-extrabold tracking-tight">Perfect Digital</h1> */}
+              {/* <p className="mt-2 text-slate-300 font-medium">Admin Portal</p> */}
+               <p className="mt-2 text-slate-300 font-medium">Admin Portal</p>
+
             </div>
 
             {/* Form */}
@@ -128,12 +134,12 @@ const AdminLogin = () => {
                   <span className="text-gray-600 font-medium">Remember me</span>
                 </label>
 
-                <a
+                {/* <a
                   href="#"
                   className="text-amber-700 hover:text-amber-800 font-medium hover:underline"
                 >
                   Forgot password?
-                </a>
+                </a> */}
               </div>
 
               {/* Submit */}
@@ -146,7 +152,7 @@ const AdminLogin = () => {
                   ${
                     loading
                       ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-amber-600 hover:bg-amber-700 text-white shadow-amber-200/40 hover:shadow-amber-300/50"
+                      : "bg-black hover:bg-white text-white  hover:text-black  shadow-amber-200/40 hover:shadow-amber-300/50"
                   }
                 `}
               >
@@ -175,13 +181,13 @@ const AdminLogin = () => {
                     Authenticating...
                   </span>
                 ) : (
-                  "Sign In to Lancaster Admin"
+                  "Sign In "
                 )}
               </button>
             </form>
 
             {/* Footer note */}
-            <div className="px-8 pb-8 text-center text-sm text-gray-500 border-t border-gray-100 pt-6">
+            {/* <div className="px-8 pb-8 text-center text-sm text-gray-500 border-t border-gray-100 pt-6">
               For assistance contact{" "}
               <a
                 href="mailto:admin@lancaster.com"
@@ -189,7 +195,7 @@ const AdminLogin = () => {
               >
                 support@lancaster.com
               </a>
-            </div>
+            </div> */}
           </div>
 
           <p className="text-center text-sm text-gray-500 mt-8">
@@ -198,7 +204,7 @@ const AdminLogin = () => {
         </div>
       </main>
 
-      <Footer />
+      {/* <Footer /> */}
     </div>
   );
 };

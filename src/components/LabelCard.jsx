@@ -17,12 +17,12 @@ const LabelCard = ({ product, small = false, className = "" }) => {
 
   const qrStyle = small
     ? {
-        width: "13mm",
-        height: "13mm",
+        width: "15mm",
+        height: "15mm",
       }
     : {
-        width: "140px",
-        height: "140px",
+        width: "160px",
+        height: "160px",
       };
 
   return (
@@ -43,18 +43,18 @@ const LabelCard = ({ product, small = false, className = "" }) => {
       </div>
 
       {/* Text */}
-      <div className="flex flex-col justify-center ml-1 leading-none overflow-hidden">
+      <div className="flex flex-col justify-center ml-2 leading-tight overflow-hidden">
         <span
           className={`font-bold ${
-            small ? "text-[5pt]" : "text-sm"
+            small ? "text-[6pt]" : "text-base"
           } truncate`}
         >
           {product.productName}
         </span>
 
         <span
-          className={`font-mono ${
-            small ? "text-[4pt]" : "text-xs"
+          className={`font-bold ${
+            small ? "text-[5pt]" : "text-sm"
           } truncate`}
         >
           {product.serialNumber}
@@ -62,8 +62,8 @@ const LabelCard = ({ product, small = false, className = "" }) => {
 
         {product.modelNumber && (
           <span
-            className={`font-mono ${
-              small ? "text-[4pt]" : "text-xs"
+            className={`font-bold ${
+              small ? "text-[5pt]" : "text-sm"
             } truncate`}
           >
             {product.modelNumber}

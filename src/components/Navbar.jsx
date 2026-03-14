@@ -3,6 +3,7 @@ import { AuthContext } from "../Context/AuthContext";
 import API from "../api/axios";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useToast } from "./Toast";
+import logo2 from "../assets/logo11.png";
 import {
   LayoutDashboard,
   Box,
@@ -144,22 +145,22 @@ const Navbar = () => {
 
           {/* Logo */}
           <Link to="/dashboard" className="flex items-center gap-3 group">
-            <div className="relative">
-              <div className="size-9 rounded-xl bg-white/95 flex items-center justify-center shadow-lg shadow-black/40 transition-all group-hover:scale-110 group-hover:rotate-3 duration-300">
-                <ShieldCheck className="size-5 text-neutral-950" />
-              </div>
-              <div className="absolute -inset-1 rounded-xl bg-gradient-to-br from-blue-500/20 to-violet-500/10 opacity-0 group-hover:opacity-100 blur transition-opacity duration-500" />
+            <div className="flex items-center justify-center rounded-2xl bg-white/5 border border-white/10 p-2 shadow-xl shadow-black/40 transition-all group-hover:scale-105 duration-300">
+              <img
+                src={logo2}
+                alt="Perfect Digital Logo"
+                className="h-10 sm:h-12 md:h-14 w-auto object-contain"
+              />
             </div>
 
-            <div className="hidden sm:block">
-              <h1 className="text-xl font-black tracking-tight text-white">
+            {/* <div className="hidden sm:block">
+              <h1 className="text-xl font-black tracking-tight text-white leading-none">
                 Lancaster
-                <span className="text-neutral-500">.</span>
               </h1>
-              <p className="text-[10px] font-medium uppercase tracking-widest text-neutral-600 mt-0.5">
-                Admin
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-500/80 mt-1">
+                Security Systems
               </p>
-            </div>
+            </div> */}
           </Link>
 
           {admin && (

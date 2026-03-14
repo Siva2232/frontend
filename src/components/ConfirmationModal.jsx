@@ -10,7 +10,8 @@ const ConfirmationModal = ({
   confirmText = "Confirm",
   cancelText = "Cancel",
   type = "warning", // 'warning', 'info', 'success'
-  isLoading = false
+  isLoading = false,
+  children
 }) => {
   if (!isOpen) return null;
 
@@ -45,6 +46,11 @@ const ConfirmationModal = ({
               <p className="mt-2 text-slate-500 text-sm leading-relaxed">
                 {message}
               </p>
+              {children && (
+                <div className="mt-4">
+                  {children}
+                </div>
+              )}
             </div>
             {!isLoading && (
               <button onClick={onClose} className="p-1 text-slate-400 hover:text-slate-600 transition-colors">

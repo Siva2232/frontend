@@ -1,11 +1,24 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 
 const QRScanner = ({ onScanSuccess }) => {
+  const html5QrCodeRef = useRef(null);
+
   useEffect(() => {
     const html5QrCode = new Html5Qrcode("reader");
+    html5QrCodeRef.current = html5QrCode;
     
-    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+    const config = {
+      fps: 10,
+      qrbox: { width: 300, height: 300 },
+      aspectRatio: 1.0,
+      videoConstraints: {
+        facingMode: { ideal: "environment" },
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+        advanced: [{ focusMode: "continuous" }],
+      },
+    };
 
     const onScan = (decodedText) => {
       const trimmedText = decodedText.trim();
@@ -54,9 +67,28 @@ const QRScanner = ({ onScanSuccess }) => {
     };
   }, []); // Empty dependency array to run once on mount
 
+  const tryFocus = () => {
+    const html5QrCode = html5QrCodeRef.current;
+    if (!html5QrCode) return;
+
+    const track = html5QrCode.getRunningTrack?.();
+    if (!track) return;
+
+    track
+      .applyConstraints({ advanced: [{ focusMode: "continuous" }, { focusMode: "auto" }] })
+      .catch(() => {
+        // ignore unsupported focus constraints
+      });
+  };
+
   return (
     <div className="w-full flex justify-center">
-      <div id="reader" className="w-full max-w-md overflow-hidden rounded-2xl" />
+      <div
+        id="reader"
+        className="w-full max-w-md overflow-hidden rounded-2xl"
+        onClick={tryFocus}
+        title="Tap to refocus the camera"
+      />
     </div>
   );
 };
