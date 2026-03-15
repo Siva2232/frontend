@@ -226,41 +226,54 @@ const Products = () => {
             padding: 0;
           }
           .label {
-            border: 1px dashed #cbd5e1;
-            border-radius: 4px;
-            padding: 2mm 2mm;
-            width: 100%;
-            height: 100%;
+            width: 50mm;
+            height: 15mm;
             background: #fff;
             display: flex;
             flex-direction: row;
             align-items: center;
-            gap: 2mm;
+            padding: 0 1mm;
+            box-sizing: border-box;
           }
           .left {
-            flex: 0 0 12mm;
-          }
-          .left img {
-            width: 12mm;
-            height: 12mm;
-          }
-          .right {
-            flex: 1 1 auto;
+            flex: 1;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            font-size: 4pt;
-            line-height: 1.1;
+            overflow: hidden;
+            padding-right: 1mm;
           }
-          .right .product {
-            font-weight: bold;
-            font-size: 5pt;
-            margin-bottom: 1mm;
+          .left div {
+            font-family: Tahoma, Geneva, sans-serif;
+            font-weight: normal;
+            font-size: 13px;
+            line-height: 1.2;
+            white-space: nowrap;
+            color: #000;
+            text-align: left;
+            margin: 0;
+            padding: 0;
           }
-          .right .serial,
-          .right .model {
-            font-family: monospace;
-            margin-bottom: 0.5mm;
+          .left .serial {
+            font-size: 13px;
+            font-weight: normal;
+          }
+          .left .model-line {
+            font-size: 13px;
+            font-weight: normal;
+          }
+          .right {
+            flex: 0 0 14mm;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          .right img {
+            width: 14mm;
+            height: 14mm;
+            display: block;
+            image-rendering: pixelated;
+            image-rendering: -webkit-optimize-contrast;
           }
           @media print {
             body { margin: 0; }
@@ -270,12 +283,14 @@ const Products = () => {
       <body>
         <div class="label">
           <div class="left">
-            <img src="${product.qrCodeUrl}" alt="QR" />
+            <div class="serial">SR/No:${product.serialNumber}</div>
+            ${product.modelNumber ? product.modelNumber.split(' ').reduce((acc, word, i) => {
+              if (i === 2) return acc + '</div><div class="model-line">' + word;
+              return acc + ' ' + word;
+            }, '<div class="model-line">') + '</div>' : ''}
           </div>
           <div class="right">
-            <div class="product">${product.productName}</div>
-            <div class="serial">${product.serialNumber}</div>
-            <div class="model">${product.modelNumber || ''}</div>
+            <img src="${product.qrCodeUrl}" alt="QR" />
           </div>
         </div>
         <script>
@@ -298,18 +313,20 @@ const Products = () => {
     // assemble combined HTML for every product x 3 copies
     let labelsHTML = '';
     bulkResults.forEach((p) => {
-      [1, 2, 3].forEach(() => {
-        labelsHTML += `
-          <div class="label">
-            <div class="left"><img src="${p.qrCodeUrl}" alt="QR"/></div>
-            <div class="right">
-              <div class="product">${p.productName}</div>
-              <div class="serial">${p.serialNumber}</div>
-              <div class="model">${p.modelNumber || ''}</div>
-            </div>
+      labelsHTML += `
+        <div class="label">
+          <div class="left">
+            <div class="serial">SR/No:${p.serialNumber}</div>
+            ${p.modelNumber ? p.modelNumber.split(' ').reduce((acc, word, i) => {
+              if (i === 2) return acc + '</div><div class="model-line">' + word;
+              return acc + ' ' + word;
+            }, '<div class="model-line">') + '</div>' : ''}
           </div>
-        `;
-      });
+          <div class="right">
+            <img src="${p.qrCodeUrl}" alt="QR"/>
+          </div>
+        </div>
+      `;
     });
 
     const printWindow = window.open('', '_blank', 'width=400,height=600');
@@ -326,27 +343,56 @@ const Products = () => {
         <style>
           @page { size: 50mm 15mm; margin: 0; }
           * { margin:0; padding:0; box-sizing:border-box; }
-          html, body { margin: 0; padding: 0; width: 50mm; }
+          html, body { margin: 0; padding: 0; width: 50mm; height: 15mm; }
           .label { 
             display:flex; 
             width:50mm; 
-            height:14.5mm; /* reduced from 15mm to prevent slight overflow */
-            border:1px dashed #cbd5e1; 
-            border-radius:4px; 
-            padding:2mm; 
-            gap:2mm; 
-            page-break-inside:avoid; 
-            overflow: hidden;
-            margin-bottom: 0;
+            height:15mm; 
+            background: #fff;
+            align-items: center; 
+            padding: 0 1mm;
+            page-break-after: always;
+            box-sizing: border-box;
           }
-          /* ensure every label starts on new page except first */
-          .label + .label { page-break-before: always; }
-          
-          .left { flex:0 0 12mm; }
-          .left img { width:12mm; height:12mm; display: block; }
-          .right { flex:1; display:flex; flex-direction:column; justify-content:center; font-size:4pt; line-height:1.1; }
-          .product { font-weight:bold; font-size:5pt; margin-bottom:1mm; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-          .serial, .model { font-family:monospace; margin-bottom:0.5mm; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+          .left { 
+            flex:1; 
+            display:flex; 
+            flex-direction:column; 
+            justify-content:center;
+            overflow: hidden;
+            padding-right: 1mm;
+          }
+          .left div { 
+            font-family: Tahoma, Geneva, sans-serif;
+            font-weight: normal; 
+            font-size: 13px; 
+            line-height: 1.2; 
+            white-space: nowrap; 
+            color: #000;
+            text-align: left;
+            margin: 0;
+          }
+          .left .serial {
+            font-size: 13px;
+            font-weight: normal;
+          }
+          .left .model-line {
+            font-size: 13px;
+            font-weight: normal;
+          }
+          .right { 
+            flex: 0 0 14mm; 
+            display:flex; 
+            align-items:center; 
+            justify-content:center; 
+          }
+          .right img { 
+            width: 14mm; 
+            height: 14mm; 
+            display: block; 
+            image-rendering: pixelated;
+            image-rendering: -webkit-optimize-contrast;
+          }
         </style>
       </head>
       <body>
