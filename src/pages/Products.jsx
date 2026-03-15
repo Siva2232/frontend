@@ -313,20 +313,22 @@ const Products = () => {
     // assemble combined HTML for every product x 3 copies
     let labelsHTML = '';
     bulkResults.forEach((p) => {
-      labelsHTML += `
-        <div class="label">
-          <div class="left">
-            <div class="serial">SR/No:${p.serialNumber}</div>
-            ${p.modelNumber ? p.modelNumber.split(' ').reduce((acc, word, i) => {
-              if (i === 2) return acc + '</div><div class="model-line">' + word;
-              return acc + ' ' + word;
-            }, '<div class="model-line">') + '</div>' : ''}
+      for (let copy = 0; copy < 3; copy++) {
+        labelsHTML += `
+          <div class="label">
+            <div class="left">
+              <div class="serial">SR/No:${p.serialNumber}</div>
+              ${p.modelNumber ? p.modelNumber.split(' ').reduce((acc, word, i) => {
+                if (i === 2) return acc + '</div><div class="model-line">' + word;
+                return acc + ' ' + word;
+              }, '<div class="model-line">') + '</div>' : ''}
+            </div>
+            <div class="right">
+              <img src="${p.qrCodeUrl}" alt="QR"/>
+            </div>
           </div>
-          <div class="right">
-            <img src="${p.qrCodeUrl}" alt="QR"/>
-          </div>
-        </div>
-      `;
+        `;
+      }
     });
 
     const printWindow = window.open('', '_blank', 'width=400,height=600');
