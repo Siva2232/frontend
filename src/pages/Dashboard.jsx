@@ -28,20 +28,21 @@ const Dashboard = () => {
 
 
   useEffect(() => {
-    // Top stats call
+    // Top stats call - Only if not in context
     if (!dashboardData) {
       fetchStats();
     } else {
       setStats(dashboardData);
     }
     
-    // Registration Ledger call
+    // Registration Ledger call - Only if not in context
     if (!recentRegistrations || recentRegistrations.length === 0) {
       fetchRegistrations();
     } else {
       setRegistrations(recentRegistrations);
     }
     
+    // Silent background updates every 30s
     const interval = setInterval(() => {
       fetchStats(null, true);
       fetchRegistrations(null, true);
@@ -51,6 +52,9 @@ const Dashboard = () => {
 
   const fetchStats = async (overrideFilter, isSilent = false) => {
     try {
+      // Logic for showing loading: 
+      // 1. NOT a silent refresh
+      // 2. We have NO cached data
       if (!isSilent && !dashboardData) setLoading(true);
       const { data } = await API.get("/stats");
       
@@ -73,21 +77,31 @@ const Dashboard = () => {
 
   const fetchRegistrations = async (overrideFilter, isSilent = false) => {
     try {
-      if (!isSilent && (!recentRegistrations || recentRegistrations.length === 0)) setRegLoading(true);
+      // High Performance Caching check
+      const hasCachedData = recentRegistrations && recentRegistrations.length > 0;
+      const isManualAction = overrideFilter && (overrideFilter.startDate || overrideFilter.endDate);
+      
+      // ONLY show loading if we have ABSOLUTELY no data OR user manually filtered
+      if (!isSilent && (!hasCachedData || isManualAction)) {
+        setRegLoading(true);
+      }
       
       const queryParams = new URLSearchParams();
       const currentFilters = overrideFilter || filters;
       if (currentFilters.startDate) queryParams.append("startDate", currentFilters.startDate);
       if (currentFilters.endDate) queryParams.append("endDate", currentFilters.endDate);
+      queryParams.append("limit", "10"); // Dashboard only needs the top 10 for maximum speed
 
-      const { data } = await API.get(`/stats/registrations?${queryParams.toString()}`);
+      // Switched to the more efficient/standard base endpoint
+      const { data } = await API.get(`/registrations?${queryParams.toString()}`);
       
       setRegistrations(data);
-      if (quickRange === 'all' && !currentFilters.startDate && !currentFilters.endDate) {
+      // Cache the "Global" state (no dates/filters) to keep re-navigation instant
+      if (!currentFilters.startDate && !currentFilters.endDate) {
         setRecentRegistrations(data);
       }
     } catch (err) {
-      console.error("Error fetching registrations:", err);
+      console.error("Ledger Sync Error:", err);
     } finally {
       setRegLoading(false);
     }
