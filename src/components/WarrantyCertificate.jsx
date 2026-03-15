@@ -214,46 +214,94 @@ const WarrantyCertificate = ({ registration }) => {
     }
 
     try {
-      // Wait a tiny bit to make sure layout is stable
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // 1. Create a deep clone to manipulate the DOM without affecting the user's view
+      const clone = element.cloneNode(true);
+      
+      // 2. Position the clone off-screen but keep it in the DOM so it renders
+      clone.style.position = 'fixed';
+      clone.style.left = '-9999px';
+      clone.style.top = '0';
+      // Preserve original width to maintain layout
+      clone.style.width = `${element.offsetWidth}px`;
+      
+      // 3. Apply a solid background to the container to prevent transparency issues
+      clone.style.backgroundColor = '#ffffff';
+      clone.style.color = '#000000'; // Default text color safety
 
-      const canvas = await html2canvas(element, {
+      document.body.appendChild(clone);
+
+      // Helper: Canvas context for color conversion
+      const ctx = document.createElement('canvas').getContext('2d');
+
+      // Helper: Convert any valid CSS color string to Hex/RGBA
+      const convertToSafeColor = (colorStr) => {
+        if (!colorStr) return colorStr;
+        ctx.fillStyle = colorStr;
+        return ctx.fillStyle;
+      };
+
+      // Helper: Find and replace oklch(...) in any string
+      const sanitizeStyleValue = (value) => {
+         if (!value || typeof value !== 'string') return value;
+         if (!value.includes('oklch')) return value;
+
+         // Replace each oklch(...) occurrence
+         return value.replace(/oklch\([^)]+\)/g, (match) => {
+             return convertToSafeColor(match);
+         });
+      };
+
+      // 4. Traverse and sanitize all elements in the clone
+      // We must use the computed style of the ORIGINAL elements to capture the actual values
+      // (because cloning might lose computed values derived from CSS if not re-rendered same way)
+      // But since we appended clone to body, getComputedStyle(clone) works too and is simpler.
+      
+      const allElements = clone.querySelectorAll('*');
+      const allNodes = [clone, ...allElements];
+
+      allNodes.forEach((node) => {
+         const computed = window.getComputedStyle(node);
+         
+         const propertiesToSanitize = [
+             'color', 
+             'backgroundColor', 
+             'borderColor', 
+             'borderTopColor', 
+             'borderBottomColor', 
+             'borderLeftColor', 
+             'borderRightColor',
+             'outlineColor',
+             'textDecorationColor',
+             'boxShadow',       
+             'backgroundImage'  
+         ];
+
+         propertiesToSanitize.forEach(prop => {
+             const val = computed.getPropertyValue(prop);
+             if (val && val.includes('oklch')) {
+                 const safeVal = sanitizeStyleValue(val);
+                 node.style.setProperty(prop, safeVal, 'important');
+             }
+         });
+      });
+
+      // 5. Generate with html2canvas (now seeing only safe colors)
+      const canvas = await html2canvas(clone, {
         scale: 2.5,
         useCORS: true,
-        allowTaint: false,
+        allowTaint: false, 
         backgroundColor: "#ffffff",
         logging: false,
         windowWidth: element.scrollWidth,
-        windowHeight: element.scrollHeight,
-        removeContainer: true,
-        onclone: (clonedDoc) => {
-          // Convert oklch colors to rgb so html2canvas can parse them
-          const allElements = clonedDoc.querySelectorAll("*");
-          allElements.forEach((el) => {
-            const computed = window.getComputedStyle(el);
-            const propsToFix = [
-              "color", "background-color", "border-color",
-              "border-top-color", "border-right-color",
-              "border-bottom-color", "border-left-color",
-              "outline-color", "text-decoration-color",
-            ];
-            propsToFix.forEach((prop) => {
-              const val = computed.getPropertyValue(prop);
-              if (val && val.includes("oklch")) {
-                // getComputedStyle returns resolved values; force rgb via canvas
-                const ctx = clonedDoc.createElement("canvas").getContext("2d");
-                ctx.fillStyle = val;
-                el.style.setProperty(prop, ctx.fillStyle, "important");
-              }
-            });
-          });
-        },
+        windowHeight: element.scrollHeight
       });
 
-      const imgData = canvas.toDataURL("image/png"); // default quality
+      // Clean up clone
+      document.body.removeChild(clone);
 
-      // Better mm calculation
-      const pxToMm = 25.4 / 96; // more accurate (96dpi standard web)
+      // 6. Create PDF
+      const imgData = canvas.toDataURL("image/png");
+      const pxToMm = 25.4 / 96;
       const widthMm  = canvas.width  * pxToMm;
       const heightMm = canvas.height * pxToMm;
 
@@ -261,25 +309,20 @@ const WarrantyCertificate = ({ registration }) => {
         orientation: widthMm > heightMm ? "landscape" : "portrait",
         unit: "mm",
         format: [widthMm, heightMm],
-        hotfixes: ["px_to_pt"], // sometimes helps with dimension rounding
+        hotfixes: ["px_to_pt"],
       });
 
-      pdf.addImage(imgData, "PNG", 0, 0, widthMm, heightMm, undefined, "FAST"); // FAST compression usually more stable
-
+      pdf.addImage(imgData, "PNG", 0, 0, widthMm, heightMm, undefined, "FAST");
       const fileName = `Warranty_${(customerName || "certificate").replace(/\s+/g, '_')}.pdf`;
       pdf.save(fileName);
 
     } catch (error) {
       console.error("PDF generation failed:", error);
+      // Clean up if error occurs
+      const cleanup = document.querySelectorAll('[style*="left: -9999px"]');
+      cleanup.forEach(el => el.remove());
       
-      // More helpful message
-      let msg = "Failed to generate PDF.\n\n";
-      if (error.message?.includes("taint")) {
-        msg += "CORS/tainting issue detected (image problem).\n";
-      }
-      msg += "Please try:\n• Using Google Chrome\n• Refresh page and try again\n• Check console for detailed error";
-
-      alert(msg);
+      alert("Failed to generate PDF. Browser reported: " + error.message);
     }
   };
 
