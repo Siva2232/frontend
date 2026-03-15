@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "https://webbackend-cset.onrender.com/api"
+  baseURL: import.meta.env.VITE_API_URL || "https://webbackend-15d2.onrender.com/api"
 });
 
 // Automatically attach token if available
