@@ -43,8 +43,7 @@ const Products = () => {
     modelNumber: "",
     manufactureDate: new Date().toISOString().split('T')[0],
     warrantyPeriodMonths: 12,
-    prefix: "SN-",
-    startNumber: 1,
+    prefix: "", // This will now act as the full "Starting Serial Number"
     count: 10,
   });
 
@@ -751,31 +750,16 @@ const Products = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Serial Prefix</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Starting Serial Number</label>
                     <div className="relative group">
                       <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors w-5 h-5" />
                       <input
                         type="text"
-                        placeholder="SN-"
+                        placeholder="e.g. 26051000 or SN-1000"
                         required
                         className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-blue-500 outline-none transition-all font-mono font-bold"
                         onChange={(e) => setBulkForm({ ...bulkForm, prefix: e.target.value })}
                         value={bulkForm.prefix}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Starting ID Number</label>
-                    <div className="relative group">
-                      <ChevronRight className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors w-5 h-5" />
-                      <input
-                        type="number"
-                        placeholder="1001"
-                        required
-                        className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-blue-500 outline-none transition-all font-bold"
-                        onChange={(e) => setBulkForm({ ...bulkForm, startNumber: e.target.value })}
-                        value={bulkForm.startNumber}
                       />
                     </div>
                   </div>
@@ -825,9 +809,8 @@ const Products = () => {
 
                 <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl">
                   <p className="text-[11px] text-amber-700 font-bold leading-relaxed">
-                    System will generate serial IDs from <span className="underline">{bulkForm.prefix}{bulkForm.startNumber}</span> to 
-                    <span className="underline"> {bulkForm.prefix}{parseInt(bulkForm.startNumber) + parseInt(bulkForm.count) - 1}</span>.
-                    Each label will be printed in 3 copies.
+                    System will generate <span className="underline">{bulkForm.count}</span> {parseInt(bulkForm.count) === 1 ? 'ID' : 'IDs'} starting from the provided base number.
+                    <br/>Example: If Input=26051000 & Count=10, generated IDs will be 26051001 to 26051010.
                   </p>
                 </div>
 
