@@ -212,21 +212,40 @@ const WarrantyCertificate = ({ registration }) => {
 
     try {
       const canvas = await html2canvas(element, {
-        scale: 4, // Ultra-high resolution
+        scale: 3,
         useCORS: true,
         backgroundColor: "#ffffff",
         logging: false,
-      });
-      
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF({
-        orientation: "landscape",
-        unit: "px",
-        format: [canvas.width, canvas.height]
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight,
+        onclone: (doc) => {
+          const win = doc.defaultView || window;
+          const nodes = doc.querySelectorAll("*");
+          nodes.forEach((node) => {
+            if (!(node instanceof HTMLElement)) return;
+            const computed = win.getComputedStyle(node);
+            if (computed.color) node.style.color = computed.color;
+            if (computed.backgroundColor && computed.backgroundColor !== "rgba(0, 0, 0, 0)") {
+              node.style.backgroundColor = computed.backgroundColor;
+            }
+            if (computed.borderColor) node.style.borderColor = computed.borderColor;
+          });
+        },
       });
 
-      pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
-      pdf.save(`Warranty_${customerName.replace(/\s+/g, '_')}.pdf`);
+      const imgData = canvas.toDataURL("image/png", 1.0);
+      const pxToMm = 0.264583;
+      const widthMm = Math.round(canvas.width * pxToMm * 100) / 100;
+      const heightMm = Math.round(canvas.height * pxToMm * 100) / 100;
+
+      const pdf = new jsPDF({
+        orientation: widthMm >= heightMm ? "landscape" : "portrait",
+        unit: "mm",
+        format: [widthMm, heightMm],
+      });
+
+      pdf.addImage(imgData, "PNG", 0, 0, widthMm, heightMm);
+      pdf.save(`Warranty_${customerName.replace(/\s+/g, '_') || 'certificate'}.pdf`);
     } catch (error) {
       console.error("Download error:", error);
       alert("Format error. Please use Chrome or try again.");
@@ -257,8 +276,14 @@ const WarrantyCertificate = ({ registration }) => {
         style={{ minHeight: "500px" }}
       >
         {/* Decorative Background Elements */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full -mr-32 -mt-32 z-0 opacity-50" />
-        <div className="absolute bottom-0 left-0 w-32 h-32 bg-slate-50 rounded-full -ml-16 -mb-16 z-0" />
+        <div
+          className="absolute top-0 right-0 w-64 h-64 rounded-full -mr-32 -mt-32 z-0"
+          style={{ backgroundColor: "rgba(237, 233, 254, 0.4)" }}
+        />
+        <div
+          className="absolute bottom-0 left-0 w-32 h-32 rounded-full -ml-16 -mb-16 z-0"
+          style={{ backgroundColor: "rgba(241, 245, 249, 0.9)" }}
+        />
 
         <div className="relative z-10">
           {/* Header Section */}
@@ -292,7 +317,10 @@ const WarrantyCertificate = ({ registration }) => {
           </div>
 
           {/* Details Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 py-10 px-6 bg-slate-50/50 rounded-xl border border-slate-100">
+          <div
+            className="grid grid-cols-2 md:grid-cols-4 gap-8 py-10 px-6 rounded-xl border"
+            style={{ backgroundColor: "rgba(248, 250, 252, 0.5)", borderColor: "#e2e8f0" }}
+          >
             <div>
               <p className="text-[10px] text-slate-400 font-bold uppercase mb-2">Model Number</p>
               <p className="text-sm font-bold text-slate-800">{modelNumber || "N/A"}</p>
