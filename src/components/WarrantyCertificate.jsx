@@ -208,49 +208,84 @@ const WarrantyCertificate = ({ registration }) => {
 
   const handleDownload = async () => {
     const element = certificateRef.current;
-    if (!element) return;
+    if (!element) {
+      alert("Certificate element not found.");
+      return;
+    }
 
     try {
+      // Wait a tiny bit to make sure layout is stable
+      await new Promise(resolve => setTimeout(resolve, 300));
+
       const canvas = await html2canvas(element, {
-        scale: 3,
+        scale: 2.5,
         useCORS: true,
+        allowTaint: false,
         backgroundColor: "#ffffff",
         logging: false,
         windowWidth: element.scrollWidth,
         windowHeight: element.scrollHeight,
-        onclone: (doc) => {
-          const win = doc.defaultView || window;
-          const nodes = doc.querySelectorAll("*");
-          nodes.forEach((node) => {
-            if (!(node instanceof HTMLElement)) return;
-            const computed = win.getComputedStyle(node);
-            if (computed.color) node.style.color = computed.color;
-            if (computed.backgroundColor && computed.backgroundColor !== "rgba(0, 0, 0, 0)") {
-              node.style.backgroundColor = computed.backgroundColor;
-            }
-            if (computed.borderColor) node.style.borderColor = computed.borderColor;
+        removeContainer: true,
+        onclone: (clonedDoc) => {
+          // Convert oklch colors to rgb so html2canvas can parse them
+          const allElements = clonedDoc.querySelectorAll("*");
+          allElements.forEach((el) => {
+            const computed = window.getComputedStyle(el);
+            const propsToFix = [
+              "color", "background-color", "border-color",
+              "border-top-color", "border-right-color",
+              "border-bottom-color", "border-left-color",
+              "outline-color", "text-decoration-color",
+            ];
+            propsToFix.forEach((prop) => {
+              const val = computed.getPropertyValue(prop);
+              if (val && val.includes("oklch")) {
+                // getComputedStyle returns resolved values; force rgb via canvas
+                const ctx = clonedDoc.createElement("canvas").getContext("2d");
+                ctx.fillStyle = val;
+                el.style.setProperty(prop, ctx.fillStyle, "important");
+              }
+            });
           });
         },
       });
 
-      const imgData = canvas.toDataURL("image/png", 1.0);
-      const pxToMm = 0.264583;
-      const widthMm = Math.round(canvas.width * pxToMm * 100) / 100;
-      const heightMm = Math.round(canvas.height * pxToMm * 100) / 100;
+      const imgData = canvas.toDataURL("image/png"); // default quality
+
+      // Better mm calculation
+      const pxToMm = 25.4 / 96; // more accurate (96dpi standard web)
+      const widthMm  = canvas.width  * pxToMm;
+      const heightMm = canvas.height * pxToMm;
 
       const pdf = new jsPDF({
-        orientation: widthMm >= heightMm ? "landscape" : "portrait",
+        orientation: widthMm > heightMm ? "landscape" : "portrait",
         unit: "mm",
         format: [widthMm, heightMm],
+        hotfixes: ["px_to_pt"], // sometimes helps with dimension rounding
       });
 
-      pdf.addImage(imgData, "PNG", 0, 0, widthMm, heightMm);
-      pdf.save(`Warranty_${customerName.replace(/\s+/g, '_') || 'certificate'}.pdf`);
+      pdf.addImage(imgData, "PNG", 0, 0, widthMm, heightMm, undefined, "FAST"); // FAST compression usually more stable
+
+      const fileName = `Warranty_${(customerName || "certificate").replace(/\s+/g, '_')}.pdf`;
+      pdf.save(fileName);
+
     } catch (error) {
-      console.error("Download error:", error);
-      alert("Format error. Please use Chrome or try again.");
+      console.error("PDF generation failed:", error);
+      
+      // More helpful message
+      let msg = "Failed to generate PDF.\n\n";
+      if (error.message?.includes("taint")) {
+        msg += "CORS/tainting issue detected (image problem).\n";
+      }
+      msg += "Please try:\n• Using Google Chrome\n• Refresh page and try again\n• Check console for detailed error";
+
+      alert(msg);
     }
   };
+
+  // ──────────────────────────────────────────────
+  // The rest of your component remains 100% unchanged
+  // ──────────────────────────────────────────────
 
   return (
     <div className="max-w-4xl mx-auto my-12 px-4 font-sans">
@@ -289,11 +324,12 @@ const WarrantyCertificate = ({ registration }) => {
           {/* Header Section */}
           <div className="flex flex-col md:flex-row justify-between items-center md:items-start border-b-2 border-slate-100 pb-10 mb-10">
             <div className="mb-6 md:mb-0">
-               {/* LOGO IMPORT SLOT */}
+              {/* LOGO IMPORT SLOT */}
               <img
                 src={Logo11}
                 alt="Perfect Digital Logo"
                 className="h-12 sm:h-14 md:h-16 w-auto mb-4 object-contain transition-transform duration-300 hover:scale-105"
+                crossOrigin="anonymous" // helps in some bundler/dev server cases
               />
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-6 h-6 text-indigo-600" />
