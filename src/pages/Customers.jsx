@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useData } from "../Context/DataContext";
 import API from "../api/axios";
 import Navbar from "../components/Navbar";
 import Footer from "../layouts/Footer";
@@ -36,9 +37,12 @@ import { useToast } from "../components/Toast";
 const Customers = () => {
   const navigate = useNavigate();
   const { show, showSuccess, showError } = useToast();
-  const [customers, setCustomers] = useState([]);
+  const { customers, customersMeta, loading: dataLoading, fetchCustomers } = useData();
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  const [searchDebounce, setSearchDebounce] = useState(null);
 
   const [searchParams] = useSearchParams();
 
@@ -63,22 +67,23 @@ const Customers = () => {
     confirmText: "Proceed"
   });
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
-
-  const fetchRegistrations = async () => {
-    try {
-      const { data } = await API.get("/register");
-      setCustomers(data || []);
-    } catch (error) {
-      console.error("Error fetching customers:", error);
-      showError("Failed to load customers");
-    }
-  };
+  useEffect(() => {
+    // load the first page of customers once
+    fetchCustomers({ page: 1, limit: itemsPerPage });
+  }, []);
 
   useEffect(() => {
-    fetchRegistrations();
-  }, []);
+    // debounced search + pagination
+    if (searchDebounce) clearTimeout(searchDebounce);
+
+    const timer = setTimeout(() => {
+      setCurrentPage(1);
+      fetchCustomers({ page: 1, limit: itemsPerPage, q: searchTerm });
+    }, 250);
+
+    setSearchDebounce(timer);
+    return () => clearTimeout(timer);
+  }, [searchTerm, itemsPerPage, fetchCustomers]);
 
   useEffect(() => {
     const q = searchParams.get("search");
@@ -87,25 +92,16 @@ const Customers = () => {
     }
   }, [searchParams]);
 
+  // When using server-side pagination, `customers` already reflects the current page.
+  // All filtering/search is done on the server via query params, so we only need
+  // to apply client-side status/date filters if necessary.
   const filteredCustomers = customers.filter((c) => {
-    // 1. Search text filter
-    const matchesSearch = [
-      c.customerName,
-      c.serialNumber,
-      c.modelNumber,
-      c.productId?.modelNumber,
-      c.purchaseShopName,
-      c.phone,
-    ].some((val) => val?.toLowerCase().includes(searchTerm.toLowerCase()));
-
-    if (!matchesSearch) return false;
-
-    // 2. Status filter (Active/Expired)
+    // 1. Status filter (Active/Expired)
     const isExpired = new Date(c.expiryDate) < new Date();
     if (filterType === "active" && isExpired) return false;
     if (filterType === "expired" && !isExpired) return false;
 
-    // 3. Date range filter
+    // 2. Date range filter
     if (dateFilter !== "all") {
       const createdAt = new Date(c.createdAt || new Date());
       const now = new Date();
@@ -155,15 +151,13 @@ const Customers = () => {
     }).length,
   };
 
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = filteredCustomers.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
+  const currentItems = filteredCustomers;
+  const totalPages = Math.max(1, Math.ceil((customersMeta.total || 0) / itemsPerPage));
 
   const paginate = (pageNumber) => {
-    if (pageNumber >= 1 && pageNumber <= totalPages) {
-      setCurrentPage(pageNumber);
-    }
+    if (pageNumber < 1 || pageNumber > totalPages) return;
+    setCurrentPage(pageNumber);
+    fetchCustomers({ page: pageNumber, limit: itemsPerPage, q: searchTerm });
   };
 
   useEffect(() => {
@@ -203,7 +197,7 @@ const Customers = () => {
           await API.put(`/register/${editingCustomer._id}`, editForm);
           showSuccess("Customer updated");
           setIsEditModalOpen(false);
-          fetchRegistrations();
+          fetchCustomers();
         } catch (error) {
           showError(error.response?.data?.message || "Update failed");
         } finally {
@@ -225,7 +219,7 @@ const Customers = () => {
               Customers
             </h1>
             <p className="mt-1.5 text-neutral-600 text-sm">
-              Manage registered warranty customers • {filteredCustomers.length} total
+              Manage registered warranty customers • {customersMeta.total || 0} total
             </p>
           </div>
 
@@ -549,7 +543,7 @@ const Customers = () => {
             >
               Apply Filters
               <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs">
-                {filteredCustomers.length}
+                {customersMeta.total || 0}
               </span>
             </button>
 
@@ -604,20 +598,19 @@ const Customers = () => {
               </thead>
 
               <tbody className="divide-y divide-neutral-100">
-                {currentItems.length === 0 ? (
+                {dataLoading.customers && customers.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="py-24 text-center">
                       <div className="inline-flex flex-col items-center gap-4">
-                        <div className="w-16 h-16 rounded-full bg-neutral-100 flex items-center justify-center">
-                          <Users className="text-neutral-300" size={28} />
-                        </div>
-                        <div>
-                          <p className="text-neutral-500 font-medium">No customers found</p>
-                          <p className="text-neutral-400 text-sm mt-1">
-                            Try adjusting your search or add a new customer
-                          </p>
-                        </div>
+                        <Loader2 className="animate-spin text-blue-600" size={28} />
+                        <p className="text-neutral-500 font-medium tracking-wide uppercase text-xs">Syncing Customers...</p>
                       </div>
+                    </td>
+                  </tr>
+                ) : currentItems.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} className="py-24 text-center">
+                      <p className="text-neutral-500 font-medium tracking-wide uppercase text-xs">No customers found</p>
                     </td>
                   </tr>
                 ) : (
@@ -743,11 +736,11 @@ const Customers = () => {
           </div>
 
           {/* Pagination */}
-          {filteredCustomers.length > 0 && (
+          {currentItems.length > 0 && (
             <div className="px-6 py-4 border-t border-neutral-100 bg-neutral-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-sm">
               <div className="text-neutral-600">
-                Showing <strong>{indexOfFirstItem + 1}</strong>–<strong>{Math.min(indexOfLastItem, filteredCustomers.length)}</strong> of{" "}
-                <strong>{filteredCustomers.length}</strong>
+                Showing <strong>{(currentPage - 1) * itemsPerPage + 1}</strong>–<strong>{(currentPage - 1) * itemsPerPage + currentItems.length}</strong> of{" "}
+                <strong>{customersMeta.total || 0}</strong>
               </div>
 
               <div className="flex items-center gap-2">
@@ -805,7 +798,7 @@ const Customers = () => {
       <ManualWarrantyModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        onSuccess={fetchRegistrations}
+        onSuccess={fetchCustomers}
       />
 
       {/* Edit Modal – cleaner & more modern */}

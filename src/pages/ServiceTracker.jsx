@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useData } from '../Context/DataContext';
 import API from '../api/axios';
 import Navbar from "../components/Navbar";
 import Footer from "../layouts/Footer";
@@ -10,10 +11,10 @@ import { useToast } from '../components/Toast';
 const ServiceTracker = () => {
   const [searchParams] = useSearchParams();
   const { show, showSuccess, showError } = useToast();
+  const { recentServices, loading: dataLoading, fetchRecentServices } = useData();
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(null);
-  const [recentServices, setRecentServices] = useState([]);
   const [filteredRecent, setFilteredRecent] = useState([]);
   const [filterPeriod, setFilterPeriod] = useState('all');
   const [customDates, setCustomDates] = useState({ start: '', end: '' });
@@ -74,7 +75,11 @@ const ServiceTracker = () => {
         handleSearch(null, q);
       }, 100);
     }
-    fetchRecentServices();
+    
+    // Initial fetch of recent services if not already loaded
+    if (recentServices.length === 0) {
+      fetchRecentServices();
+    }
   }, []);
 
   // recompute filtered list whenever source or filters change
@@ -142,15 +147,6 @@ const ServiceTracker = () => {
     }
     setFilteredRecent(arr);
   }, [recentServices, filterPeriod, customDates, statusFilter]);
-
-  const fetchRecentServices = async () => {
-    try {
-      const res = await API.get('/service/history');
-      if (res.data.recentServices) setRecentServices(res.data.recentServices);
-    } catch (err) {
-      console.error("Failed to fetch recent services", err);
-    }
-  };
 
   const [newEntry, setNewEntry] = useState({
     serialNumber: '',

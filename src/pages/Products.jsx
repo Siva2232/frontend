@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useData } from "../Context/DataContext";
 import API from "../api/axios";
 import Navbar from "../components/Navbar";
 import LabelCard from "../components/LabelCard";
@@ -29,6 +30,7 @@ import {
 
 const Products = () => {
   const { show, showSuccess, showError } = useToast();
+  const { products, productsMeta, loading: dataLoading, fetchProducts } = useData();
   const [activeMode, setActiveMode] = useState("single"); // 'single' or 'bulk'
   const [form, setForm] = useState({
     productName: "",
@@ -47,13 +49,19 @@ const Products = () => {
     count: 10,
   });
 
+  // Persist last generated serial across refreshes so admins can continue
+  useEffect(() => {
+    const last = localStorage.getItem("lastBulkSerial");
+    if (last) {
+      setBulkForm((prev) => ({ ...prev, prefix: last }));
+    }
+  }, []);
+
   const [qr, setQr] = useState("");
   const [bulkResults, setBulkResults] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [productsLoading, setProductsLoading] = useState(true);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
-  const [products, setProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedQR, setSelectedQR] = useState(null);
   const [isBulkPrintOpen, setIsBulkPrintOpen] = useState(false);
@@ -70,47 +78,42 @@ const Products = () => {
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [searchDebounce, setSearchDebounce] = useState(null);
 
-  const fetchProducts = async () => {
-    try {
-      const { data } = await API.get("/products");
-      setProducts(data);
-    } catch (err) {
-      console.error("Failed to fetch products:", err);
-    } finally {
-      setProductsLoading(false);
-    }
-  };
-
-  // Filter Logic
+  // Search + pagination
   const filteredProducts = products.filter((p) => {
-    const searchLower = searchTerm.toLowerCase();
+    if (!searchTerm) return true;
+    const lower = searchTerm.toLowerCase();
     return (
-      p.productName?.toLowerCase().includes(searchLower) ||
-      p.modelNumber?.toLowerCase().includes(searchLower) ||
-      p.serialNumber?.toLowerCase().includes(searchLower)
+      p.productName?.toLowerCase().includes(lower) ||
+      p.modelNumber?.toLowerCase().includes(lower) ||
+      p.serialNumber?.toLowerCase().includes(lower)
     );
   });
 
-  // Pagination Logic
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = filteredProducts.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  const currentItems = filteredProducts;
+  const totalPages = Math.max(1, Math.ceil((productsMeta.total || 0) / itemsPerPage));
 
   const paginate = (pageNumber) => {
-    if (pageNumber > 0 && pageNumber <= totalPages) {
-      setCurrentPage(pageNumber);
-    }
+    if (pageNumber < 1 || pageNumber > totalPages) return;
+    setCurrentPage(pageNumber);
+    fetchProducts({ page: pageNumber, limit: itemsPerPage, q: searchTerm });
   };
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm]);
+    // initial load
+    fetchProducts({ page: 1, limit: itemsPerPage });
+  }, []);
 
   useEffect(() => {
-    fetchProducts();
-  }, []);
+    if (searchDebounce) clearTimeout(searchDebounce);
+    const timer = setTimeout(() => {
+      setCurrentPage(1);
+      fetchProducts({ page: 1, limit: itemsPerPage, q: searchTerm });
+    }, 250);
+    setSearchDebounce(timer);
+    return () => clearTimeout(timer);
+  }, [searchTerm, itemsPerPage, fetchProducts]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -152,6 +155,17 @@ const Products = () => {
     });
   };
 
+  const getNextSerial = (serial) => {
+    if (!serial) return "";
+    const match = serial.match(/^(.*?)(\d+)$/);
+    if (!match) {
+      return `${serial}1`;
+    }
+    const [, prefix, digits] = match;
+    const nextNum = String(Number(digits) + 1).padStart(digits.length, "0");
+    return `${prefix}${nextNum}`;
+  };
+
   const handleBulkSubmit = async (e) => {
     e.preventDefault();
     
@@ -171,15 +185,21 @@ const Products = () => {
           const { data } = await API.post("/products/bulk", bulkForm);
           setBulkResults(data.products);
           showSuccess(data.message);
+
+          // Pre-fill the next start serial using the last generated serial
+          const lastSerial = data.products?.[data.products.length - 1]?.serialNumber;
+          const nextStart = getNextSerial(lastSerial);
+          localStorage.setItem("lastBulkSerial", nextStart);
+
           setBulkForm({
-            productName: "",
-            modelNumber: "",
-            manufactureDate: new Date().toISOString().split('T')[0],
-            warrantyPeriodMonths: 12,
-            prefix: "SN-",
-            startNumber: 1,
-            count: 10,
+            productName: bulkForm.productName,
+            modelNumber: bulkForm.modelNumber,
+            manufactureDate: bulkForm.manufactureDate,
+            warrantyPeriodMonths: bulkForm.warrantyPeriodMonths,
+            prefix: nextStart || bulkForm.prefix,
+            count: bulkForm.count,
           });
+
           fetchProducts();
           setIsBulkPrintOpen(true); // Open bulk print view automatically
         } catch (err) {
@@ -812,6 +832,41 @@ const Products = () => {
                     System will generate <span className="underline">{bulkForm.count}</span> {parseInt(bulkForm.count) === 1 ? 'ID' : 'IDs'} starting from the provided base number.
                     <br/>Example: If Input=26051000 & Count=10, generated IDs will be 26051001 to 26051010.
                   </p>
+                  {bulkResults && bulkResults.length > 0 && (
+                    (() => {
+                      const lastSerial = bulkResults[bulkResults.length - 1].serialNumber;
+                      const nextSerial = getNextSerial(lastSerial);
+                      return (
+                        <div className="mt-3 text-[11px] text-slate-700">
+                          <div className="flex flex-wrap gap-2 items-center">
+                            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 text-slate-700 font-semibold">
+                              Last generated:
+                              <span className="font-mono text-slate-800">{lastSerial}</span>
+                            </span>
+                            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 text-slate-700 font-semibold">
+                              Next start:
+                              <span className="font-mono text-slate-800">{nextSerial}</span>
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => navigator.clipboard.writeText(nextSerial)}
+                              className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 font-semibold hover:bg-blue-100 transition"
+                            >
+                              Copy next serial
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setBulkForm(prev => ({ ...prev, prefix: nextSerial }))}
+                              className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 font-semibold hover:bg-emerald-100 transition"
+                            >
+                              Continue from here
+                            </button>
+                          </div>
+                          <p className="mt-2 text-[10px] text-slate-500">After generation, the form will be prefilled to start from the next serial.</p>
+                        </div>
+                      );
+                    })()
+                  )}
                 </div>
 
                 <button 
@@ -908,14 +963,14 @@ const Products = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
-                  {productsLoading ? (
+                  {(loading || dataLoading.products) && products.length === 0 ? (
                     <tr>
                       <td colSpan="6" className="px-8 py-20 text-center">
                         <Loader2 className="animate-spin w-8 h-8 text-blue-600 mx-auto mb-3" />
                         <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Querying Inventory...</p>
                       </td>
                     </tr>
-                  ) : filteredProducts.length === 0 ? (
+                  ) : currentItems.length === 0 ? (
                     <tr>
                       <td colSpan="6" className="px-8 py-20 text-center">
                         <div className="text-slate-300 italic text-sm">No assets match your search criteria.</div>
@@ -995,10 +1050,10 @@ const Products = () => {
             </div>
 
             {/* Pagination */}
-            {!productsLoading && products.length > 0 && (
+            {!(loading || dataLoading.products) && currentItems.length > 0 && (
               <div className="px-8 py-5 border-t border-slate-50 flex flex-col sm:flex-row justify-between items-center bg-slate-50/30 gap-4">
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-widest text-center sm:text-left">
-                  Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, products.length)} of {products.length} Entries
+                  Showing {(currentPage - 1) * itemsPerPage + 1} to {(currentPage - 1) * itemsPerPage + currentItems.length} of {productsMeta.total || 0} Entries
                 </span>
                 <div className="flex items-center gap-2">
                   <button 

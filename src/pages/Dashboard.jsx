@@ -1,19 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import API from "../api/axios";
+import { useData } from "../Context/DataContext";
 import Navbar from "../components/Navbar";
 import Footer from "../layouts/Footer";
 import { Package, Users, ShieldCheck, Loader2, RefreshCw, Calendar, TrendingUp, Search, MoreVertical, Eye, ClipboardList } from "lucide-react";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [stats, setStats] = useState({
-    totalProducts: 0,
-    registeredWarranties: 0,
-    activeWarranties: 0,
-    recentRegistrations: [],
-  });
-  const [loading, setLoading] = useState(true);
+  const { stats, loading: dataLoading, fetchStats } = useData();
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [filters, setFilters] = useState({
@@ -24,34 +19,21 @@ const Dashboard = () => {
 
 
   useEffect(() => {
-    fetchStats();
-    // Poll for the latest statistics every 30 seconds
-    const interval = setInterval(fetchStats, 30000);
-    return () => clearInterval(interval);
+    if (stats.recentRegistrations.length === 0) {
+      fetchStats();
+    }
   }, []);
 
-  const fetchStats = async (overrideFilter) => {
-    try {
-      if (overrideFilter) setLoading(true); // only block UI for preset changes
-      const queryParams = new URLSearchParams();
-      const { startDate, endDate } = overrideFilter || filters;
-      if (startDate) queryParams.append("startDate", startDate);
-      if (endDate) queryParams.append("endDate", endDate);
+  const handleRefresh = async () => {
+    setLoading(true);
+    await fetchStats(filters);
+    setLoading(false);
+  };
 
-      const { data } = await API.get(`/stats?${queryParams.toString()}`);
-      setStats({
-        totalProducts: data.totalProducts || 0,
-        registeredWarranties: data.registeredWarranties || 0,
-        activeWarranties: data.activeWarranties || 0,
-        recentRegistrations: data.recentRegistrations || [],
-      });
-      setError("");
-    } catch (err) {
-      console.error("Error fetching stats:", err);
-      setError("System Sync Error: Unable to retrieve real-time statistics.");
-    } finally {
-      setLoading(false);
-    }
+  const handleApplyFilters = async () => {
+    setLoading(true);
+    await fetchStats(filters);
+    setLoading(false);
   };
 
   const handleFilterChange = (e) => {
@@ -62,12 +44,12 @@ const Dashboard = () => {
   // whenever quickRange updates, compute corresponding start/end
   useEffect(() => {
     if (quickRange === 'all') {
-      setFilters({ startDate: '', endDate: '' });
-      fetchStats({ startDate: '', endDate: '' });
+      const newFilters = { startDate: '', endDate: '' };
+      setFilters(newFilters);
+      fetchStats(newFilters);
       return;
     }
     if (quickRange === 'custom') {
-      // keep whatever manual dates are set, don't auto-fetch
       return;
     }
     const now = new Date();
@@ -75,7 +57,7 @@ const Dashboard = () => {
     let end = new Date(now);
     switch (quickRange) {
       case 'today':
-        break; // start/end today
+        break; 
       case 'yesterday':
         start.setDate(start.getDate() - 1);
         end = new Date(start);
@@ -89,13 +71,10 @@ const Dashboard = () => {
       case 'year':
         start.setFullYear(start.getFullYear() - 1);
         break;
-      default:
-        break;
     }
     const toISO = (d) => d.toISOString().split('T')[0];
     const newFilters = { startDate: toISO(start), endDate: toISO(end) };
     setFilters(newFilters);
-    // immediately fetch with calculated range
     fetchStats(newFilters);
   }, [quickRange]);
 
@@ -136,10 +115,10 @@ const Dashboard = () => {
             <p className="text-slate-500 mt-1">Real-time performance metrics and registration logs.</p>
           </div>
           <button 
-            onClick={fetchStats}
+            onClick={handleRefresh}
             className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm active:scale-95"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${loading || dataLoading.stats ? 'animate-spin' : ''}`} />
             Refresh Sync
           </button>
         </div>
@@ -227,7 +206,7 @@ const Dashboard = () => {
               
               <div className="flex gap-2">
                 <button 
-                  onClick={fetchStats}
+                  onClick={handleApplyFilters}
                   className="bg-slate-900 text-white text-xs font-bold px-5 py-2 rounded-xl hover:bg-blue-600 transition-colors shadow-sm"
                 >
                   Apply Filters
@@ -248,7 +227,7 @@ const Dashboard = () => {
           </div>
 
           <div className="overflow-x-auto">
-            {loading ? (
+            {(loading || dataLoading.stats) && stats.recentRegistrations.length === 0 ? (
               <div className="py-24 flex flex-col items-center justify-center opacity-50">
                 <Loader2 className="w-8 h-8 text-blue-600 animate-spin mb-3" />
                 <p className="text-sm font-medium text-slate-500 tracking-wide uppercase">Syncing Database...</p>

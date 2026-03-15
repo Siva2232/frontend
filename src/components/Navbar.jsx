@@ -1,5 +1,6 @@
-import { useContext, useState, useEffect, useRef } from "react";
+import React, { useContext, useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { AuthContext } from "../Context/AuthContext";
+import { useData } from "../Context/DataContext";
 import API from "../api/axios";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useToast } from "./Toast";
@@ -16,6 +17,7 @@ import {
   X,
   Bell,
   Wrench,
+  Loader2,
 } from "lucide-react";
 
 const Navbar = () => {
@@ -27,8 +29,7 @@ const Navbar = () => {
   const [profileOpen, setProfileOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
-  const [notifications, setNotifications] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const { notifications, unreadCount, loading, fetchNotifications, fetchUnreadCount, setNotifications, setUnreadCount } = useData();
   const firstFetch = useRef(true); // avoids toast on initial mount
 
   const notificationRef = useRef(null);
@@ -44,44 +45,34 @@ const Navbar = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Poll unread count
+  const latestUnread = useRef(unreadCount);
+
+  useEffect(() => {
+    latestUnread.current = unreadCount;
+  }, [unreadCount]);
+
+  // Poll unread count and show toast when a new notification arrives
   useEffect(() => {
     if (!admin) return;
 
-    const fetchUnread = async () => {
-      try {
-        const { data } = await API.get("/notifications/unread");
-        setUnreadCount((prev) => {
-          if (!firstFetch.current && data.count > prev) {
-            show("New Notification!", "info");
-          }
-          firstFetch.current = false;
-          return data.count;
-        });
-      } catch (err) {
-        console.error("Failed to fetch unread count");
+    const checkUnread = async () => {
+      const newCount = await fetchUnreadCount();
+      if (!firstFetch.current && newCount != null && newCount > latestUnread.current) {
+        show("New Notification!", "info");
       }
+      firstFetch.current = false;
     };
 
-    fetchUnread();
-    const interval = setInterval(fetchUnread, 10000);
+    checkUnread();
+    const interval = setInterval(checkUnread, 10000);
     return () => clearInterval(interval);
-  }, [admin, show]);
-
-  const fetchNotifications = async () => {
-    try {
-      const { data } = await API.get("/notifications?limit=20");
-      setNotifications(data.notifications || []);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  }, [admin, show, fetchUnreadCount]);
 
   useEffect(() => {
-    if (notificationOpen && admin) {
+    if (notificationOpen && admin && notifications.length === 0) {
       fetchNotifications();
     }
-  }, [notificationOpen, admin]);
+  }, [notificationOpen, admin, notifications.length, fetchNotifications]);
 
   const markAllRead = async () => {
     try {
@@ -128,14 +119,18 @@ const Navbar = () => {
     }
   };
 
-  const isActive = (path) => location.pathname === path;
+  // memoized to avoid re-creating function on every render
+  const isActive = useCallback((path) => location.pathname === path, [location.pathname]);
 
-  const navLinks = [
-    { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
-    { name: "Products", path: "/products", icon: Box },
-    { name: "Customers", path: "/customers", icon: Users },
-    { name: "Services", path: "/services", icon: Wrench },
-  ];
+  const navLinks = useMemo(
+    () => [
+      { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
+      { name: "Products", path: "/products", icon: Box },
+      { name: "Customers", path: "/customers", icon: Users },
+      { name: "Services", path: "/services", icon: Wrench },
+    ],
+    []
+  );
 
   return (
     <nav className="sticky top-0 z-50 bg-neutral-950/95 border-b border-neutral-800/70 backdrop-blur-xl">
@@ -259,7 +254,12 @@ const Navbar = () => {
                     </div>
 
                     <div className="flex-1 overflow-y-auto">
-                      {notifications.length === 0 ? (
+                      {loading.notifications ? (
+                        <div className="flex flex-col items-center justify-center py-16 text-neutral-500">
+                          <Loader2 className="animate-spin size-8 mb-3" />
+                          <p className="text-sm">Loading notifications…</p>
+                        </div>
+                      ) : notifications.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-16 text-neutral-500">
                           <Bell className="size-8 mb-3 opacity-40" />
                           <p className="text-sm">No notifications yet</p>
@@ -444,4 +444,4 @@ const Navbar = () => {
   );
 };
 
-export default Navbar;
+export default React.memo(Navbar);
