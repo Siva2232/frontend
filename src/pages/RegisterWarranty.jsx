@@ -208,12 +208,13 @@ const RegisterWarranty = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2.5">Phone Number (optional)</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2.5">Phone Number</label>
                       <div className="relative">
                         <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
                         <input
                           type="tel"
                           name="phone"
+                          required
                           placeholder="+91 98765 43210"
                           className="w-full pl-12 pr-5 py-4 bg-white border border-gray-200 rounded-xl focus:border-gray-400 focus:ring-4 focus:ring-gray-100/60 outline-none transition-all text-gray-900 placeholder-gray-400"
                           onChange={handleChange}
@@ -237,13 +238,12 @@ const RegisterWarranty = () => {
                     </div>
 
                     <div className="md:col-span-2">
-                      <label className="block text-sm font-semibold text-gray-700 mb-2.5">Email Address</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2.5">Email Address (optional)</label>
                       <div className="relative">
                         <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
                         <input
                           type="email"
                           name="email"
-                          required
                           placeholder="yourname@example.com"
                           className="w-full pl-12 pr-5 py-4 bg-white border border-gray-200 rounded-xl focus:border-gray-400 focus:ring-4 focus:ring-gray-100/60 outline-none transition-all text-gray-900 placeholder-gray-400"
                           onChange={handleChange}
