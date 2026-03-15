@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import API from '../api/axios';
+import { AuthContext } from '../Context/AuthContext';
 import Navbar from "../components/Navbar";
 import Footer from "../layouts/Footer";
 import ConfirmationModal from "../components/ConfirmationModal";
@@ -10,11 +11,12 @@ import { useToast } from '../components/Toast';
 const ServiceTracker = () => {
   const [searchParams] = useSearchParams();
   const { show, showSuccess, showError } = useToast();
+  const { servicesData, setServicesData } = useContext(AuthContext);
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(null);
-  const [recentServices, setRecentServices] = useState([]);
-  const [filteredRecent, setFilteredRecent] = useState([]);
+  const [recentServices, setRecentServices] = useState(servicesData || []);
+  const [filteredRecent, setFilteredRecent] = useState(servicesData || []);
   const [filterPeriod, setFilterPeriod] = useState('all');
   const [customDates, setCustomDates] = useState({ start: '', end: '' });
   const [statusFilter, setStatusFilter] = useState('all');
@@ -146,7 +148,10 @@ const ServiceTracker = () => {
   const fetchRecentServices = async () => {
     try {
       const res = await API.get('/service/history');
-      if (res.data.recentServices) setRecentServices(res.data.recentServices);
+      if (res.data.recentServices) {
+        setRecentServices(res.data.recentServices);
+        setServicesData(res.data.recentServices);
+      }
     } catch (err) {
       console.error("Failed to fetch recent services", err);
     }

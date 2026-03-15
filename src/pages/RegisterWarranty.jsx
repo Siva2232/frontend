@@ -29,6 +29,8 @@ const RegisterWarranty = () => {
   const { showSuccess, showError } = useToast();
 
   const [serialNumber, setSerialNumber] = useState("");
+  const [serialLocked, setSerialLocked] = useState(false);
+  const [serialVerified, setSerialVerified] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [registeredData, setRegisteredData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -41,24 +43,73 @@ const RegisterWarranty = () => {
     purchaseShopName: "",
     purchaseDate: "",
   });
+  const [modelLocked, setModelLocked] = useState(false);
+  const [productFetchError, setProductFetchError] = useState("");
 
   useEffect(() => {
-    const serialFromUrl = searchParams.get("serial");
-    if (serialFromUrl) setSerialNumber(serialFromUrl);
+    let serialFromUrl = searchParams.get("serial");
+
+    // Fallback for cases where useSearchParams doesn't pick up the query param immediately
+    if (!serialFromUrl) {
+      const params = new URLSearchParams(window.location.search);
+      serialFromUrl = params.get("serial");
+    }
+
+    if (serialFromUrl) {
+      setSerialNumber(serialFromUrl);
+      setSerialLocked(true);
+      setSerialVerified(false);
+    }
   }, [searchParams]);
+
+  useEffect(() => {
+    if (!serialNumber) {
+      setModelLocked(false);
+      setSerialLocked(false);
+      setSerialVerified(false);
+      setProductFetchError("");
+      setForm((prev) => ({ ...prev, modelNumber: "" }));
+      return;
+    }
+
+    const fetchProduct = async () => {
+      try {
+        setProductFetchError("");
+        const { data } = await API.get(`/products/${encodeURIComponent(serialNumber)}`);
+        setForm((prev) => ({ ...prev, modelNumber: data.modelNumber || "" }));
+        setModelLocked(true);
+      } catch (err) {
+        setProductFetchError(
+          err.response?.data?.message || "Failed to fetch product details."
+        );
+        setModelLocked(false);
+        setForm((prev) => ({ ...prev, modelNumber: "" }));
+      }
+    };
+
+    fetchProduct();
+  }, [serialNumber]);
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   const handleScanSuccess = (result) => {
+    if (serialLocked && result !== serialNumber) {
+      showError("Scanned serial does not match the link. Please scan the correct QR code.");
+      return;
+    }
+
     setSerialNumber(result);
+    setSerialVerified(true);
     setIsScanning(false);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!serialNumber) return showError("Serial number is required");
+    if (productFetchError) return showError("Invalid serial number. Please scan a valid QR code.");
+    if (!serialVerified) return showError("Please scan the QR code to verify the serial number.");
 
     setLoading(true);
     try {
@@ -178,14 +229,24 @@ const RegisterWarranty = () => {
                         </code>
                         <CheckCircle2 className="text-gray-700 w-6 h-6 flex-shrink-0" strokeWidth={2.5} />
                       </div>
+                      {serialLocked && !serialVerified && (
+                        <p className="mt-2 text-sm text-yellow-700">
+                          Serial was provided via link. Please scan the QR code to verify it.
+                        </p>
+                      )}
                     </div>
                     <button
                       type="button"
                       onClick={() => {
+                        if (serialLocked) return;
                         setSerialNumber("");
+                        setSerialVerified(false);
                         setIsScanning(true);
                       }}
-                      className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 hover:border-gray-400 transition-colors whitespace-nowrap"
+                      disabled={serialLocked}
+                      className={`inline-flex items-center gap-2 px-6 py-3 bg-white border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 hover:border-gray-400 transition-colors whitespace-nowrap ${
+                        serialLocked ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
                     >
                       <RefreshCcw className="w-4 h-4" />
                       Change
@@ -252,16 +313,21 @@ const RegisterWarranty = () => {
                     </div>
 
                     <div className="md:col-span-2">
-                      <label className="block text-sm font-semibold text-gray-700 mb-2.5">Model Number (optional)</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2.5">Model Number (auto-filled)</label>
                       <div className="relative">
                         <Hash className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
                         <input
                           name="modelNumber"
-                          placeholder="e.g. PD-X1 Pro 2025"
+                          value={form.modelNumber}
+                          placeholder="Scan QR code to fetch"
                           className="w-full pl-12 pr-5 py-4 bg-white border border-gray-200 rounded-xl focus:border-gray-400 focus:ring-4 focus:ring-gray-100/60 outline-none transition-all text-gray-900 placeholder-gray-400"
                           onChange={handleChange}
+                          readOnly={modelLocked}
                         />
                       </div>
+                      {productFetchError && (
+                        <p className="mt-2 text-sm text-red-600">{productFetchError}</p>
+                      )}
                     </div>
 
                     <div className="md:col-span-2">

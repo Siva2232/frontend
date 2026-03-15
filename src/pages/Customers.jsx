@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import API from "../api/axios";
+import { AuthContext } from "../Context/AuthContext";
 import Navbar from "../components/Navbar";
 import Footer from "../layouts/Footer";
 import ManualWarrantyModal from "../components/ManualWarrantyModal";
@@ -36,7 +37,8 @@ import { useToast } from "../components/Toast";
 const Customers = () => {
   const navigate = useNavigate();
   const { show, showSuccess, showError } = useToast();
-  const [customers, setCustomers] = useState([]);
+  const { customersData, setCustomersData } = useContext(AuthContext);
+  const [customers, setCustomers] = useState(customersData || []);
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
@@ -69,7 +71,9 @@ const Customers = () => {
   const fetchRegistrations = async () => {
     try {
       const { data } = await API.get("/register");
-      setCustomers(data || []);
+      const list = data || [];
+      setCustomers(list);
+      setCustomersData(list);
     } catch (error) {
       console.error("Error fetching customers:", error);
       showError("Failed to load customers");

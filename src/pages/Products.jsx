@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import API from "../api/axios";
+import { AuthContext } from "../Context/AuthContext";
 import Navbar from "../components/Navbar";
 import LabelCard from "../components/LabelCard";
 import Footer from "../layouts/Footer";
@@ -29,6 +30,7 @@ import {
 
 const Products = () => {
   const { show, showSuccess, showError } = useToast();
+  const { productsData, setProductsData } = useContext(AuthContext);
   const [activeMode, setActiveMode] = useState("single"); // 'single' or 'bulk'
   const [form, setForm] = useState({
     productName: "",
@@ -50,10 +52,10 @@ const Products = () => {
   const [qr, setQr] = useState("");
   const [bulkResults, setBulkResults] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [productsLoading, setProductsLoading] = useState(true);
+  const [productsLoading, setProductsLoading] = useState(!productsData || productsData.length === 0);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState(productsData || []);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedQR, setSelectedQR] = useState(null);
   const [isBulkPrintOpen, setIsBulkPrintOpen] = useState(false);
@@ -73,8 +75,10 @@ const Products = () => {
 
   const fetchProducts = async () => {
     try {
+      if (products.length === 0) setProductsLoading(true);
       const { data } = await API.get("/products");
       setProducts(data);
+      setProductsData(data);
     } catch (err) {
       console.error("Failed to fetch products:", err);
     } finally {
