@@ -1,71 +1,50 @@
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../api/axios";
-import { AuthContext } from "../Context/AuthContext";
 import Navbar from "../components/Navbar";
 import Footer from "../layouts/Footer";
 import { Package, Users, ShieldCheck, Loader2, RefreshCw, Calendar, TrendingUp, Search, MoreVertical, Eye, ClipboardList } from "lucide-react";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { dashboardData, setDashboardData, recentRegistrations, setRecentRegistrations } = useContext(AuthContext);
-  
-  const [stats, setStats] = useState(dashboardData || {
+  const [stats, setStats] = useState({
     totalProducts: 0,
     registeredWarranties: 0,
     activeWarranties: 0,
+    recentRegistrations: [],
   });
-  const [registrations, setRegistrations] = useState(recentRegistrations || []);
-  const [loading, setLoading] = useState(false);
-  const [regLoading, setRegLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [filters, setFilters] = useState({
     startDate: "",
     endDate: "",
   });
-  const [quickRange, setQuickRange] = useState("all"); 
+  const [quickRange, setQuickRange] = useState("all"); // 'all', 'today','yesterday','week','month','year','custom'   
 
 
   useEffect(() => {
-    // Top stats call - Only if not in context
-    if (!dashboardData) {
-      fetchStats();
-    } else {
-      setStats(dashboardData);
-    }
-    
-    // Registration Ledger call - Only if not in context
-    if (!recentRegistrations || recentRegistrations.length === 0) {
-      fetchRegistrations();
-    } else {
-      setRegistrations(recentRegistrations);
-    }
-    
-    // Silent background updates every 30s
-    const interval = setInterval(() => {
-      fetchStats(null, true);
-      fetchRegistrations(null, true);
-    }, 30000);
+    fetchStats();
+    // Poll for the latest statistics every 30 seconds
+    const interval = setInterval(fetchStats, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  const fetchStats = async (overrideFilter, isSilent = false) => {
+  const fetchStats = async (overrideFilter) => {
     try {
-      // Logic for showing loading: 
-      // 1. NOT a silent refresh
-      // 2. We have NO cached data
-      if (!isSilent && !dashboardData) setLoading(true);
-      const { data } = await API.get("/stats");
-      
-      const newStats = {
+      if (overrideFilter) setLoading(true); // only block UI for preset changes
+      const queryParams = new URLSearchParams();
+      const { startDate, endDate } = overrideFilter || filters;
+      if (startDate) queryParams.append("startDate", startDate);
+      if (endDate) queryParams.append("endDate", endDate);
+
+      const { data } = await API.get(`/stats?${queryParams.toString()}`);
+      setStats({
         totalProducts: data.totalProducts || 0,
         registeredWarranties: data.registeredWarranties || 0,
         activeWarranties: data.activeWarranties || 0,
-      };
-
-      setStats(newStats);
-      setDashboardData(newStats);
+        recentRegistrations: data.recentRegistrations || [],
+      });
       setError("");
     } catch (err) {
       console.error("Error fetching stats:", err);
@@ -75,59 +54,25 @@ const Dashboard = () => {
     }
   };
 
-  const fetchRegistrations = async (overrideFilter, isSilent = false) => {
-    try {
-      // High Performance Caching check
-      const hasCachedData = recentRegistrations && recentRegistrations.length > 0;
-      const isManualAction = overrideFilter && (overrideFilter.startDate || overrideFilter.endDate);
-      
-      // ONLY show loading if we have ABSOLUTELY no data OR user manually filtered
-      if (!isSilent && (!hasCachedData || isManualAction)) {
-        setRegLoading(true);
-      }
-      
-      const queryParams = new URLSearchParams();
-      const currentFilters = overrideFilter || filters;
-      if (currentFilters.startDate) queryParams.append("startDate", currentFilters.startDate);
-      if (currentFilters.endDate) queryParams.append("endDate", currentFilters.endDate);
-      queryParams.append("limit", "10"); // Dashboard only needs the top 10 for maximum speed
-
-      // Switched to the more efficient/standard base endpoint
-      const { data } = await API.get(`/registrations?${queryParams.toString()}`);
-      
-      setRegistrations(data);
-      // Cache the "Global" state (no dates/filters) to keep re-navigation instant
-      if (!currentFilters.startDate && !currentFilters.endDate) {
-        setRecentRegistrations(data);
-      }
-    } catch (err) {
-      console.error("Ledger Sync Error:", err);
-    } finally {
-      setRegLoading(false);
-    }
-  };
-
   const handleFilterChange = (e) => {
-    const newFilters = { ...filters, [e.target.name]: e.target.value };
-    setFilters(newFilters);
-    setQuickRange('custom'); // Switch to custom when manual dates are used
-    fetchRegistrations(newFilters);
+    setFilters((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    setQuickRange('all'); // clear quick range when manual date changed
   };
 
-  // Replace manual useEffect for quickRange to call fetchRegistrations instead
+  // whenever quickRange updates, compute corresponding start/end
   useEffect(() => {
     if (quickRange === 'all') {
-      const emptyFilters = { startDate: '', endDate: '' };
-      setFilters(emptyFilters);
-      fetchRegistrations(emptyFilters);
+      setFilters({ startDate: '', endDate: '' });
+      fetchStats({ startDate: '', endDate: '' });
       return;
     }
-    if (quickRange === 'custom') return;
-
+    if (quickRange === 'custom') {
+      // keep whatever manual dates are set, don't auto-fetch
+      return;
+    }
     const now = new Date();
     let start = new Date(now);
     let end = new Date(now);
-    // ... logic remains same, just call fetchRegistrations at the end
     switch (quickRange) {
       case 'today':
         break; // start/end today
@@ -150,8 +95,8 @@ const Dashboard = () => {
     const toISO = (d) => d.toISOString().split('T')[0];
     const newFilters = { startDate: toISO(start), endDate: toISO(end) };
     setFilters(newFilters);
-    // immediately fetch registrations with calculated range
-    fetchRegistrations(newFilters);
+    // immediately fetch with calculated range
+    fetchStats(newFilters);
   }, [quickRange]);
 
 
@@ -282,7 +227,7 @@ const Dashboard = () => {
               
               <div className="flex gap-2">
                 <button 
-                  onClick={() => fetchRegistrations()}
+                  onClick={fetchStats}
                   className="bg-slate-900 text-white text-xs font-bold px-5 py-2 rounded-xl hover:bg-blue-600 transition-colors shadow-sm"
                 >
                   Apply Filters
@@ -290,10 +235,8 @@ const Dashboard = () => {
                 {(filters.startDate || filters.endDate) && (
                   <button 
                     onClick={() => {
-                      const emptyFilters = { startDate: "", endDate: "" };
-                      setFilters(emptyFilters);
-                      setQuickRange('all');
-                      fetchRegistrations(emptyFilters);
+                      setFilters({ startDate: "", endDate: "" });
+                      setTimeout(fetchStats, 0);
                     }}
                     className="text-xs text-slate-400 font-bold hover:text-red-500 px-2 transition-colors"
                   >
@@ -305,12 +248,12 @@ const Dashboard = () => {
           </div>
 
           <div className="overflow-x-auto">
-            {regLoading ? (
+            {loading ? (
               <div className="py-24 flex flex-col items-center justify-center opacity-50">
                 <Loader2 className="w-8 h-8 text-blue-600 animate-spin mb-3" />
                 <p className="text-sm font-medium text-slate-500 tracking-wide uppercase">Syncing Database...</p>
               </div>
-            ) : !registrations || registrations.length === 0 ? (
+            ) : !stats.recentRegistrations || stats.recentRegistrations.length === 0 ? (
               <div className="py-24 text-center">
                 <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
                   <Search className="w-8 h-8 text-slate-200" />
@@ -330,7 +273,7 @@ const Dashboard = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {registrations.map((reg) => (
+                  {stats.recentRegistrations.map((reg) => (
                     <tr key={reg._id} className="group hover:bg-slate-50/80 transition-all">
                       <td className="px-8 py-5">
                         <div className="flex items-center gap-3">

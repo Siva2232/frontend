@@ -7,13 +7,6 @@ export const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [admin, setAdmin] = useState(null);
   const [loading, setLoading] = useState(true);
-  
-  // Shared data cache
-  const [dashboardData, setDashboardData] = useState(null);
-  const [recentRegistrations, setRecentRegistrations] = useState([]);
-  const [productsData, setProductsData] = useState([]);
-  const [customersData, setCustomersData] = useState([]);
-  const [servicesData, setServicesData] = useState([]);
 
   // Check token on page load
   useEffect(() => {
@@ -63,16 +56,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      admin, 
-      login, 
-      logout, 
-      loading,
-      dashboardData, setDashboardData,
-      productsData, setProductsData,
-      customersData, setCustomersData,
-      servicesData, setServicesData
-    }}>
+    <AuthContext.Provider value={{ admin, login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );
