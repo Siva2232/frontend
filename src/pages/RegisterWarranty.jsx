@@ -34,6 +34,7 @@ const RegisterWarranty = () => {
   const [serialLocked, setSerialLocked] = useState(false);
   const [serialVerified, setSerialVerified] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
+  const [isManualEntry, setIsManualEntry] = useState(false);
   const [registeredData, setRegisteredData] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -200,18 +201,64 @@ const RegisterWarranty = () => {
                   </p>
 
                   {!isScanning ? (
-                    <button
-                      onClick={() => {
-                        setIsScanning(true);
-                        setSerialVerified(false);
-                      }}
-                      className="inline-flex items-center gap-3 px-9 py-5 bg-gray-900 text-white font-medium rounded-2xl shadow-lg hover:bg-black transition-all active:scale-[0.97] text-lg"
-                    >
-                      <Camera className="w-6 h-6" />
-                      Open Scanner
-                    </button>
+                    <div className="flex flex-col gap-4">
+                      <button
+                        onClick={() => {
+                          setIsScanning(true);
+                          setSerialVerified(false);
+                          setIsManualEntry(false);
+                        }}
+                        className="inline-flex items-center gap-3 px-9 py-5 bg-gray-900 text-white font-medium rounded-2xl shadow-lg hover:bg-black transition-all active:scale-[0.97] text-lg"
+                      >
+                        <Camera className="w-6 h-6" />
+                        Open Scanner
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsManualEntry(true);
+                          setIsScanning(false);
+                        }}
+                        className="inline-flex items-center gap-3 px-9 py-5 bg-gray-200 text-gray-700 font-medium rounded-2xl shadow-lg hover:bg-gray-300 transition-all active:scale-[0.97] text-lg"
+                      >
+                        <Hash className="w-6 h-6" />
+                        Enter Manually
+                      </button>
+                    </div>
+                  ) : isManualEntry ? (
+                    <div className="w-full max-w-md mx-auto space-y-6">
+                      <input
+                        type="text"
+                        placeholder="Enter serial number"
+                        value={serialNumber}
+                        onChange={(e) => setSerialNumber(e.target.value)}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:border-gray-400 focus:ring-4 focus:ring-gray-100/60 outline-none"
+                      />
+                      <div className="flex gap-4 justify-center">
+                        <button
+                          onClick={() => {
+                            if (serialNumber.trim()) {
+                              setSerialVerified(true);
+                              setIsManualEntry(false);
+                              showSuccess("Serial number entered successfully.");
+                            } else {
+                              showError("Please enter a valid serial number.");
+                            }
+                          }}
+                          className="inline-flex items-center gap-3 px-6 py-3 bg-gray-900 text-white font-medium rounded-xl hover:bg-black transition-all"
+                        >
+                          Confirm
+                        </button>
+                        <button
+                          onClick={() => setIsManualEntry(false)}
+                          className="inline-flex items-center gap-3 px-6 py-3 bg-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-300 transition-all"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
                   ) : (
                     <div className="w-full max-w-md mx-auto space-y-6">
+                        setIsManualEntry(false);
                       <div className="rounded-2xl overflow-hidden border-4 border-gray-200 bg-black aspect-square shadow-2xl">
                         <QRScanner
                           onScanSuccess={handleScanSuccess}
