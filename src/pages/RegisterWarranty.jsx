@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import API from "../api/axios";
 import QRScanner from "../components/QRScanner";
 import WarrantyCertificate from "../components/WarrantyCertificate";
@@ -27,8 +27,9 @@ const normalizeSerial = (value = "") => value.trim().replace(/^SERIAL\s*:\s*/i, 
 
 const RegisterWarranty = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const location = useLocation();
   const { showSuccess, showError } = useToast();
+  const urlSerialRef = useRef(null);
 
   const [serialNumber, setSerialNumber] = useState("");
   const [serialLocked, setSerialLocked] = useState(false);
@@ -50,21 +51,24 @@ const RegisterWarranty = () => {
   const [productFetchError, setProductFetchError] = useState("");
 
   useEffect(() => {
-    let serialFromUrl = searchParams.get("serial");
-
-    // Fallback for cases where useSearchParams doesn't pick up the query param immediately
-    if (!serialFromUrl) {
-      const params = new URLSearchParams(window.location.search);
-      serialFromUrl = params.get("serial");
-    }
+    const params = new URLSearchParams(location.search);
+    const serialFromUrl = params.get("serial");
 
     if (serialFromUrl) {
-      setSerialNumber(normalizeSerial(serialFromUrl));
+      const normalized = normalizeSerial(serialFromUrl);
+      urlSerialRef.current = normalized;
+      setSerialNumber(normalized);
       setSerialLocked(true);
       setSerialVerified(false);
       setIsScanning(false);
+      return;
     }
-  }, [searchParams]);
+
+    // Clear lock if query param is removed
+    urlSerialRef.current = null;
+    setSerialLocked(false);
+    setSerialVerified(false);
+  }, [location.search]);
 
   useEffect(() => {
     if (!serialNumber) {
@@ -100,29 +104,37 @@ const RegisterWarranty = () => {
 
   const handleScanSuccess = (result) => {
     const normalizedResult = normalizeSerial(result);
-    const normalizedCurrentSerial = normalizeSerial(serialNumber);
 
-    if (serialLocked && normalizedCurrentSerial && normalizedResult !== normalizedCurrentSerial) {
-      showError("Scanned serial does not match the link. Please scan the correct QR code.");
-      return;
-    }
+    if (urlSerialRef.current) {
+      if (normalizedResult !== urlSerialRef.current) {
+        showError("Scanned serial does not match the link. Please scan the correct QR code.");
+        return;
+      }
 
-    if (serialLocked) {
       setSerialVerified(true);
       setIsScanning(false);
       showSuccess("QR code verified successfully!");
-    } else {
-      setSerialNumber(normalizedResult);
-      setIsScanning(false);
-      showSuccess("QR code scanned successfully.");
+      return;
     }
+
+    setSerialNumber(normalizedResult);
+    setIsScanning(false);
+    showSuccess("QR code scanned successfully.");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!serialNumber) return showError("Serial number is required");
     if (productFetchError) return showError("Invalid serial number. Please enter a valid serial number.");
-    if (serialLocked && !serialVerified) return showError("Please scan the QR code to verify the serial number.");
+
+    if (urlSerialRef.current) {
+      if (serialNumber !== urlSerialRef.current) {
+        return showError("Serial number has been modified. Please use the QR link or scan the code again.");
+      }
+      if (!serialVerified) {
+        return showError("Please scan the QR code to verify the serial number.");
+      }
+    }
 
     setLoading(true);
     try {
