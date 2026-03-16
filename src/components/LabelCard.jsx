@@ -19,9 +19,9 @@ const LabelCard = ({ product, small = false, className = "" }) => {
 
   const qrStyle = small
     ? {
-        width: "15mm",
-        height: "15mm",
-        minWidth: "15mm",
+        width: "13.5mm",
+        height: "13.5mm",
+        minWidth: "13.5mm",
       }
     : {
         width: "160px",
@@ -77,7 +77,7 @@ const LabelCard = ({ product, small = false, className = "" }) => {
         <img
           src={product.qrCodeUrl}
           alt="QR"
-          className="w-full h-full object-contain print:max-w-none scale-105"
+          className="w-full h-full object-contain print:max-w-none"
         />
       </div>
 

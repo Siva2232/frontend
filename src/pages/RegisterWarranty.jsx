@@ -23,6 +23,8 @@ import {
   Loader2,
 } from "lucide-react";
 
+const normalizeSerial = (value = "") => value.trim().replace(/^SERIAL\s*:\s*/i, "");
+
 const RegisterWarranty = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -56,9 +58,10 @@ const RegisterWarranty = () => {
     }
 
     if (serialFromUrl) {
-      setSerialNumber(serialFromUrl);
+      setSerialNumber(normalizeSerial(serialFromUrl));
       setSerialLocked(true);
-      setSerialVerified(false);
+      setSerialVerified(true);
+      setIsScanning(false);
     }
   }, [searchParams]);
 
@@ -95,14 +98,18 @@ const RegisterWarranty = () => {
   };
 
   const handleScanSuccess = (result) => {
-    if (serialLocked && result !== serialNumber) {
+    const normalizedResult = normalizeSerial(result);
+    const normalizedCurrentSerial = normalizeSerial(serialNumber);
+
+    if (serialLocked && normalizedCurrentSerial && normalizedResult !== normalizedCurrentSerial) {
       showError("Scanned serial does not match the link. Please scan the correct QR code.");
       return;
     }
 
-    setSerialNumber(result);
+    setSerialNumber(normalizedResult);
     setSerialVerified(true);
     setIsScanning(false);
+    showSuccess("QR code scanned successfully.");
   };
 
   const handleSubmit = async (e) => {
@@ -194,7 +201,10 @@ const RegisterWarranty = () => {
 
                   {!isScanning ? (
                     <button
-                      onClick={() => setIsScanning(true)}
+                      onClick={() => {
+                        setIsScanning(true);
+                        setSerialVerified(false);
+                      }}
                       className="inline-flex items-center gap-3 px-9 py-5 bg-gray-900 text-white font-medium rounded-2xl shadow-lg hover:bg-black transition-all active:scale-[0.97] text-lg"
                     >
                       <Camera className="w-6 h-6" />
@@ -203,7 +213,10 @@ const RegisterWarranty = () => {
                   ) : (
                     <div className="w-full max-w-md mx-auto space-y-6">
                       <div className="rounded-2xl overflow-hidden border-4 border-gray-200 bg-black aspect-square shadow-2xl">
-                        <QRScanner onScanSuccess={handleScanSuccess} />
+                        <QRScanner
+                          onScanSuccess={handleScanSuccess}
+                          onScanError={showError}
+                        />
                       </div>
                       <button
                         onClick={() => setIsScanning(false)}
@@ -229,29 +242,47 @@ const RegisterWarranty = () => {
                         </code>
                         <CheckCircle2 className="text-gray-700 w-6 h-6 flex-shrink-0" strokeWidth={2.5} />
                       </div>
-                      {serialLocked && !serialVerified && (
+                      {serialVerified ? (
+                        <p className="mt-2 text-sm text-emerald-700">
+                          QR code verified. You can continue with warranty registration.
+                        </p>
+                      ) : (
                         <p className="mt-2 text-sm text-yellow-700">
-                          Serial was provided via link. Please scan the QR code to verify it.
+                          Please scan the QR code once to verify the serial number.
                         </p>
                       )}
                     </div>
                     <button
                       type="button"
                       onClick={() => {
-                        if (serialLocked) return;
-                        setSerialNumber("");
                         setSerialVerified(false);
                         setIsScanning(true);
                       }}
-                      disabled={serialLocked}
-                      className={`inline-flex items-center gap-2 px-6 py-3 bg-white border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 hover:border-gray-400 transition-colors whitespace-nowrap ${
-                        serialLocked ? "opacity-50 cursor-not-allowed" : ""
-                      }`}
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 hover:border-gray-400 transition-colors whitespace-nowrap"
                     >
                       <RefreshCcw className="w-4 h-4" />
-                      Change
+                      Scan Again
                     </button>
                   </div>
+
+                  {isScanning && (
+                    <div className="space-y-4 rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                      <div className="rounded-2xl overflow-hidden border-4 border-gray-200 bg-black aspect-square shadow-xl max-w-md mx-auto">
+                        <QRScanner
+                          onScanSuccess={handleScanSuccess}
+                          onScanError={showError}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsScanning(false)}
+                        className="flex items-center gap-2 text-gray-500 hover:text-gray-800 mx-auto transition-colors font-medium"
+                      >
+                        <AlertCircle className="w-4 h-4" />
+                        Cancel Scanner
+                      </button>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-7">
                     <div className="md:col-span-2">
