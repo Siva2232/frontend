@@ -61,7 +61,7 @@ const RegisterWarranty = () => {
     if (serialFromUrl) {
       setSerialNumber(normalizeSerial(serialFromUrl));
       setSerialLocked(true);
-      setSerialVerified(true);
+      setSerialVerified(false);
       setIsScanning(false);
     }
   }, [searchParams]);
@@ -107,17 +107,22 @@ const RegisterWarranty = () => {
       return;
     }
 
-    setSerialNumber(normalizedResult);
-    setSerialVerified(true);
-    setIsScanning(false);
-    showSuccess("QR code scanned successfully.");
+    if (serialLocked) {
+      setSerialVerified(true);
+      setIsScanning(false);
+      showSuccess("QR code verified successfully!");
+    } else {
+      setSerialNumber(normalizedResult);
+      setIsScanning(false);
+      showSuccess("QR code scanned successfully.");
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!serialNumber) return showError("Serial number is required");
-    if (productFetchError) return showError("Invalid serial number. Please scan a valid QR code.");
-    if (!serialVerified) return showError("Please scan the QR code to verify the serial number.");
+    if (productFetchError) return showError("Invalid serial number. Please enter a valid serial number.");
+    if (serialLocked && !serialVerified) return showError("Please scan the QR code to verify the serial number.");
 
     setLoading(true);
     try {
@@ -237,7 +242,6 @@ const RegisterWarranty = () => {
                         <button
                           onClick={() => {
                             if (serialNumber.trim()) {
-                              setSerialVerified(true);
                               setIsManualEntry(false);
                               showSuccess("Serial number entered successfully.");
                             } else {
@@ -258,7 +262,6 @@ const RegisterWarranty = () => {
                     </div>
                   ) : (
                     <div className="w-full max-w-md mx-auto space-y-6">
-                        setIsManualEntry(false);
                       <div className="rounded-2xl overflow-hidden border-4 border-gray-200 bg-black aspect-square shadow-2xl">
                         <QRScanner
                           onScanSuccess={handleScanSuccess}
@@ -289,26 +292,31 @@ const RegisterWarranty = () => {
                         </code>
                         <CheckCircle2 className="text-gray-700 w-6 h-6 flex-shrink-0" strokeWidth={2.5} />
                       </div>
-                      {serialVerified ? (
-                        <p className="mt-2 text-sm text-emerald-700">
-                          QR code verified. You can continue with warranty registration.
-                        </p>
-                      ) : (
-                        <p className="mt-2 text-sm text-yellow-700">
-                          Please scan the QR code once to verify the serial number.
-                        </p>
-                      )}
+                      {serialLocked ? (
+                        serialVerified ? (
+                          <p className="mt-2 text-sm text-emerald-700">
+                            QR code verified. You can continue with warranty registration.
+                          </p>
+                        ) : (
+                          <p className="mt-2 text-sm text-yellow-700">
+                            Please scan the QR code once to verify the serial number.
+                          </p>
+                        )
+                      ) : null}
                     </div>
                     <button
                       type="button"
                       onClick={() => {
-                        setSerialVerified(false);
+                        if (serialLocked) {
+                          setSerialVerified(false);
+                        }
                         setIsScanning(true);
+                        setIsManualEntry(false);
                       }}
                       className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 hover:border-gray-400 transition-colors whitespace-nowrap"
                     >
                       <RefreshCcw className="w-4 h-4" />
-                      Scan Again
+                      {serialLocked ? "Verify" : "Scan Again"}
                     </button>
                   </div>
 
@@ -437,20 +445,16 @@ const RegisterWarranty = () => {
                   >
                     {loading ? (
                       <>
-                        <Loader2 className="w-6 h-6 animate-spin" />
-                        Processing...
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Registering...
                       </>
                     ) : (
                       <>
-                        Activate Warranty
-                        <CheckCircle2 className="w-6 h-6" strokeWidth={2.5} />
+                        <ShieldCheck className="w-5 h-5" />
+                        Register Warranty
                       </>
                     )}
                   </button>
-
-                  <p className="text-center text-sm text-gray-500 mt-6">
-                    Your data is secure and used only for warranty purposes.
-                  </p>
                 </form>
               )}
             </div>
