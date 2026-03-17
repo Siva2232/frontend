@@ -153,6 +153,7 @@ const ServiceTracker = () => {
     modelNumber: '',
     customerName: '',
     phone: '',
+    shopName: '',
     issueDescription: '',
     serviceCost: 0,
     technicianNotes: ''
@@ -172,6 +173,7 @@ const ServiceTracker = () => {
         serialNumber: res.data.registration?.serialNumber || query.trim(),
         customerName: res.data.registration?.customerName || '',
         phone: res.data.registration?.phone || '',
+        shopName: res.data.registration?.purchaseShopName || '',
         modelNumber: res.data.registration?.modelNumber || ''
       }));
     } catch (err) {
@@ -379,9 +381,9 @@ const ServiceTracker = () => {
                   'bg-gradient-to-br from-slate-50 to-slate-100 border-slate-200 text-slate-600'
                 }`}>
                   {data.stats.warrantyStatus}
-                  {data.stats.expiryDate && (
+                  {(data.stats.expiryDate || data.registration?.expiryDate) && (
                     <div className="mt-2 text-sm font-semibold opacity-90">
-                      Expires: {new Date(data.stats.expiryDate).toLocaleDateString('en-IN')}
+                      Expires: {new Date(data.registration?.expiryDate || data.stats.expiryDate).toLocaleDateString('en-IN')}
                     </div>
                   )}
                 </div>
@@ -456,6 +458,11 @@ const ServiceTracker = () => {
                         </div>
 
                         <p className="text-slate-800 font-medium mb-4">{record.issueDescription}</p>
+
+                        <div className="mb-4 text-sm">
+                          <div className="text-xs text-slate-500 uppercase mb-1">Shop</div>
+                          <div className="font-semibold text-slate-800">{normalizeName(record.shopName) || '—'}</div>
+                        </div>
 
                         <div className="mb-4 text-sm">
                           <div className="text-xs text-slate-500 uppercase mb-1">Technician</div>
@@ -746,6 +753,27 @@ const ServiceTracker = () => {
                     className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm"
                     value={newEntry.customerName}
                     onChange={e => setNewEntry({ ...newEntry, customerName: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div>
+                  <label className="text-xs font-semibold text-slate-600 uppercase mb-1.5 block">Shop Name</label>
+                  <input
+                    className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm"
+                    value={newEntry.shopName}
+                    onChange={e => setNewEntry({ ...newEntry, shopName: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-600 uppercase mb-1.5 block">Phone *</label>
+                  <input
+                    className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm"
+                    value={newEntry.phone}
+                    onChange={e => setNewEntry({ ...newEntry, phone: e.target.value })}
                     required
                   />
                 </div>

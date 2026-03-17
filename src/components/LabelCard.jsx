@@ -34,7 +34,7 @@ const LabelCard = ({ product, small = false, className = "" }) => {
       style={containerStyle}
     >
       {/* TEXT SIDE */}
-      <div className="flex flex-col justify-center leading-[1.1] pl-[2mm] pr-[1mm] overflow-hidden flex-1">
+      <div className="flex flex-col justify-center leading-[1.1] pl-[2mm] pr-[1mm] overflow-hidden flex-1 min-w-0">
         
         <span
           className="truncate font-bold tracking-tight"
@@ -86,11 +86,24 @@ const LabelCard = ({ product, small = false, className = "" }) => {
           .label-print-container {
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
+            /* Ensure labels don't get cut off when a page break occurs */
+            page-break-inside: avoid;
+            break-inside: avoid;
+            overflow: visible !important;
           }
+
           /* Ensure text doesn't shrink or wrap unexpectedly in print */
           .label-print-container span {
             display: block !important;
             white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          /* Avoid browsers scaling/overflowing QR image on print */
+          .label-print-container img {
+            max-width: 100% !important;
+            max-height: 100% !important;
           }
         }
       `}</style>

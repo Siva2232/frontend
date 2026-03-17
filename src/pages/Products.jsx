@@ -159,7 +159,7 @@ const Products = () => {
     if (!serial) return "";
     const match = serial.match(/^(.*?)(\d+)$/);
     if (!match) {
-      return `${serial}1`;
+      return `${serial}01`;
     }
     const [, prefix, digits] = match;
     const nextNum = String(Number(digits) + 1).padStart(digits.length, "0");
