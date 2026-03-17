@@ -24,13 +24,11 @@ const normalizeScannedValue = (decodedText) => {
 };
 
 const QRScanner = ({ onScanSuccess, onScanError }) => {
-  const html5QrCodeRef = useRef(null);
-  const hasScannedRef = useRef(false);
-  const scannerId = useId().replace(/:/g, "-");
+  const containerId = useId().replace(/:/g, "-");
 
   useEffect(() => {
-    const html5QrCode = new Html5Qrcode(scannerId);
-    html5QrCodeRef.current = html5QrCode;
+    let html5QrCode;
+    let isAttached = true;
 
     const config = {
       fps: 12,
@@ -42,54 +40,44 @@ const QRScanner = ({ onScanSuccess, onScanError }) => {
       formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
       videoConstraints: {
         facingMode: { ideal: "environment" },
-        width: { ideal: 1920 },
-        height: { ideal: 1080 },
       },
     };
 
-    const onScan = (decodedText) => {
-      if (hasScannedRef.current) {
-        return;
-      }
-
+    const onScan = async (decodedText) => {
+      if (!isAttached) return;
       const serial = normalizeScannedValue(decodedText);
-      if (!serial) {
-        return;
-      }
+      if (!serial) return;
 
-      hasScannedRef.current = true;
-      html5QrCode
-        .stop()
-        .then(() => {
-          onScanSuccess(serial);
-        })
-        .catch((error) => {
-          console.error("Error stopping scanner", error);
-          onScanSuccess(serial);
-        });
+      isAttached = false;
+      
+      try {
+        if (html5QrCode && html5QrCode.isScanning) {
+          await html5QrCode.stop();
+        }
+      } catch (error) {
+        console.error("Error stopping scanner on scan:", error);
+      } finally {
+        onScanSuccess(serial);
+      }
     };
 
     const startScanner = async () => {
       try {
+        html5QrCode = new Html5Qrcode(containerId);
         await html5QrCode.start({ facingMode: "environment" }, config, onScan);
-      } catch (primaryError) {
-        console.error("Scanner start error:", primaryError);
-
+      } catch (err) {
+        console.warn("Camera start failed, retrying with all cameras:", err);
+        if (!isAttached) return;
+        
         try {
           const cameras = await Html5Qrcode.getCameras();
-          const fallbackCamera = cameras.find((camera) =>
-            /back|rear|environment/i.test(camera.label)
-          ) || cameras[0];
-
-          if (!fallbackCamera) {
-            throw new Error("No camera devices found");
+          if (cameras && cameras.length > 0 && isAttached) {
+            await html5QrCode.start(cameras[0].id, config, onScan);
+          } else {
+            onScanError?.("No camera found or permission denied.");
           }
-
-          await html5QrCode.start(fallbackCamera.id, config, onScan);
-        } catch (fallbackError) {
-          console.error("Fallback scanner start error:", fallbackError);
-          hasScannedRef.current = false;
-          onScanError?.("Unable to start the camera. Please allow camera access and try again.");
+        } catch (fallbackErr) {
+          onScanError?.("Could not start camera.");
         }
       }
     };
@@ -97,38 +85,18 @@ const QRScanner = ({ onScanSuccess, onScanError }) => {
     startScanner();
 
     return () => {
-      hasScannedRef.current = false;
-
-      if (html5QrCode.isScanning) {
-        html5QrCode.stop().catch((error) => console.error("Cleanup error:", error));
+      isAttached = false;
+      if (html5QrCode) {
+        if (html5QrCode.isScanning) {
+          html5QrCode.stop().catch(err => console.error("Cleanup stop failed:", err));
+        }
       }
-
-      html5QrCode.clear().catch(() => {});
     };
-  }, [onScanError, onScanSuccess, scannerId]);
-
-  const tryFocus = () => {
-    const html5QrCode = html5QrCodeRef.current;
-    if (!html5QrCode) return;
-
-    const track = html5QrCode.getRunningTrack?.();
-    if (!track) return;
-
-    track
-      .applyConstraints({ advanced: [{ focusMode: "continuous" }, { focusMode: "auto" }] })
-      .catch(() => {
-        // ignore unsupported focus constraints
-      });
-  };
+  }, [containerId, onScanSuccess, onScanError]);
 
   return (
-    <div className="w-full flex justify-center">
-      <div
-        id={scannerId}
-        className="w-full max-w-md overflow-hidden rounded-2xl"
-        onClick={tryFocus}
-        title="Tap to refocus the camera"
-      />
+    <div className="relative w-full aspect-square bg-black overflow-hidden rounded-xl">
+      <div id={containerId} className="w-full h-full" />
     </div>
   );
 };

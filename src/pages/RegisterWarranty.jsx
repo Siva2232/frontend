@@ -50,12 +50,24 @@ const RegisterWarranty = () => {
   const [productFetchError, setProductFetchError] = useState("");
 
   useEffect(() => {
+    // Prefer explicit serial param if present for backwards compatibility.
     let serialFromUrl = searchParams.get("serial");
 
-    // Fallback for cases where useSearchParams doesn't pick up the query param immediately
-    if (!serialFromUrl) {
-      const params = new URLSearchParams(window.location.search);
-      serialFromUrl = params.get("serial");
+    // Support encoded serial via "s" (base64) for privacy.
+    const encoded = searchParams.get("s");
+    if (!serialFromUrl && encoded) {
+      try {
+        serialFromUrl = atob(encoded);
+      } catch {
+        serialFromUrl = null;
+      }
+    }
+
+    // Optionally set model from URL (for better UX in case it is passed)
+    const modelFromUrl = searchParams.get("model");
+    if (modelFromUrl) {
+      setForm((prev) => ({ ...prev, modelNumber: modelFromUrl }));
+      setModelLocked(Boolean(modelFromUrl));
     }
 
     if (serialFromUrl) {
@@ -218,16 +230,7 @@ const RegisterWarranty = () => {
                         <Camera className="w-6 h-6" />
                         Open Scanner
                       </button>
-                      <button
-                        onClick={() => {
-                          setIsManualEntry(true);
-                          setIsScanning(false);
-                        }}
-                        className="inline-flex items-center gap-3 px-9 py-5 bg-gray-200 text-gray-700 font-medium rounded-2xl shadow-lg hover:bg-gray-300 transition-all active:scale-[0.97] text-lg"
-                      >
-                        <Hash className="w-6 h-6" />
-                        Enter Manually
-                      </button>
+                     
                     </div>
                   ) : isManualEntry ? (
                     <div className="w-full max-w-md mx-auto space-y-6">

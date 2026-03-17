@@ -1174,7 +1174,7 @@ const Products = () => {
 
                 <div className="mt-4 pt-4 border-t border-slate-50 print:hidden">
                   <a 
-                    href={`/customer-home?serial=${selectedQR.serialNumber}`}
+                    href={`/customer-home?model=${encodeURIComponent(selectedQR.modelNumber)}&s=${btoa(selectedQR.serialNumber)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-600 text-[9px] font-black uppercase tracking-widest hover:underline flex items-center justify-center gap-1.5"

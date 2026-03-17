@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import API from "../api/axios";
 import {
   ShieldCheck,
   MessageCircle,
@@ -16,7 +17,10 @@ const supportCategories = [
     description: "Register your warranty",
     icon: ShieldCheck,
     color: "from-amber-500/10 to-amber-600/5",
-    link: (serial) => `/register-warranty?serial=${serial || ""}`,
+    link: (serial, model = "") => {
+      const encoded = serial ? btoa(serial) : "";
+      return `/register-warranty?model=${encodeURIComponent(model || "")}&s=${encoded}`;
+    },
   },
   {
     title: "WhatsApp Support",
@@ -49,8 +53,29 @@ const faqs = [
 export default function CustomerSupport() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const serial = searchParams.get("serial");
+  const serialParam = searchParams.get("serial");
+  const encodedSerial = searchParams.get("s");
+  const [model, setModel] = useState(searchParams.get("model") || "");
+  const serial = serialParam || (encodedSerial ? (() => {
+    try { return atob(encodedSerial); } catch { return null; }
+  })() : null);
   const [openFaq, setOpenFaq] = useState(null);
+
+  useEffect(() => {
+    if (!serial || model) return;
+
+    // Try to fetch model data based on serial for better UX + link generation.
+    const fetchModel = async () => {
+      try {
+        const { data } = await API.get(`/products/${encodeURIComponent(serial)}`);
+        if (data?.modelNumber) setModel(data.modelNumber);
+      } catch (err) {
+        // ignore errors; model is optional
+      }
+    };
+
+    fetchModel();
+  }, [serial, model]);
 
   return (
     <div className="min-h-screen bg-white">
@@ -76,125 +101,104 @@ export default function CustomerSupport() {
         </div>
       </div>
 
-      <main className="max-w-7xl mx-auto px-6 lg:px-12 py-16 md:py-20 lg:py-24">
-        {/* Support Categories – now only 2 cards */}
-        <div className="grid sm:grid-cols-1 lg:grid-cols-2 gap-6 md:gap-10 max-w-4xl mx-auto">
-          {supportCategories.map((cat) => (
-            <a
-              key={cat.title}
-              href={cat.link(serial)}
-              target={cat.link().startsWith("http") ? "_blank" : undefined}
-              rel={cat.link().startsWith("http") ? "noopener noreferrer" : undefined}
-              onClick={(e) => {
-                if (cat.link(serial) !== "#" && !cat.link().startsWith("http")) {
-                  e.preventDefault();
-                  navigate(cat.link(serial));
-                }
-              }}
+     <main className="max-w-7xl mx-auto px-6 lg:px-12 py-16 md:py-20 lg:py-24">
+  {/* Support Categories – now only 2 cards */}
+  <div className="grid sm:grid-cols-1 lg:grid-cols-2 gap-6 md:gap-10 max-w-4xl mx-auto">
+    {supportCategories.map((cat) => {
+      const href = cat.link(serial, model);
+      const isExternal = href.startsWith("http");
+
+      return (
+        <a
+          key={cat.title}
+          href={href}
+          target={isExternal ? "_blank" : undefined}
+          rel={isExternal ? "noopener noreferrer" : undefined}
+          onClick={(e) => {
+            if (!isExternal) {
+              e.preventDefault();
+              navigate(href);
+            }
+          }}
+          className={`
+            group relative overflow-hidden rounded-2xl border border-gray-100 
+            bg-gradient-to-br ${cat.color} p-8 md:p-10 transition-all duration-300
+            hover:shadow-xl hover:shadow-black/5 hover:-translate-y-1 cursor-pointer
+            ${cat.highlight ? "ring-2 ring-green-400/50 shadow-green-600/15 scale-[1.02]" : ""}
+          `}
+        >
+          <div className="mb-6">
+            <div
               className={`
-                group relative overflow-hidden rounded-2xl border border-gray-100 
-                bg-gradient-to-br ${cat.color} p-8 md:p-10 transition-all duration-300
-                hover:shadow-xl hover:shadow-black/5 hover:-translate-y-1 cursor-pointer
-                ${cat.highlight ? "ring-2 ring-green-400/50 shadow-green-600/15 scale-[1.02]" : ""}
+                inline-flex h-14 w-14 items-center justify-center rounded-xl 
+                bg-gradient-to-br from-gray-900 to-gray-800 text-white shadow-lg
+                transition-transform group-hover:scale-110
               `}
             >
-              <div className="mb-6">
-                <div
-                  className={`
-                    inline-flex h-14 w-14 items-center justify-center rounded-xl 
-                    bg-gradient-to-br from-gray-900 to-gray-800 text-white shadow-lg
-                    transition-transform group-hover:scale-110
-                  `}
-                >
-                  <cat.icon size={28} strokeWidth={2} />
-                </div>
-              </div>
-
-              <h3 className="text-2xl font-bold text-gray-900 mb-3 group-hover:text-green-700 transition-colors">
-                {cat.title}
-              </h3>
-              <p className="text-gray-600 text-base leading-relaxed mb-10 group-hover:text-gray-700">
-                {cat.description}
-              </p>
-
-              <div className="flex items-center gap-2.5 text-sm font-semibold uppercase tracking-wider text-gray-600 group-hover:text-green-600 transition-colors">
-               Click Now
-                <ArrowUpRight size={16} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-              </div>
-            </a>
-          ))}
-        </div>
-
-        {/* WhatsApp-focused quick help section */}
-        {/* <div className="mt-20 lg:mt-28">
-          <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-10 md:p-14 lg:p-16 text-white flex flex-col items-center text-center shadow-2xl shadow-black/25 max-w-4xl mx-auto">
-            <div className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center mb-8">
-              <MessageCircle size={40} className="text-green-400" />
+              <cat.icon size={28} strokeWidth={2} />
             </div>
-
-            <p className="text-green-400/90 text-sm font-semibold uppercase tracking-widest mb-4">
-              Fastest Way to Get Help
-            </p>
-
-            <h3 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-6">
-              Message us on WhatsApp
-            </h3>
-
-            <p className="text-gray-200 text-lg md:text-xl max-w-lg mb-10 leading-relaxed">
-              Get real-time help from our support team — usually within minutes
-            </p>
-
-            <a
-              href="https://wa.me/919876543210?text=Hello%2C+I+need+help+with+my+Lancaster+product"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-12 py-6 bg-green-600 hover:bg-green-500 text-white font-bold text-lg md:text-xl rounded-2xl transition-all shadow-xl shadow-green-700/40 hover:shadow-green-600/50 active:scale-95"
-            >
-              Open WhatsApp Chat
-            </a>
-          </div>
-        </div> */}
-
-        {/* FAQ section */}
-        <div className="mt-20 lg:mt-28">
-          <div className="mx-auto max-w-3xl mb-10 pb-3 border-b border-gray-200">
-            <h2 className="text-center text-sm md:text-base font-semibold uppercase tracking-[0.25em] text-gray-500">
-              Frequently Asked Questions
-            </h2>
           </div>
 
-          <div className="space-y-8 max-w-3xl mx-auto">
-            {faqs.map((faq, i) => (
-              <div
-                key={i}
-                className="border-b border-gray-100 pb-7 last:border-none"
-              >
-                <button
-                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                  className="w-full flex items-center justify-between text-left group"
-                >
-                  <span className="text-xl font-semibold text-gray-900 group-hover:text-green-700 transition-colors">
-                    {faq.question}
-                  </span>
-                  <ArrowUpRight
-                    className={`text-gray-400 transition-transform duration-300 flex-shrink-0 ml-6 ${
-                      openFaq === i ? "rotate-45 text-green-600" : ""
-                    }`}
-                    size={22}
-                  />
-                </button>
+          <h3 className="text-2xl font-bold text-gray-900 mb-3 group-hover:text-green-700 transition-colors">
+            {cat.title}
+          </h3>
 
-                {openFaq === i && (
-                  <div className="mt-5 text-gray-600 leading-relaxed text-lg animate-in fade-in slide-in-from-top-2 duration-300">
-                    {faq.answer}
-                  </div>
-                )}
-              </div>
-            ))}
+          <p className="text-gray-600 text-base leading-relaxed mb-10 group-hover:text-gray-700">
+            {cat.description}
+          </p>
+
+          <div className="flex items-center gap-2.5 text-sm font-semibold uppercase tracking-wider text-gray-600 group-hover:text-green-600 transition-colors">
+            Click Now
+            <ArrowUpRight
+              size={16}
+              className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform"
+            />
           </div>
+        </a>
+      );
+    })}
+  </div>
+
+  {/* FAQ section */}
+  <div className="mt-20 lg:mt-28">
+    <div className="mx-auto max-w-3xl mb-10 pb-3 border-b border-gray-200">
+      <h2 className="text-center text-sm md:text-base font-semibold uppercase tracking-[0.25em] text-gray-500">
+        Frequently Asked Questions
+      </h2>
+    </div>
+
+    <div className="space-y-8 max-w-3xl mx-auto">
+      {faqs.map((faq, i) => (
+        <div
+          key={i}
+          className="border-b border-gray-100 pb-7 last:border-none"
+        >
+          <button
+            onClick={() => setOpenFaq(openFaq === i ? null : i)}
+            className="w-full flex items-center justify-between text-left group"
+          >
+            <span className="text-xl font-semibold text-gray-900 group-hover:text-green-700 transition-colors">
+              {faq.question}
+            </span>
+
+            <ArrowUpRight
+              className={`text-gray-400 transition-transform duration-300 flex-shrink-0 ml-6 ${
+                openFaq === i ? "rotate-45 text-green-600" : ""
+              }`}
+              size={22}
+            />
+          </button>
+
+          {openFaq === i && (
+            <div className="mt-5 text-gray-600 leading-relaxed text-lg animate-in fade-in slide-in-from-top-2 duration-300">
+              {faq.answer}
+            </div>
+          )}
         </div>
-      </main>
-
+      ))}
+    </div>
+  </div>
+</main>
       <Footer />
     </div>
   );

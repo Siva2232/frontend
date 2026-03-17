@@ -621,7 +621,11 @@ const Customers = () => {
                         key={c._id}
                         className="group hover:bg-neutral-50/70 transition-colors"
                       >
-                        <td className="px-5 py-4">
+                        <td
+                          className="px-5 py-4 cursor-pointer"
+                          onClick={() => navigate(`/services?q=${encodeURIComponent(c.serialNumber)}`)}
+                          title="View service history"
+                        >
                           <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-neutral-800 to-neutral-900 flex items-center justify-center text-white font-semibold text-sm shadow-sm">
                               {c.customerName?.[0]?.toUpperCase() || "?"}
@@ -653,7 +657,11 @@ const Customers = () => {
                           </span>
                         </td>
 
-                        <td className="px-5 py-4">
+                        <td
+                          className="px-5 py-4 cursor-pointer"
+                          onClick={() => navigate(`/services?q=${encodeURIComponent(c.serialNumber)}`)}
+                          title="View service history"
+                        >
                           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-neutral-100 text-neutral-700 text-xs font-mono font-medium rounded-md border border-neutral-200">
                             <Hash size={13} className="text-neutral-400" />
                             {c.serialNumber}

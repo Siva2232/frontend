@@ -254,7 +254,11 @@ const Dashboard = () => {
                 <tbody className="divide-y divide-slate-100">
                   {stats.recentRegistrations.map((reg) => (
                     <tr key={reg._id} className="group hover:bg-slate-50/80 transition-all">
-                      <td className="px-8 py-5">
+                      <td
+                        className="px-8 py-5 cursor-pointer"
+                        onClick={() => navigate(`/services?q=${encodeURIComponent(reg.serialNumber)}`)}
+                        title="View service tracking"
+                      >
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-[10px] font-bold text-blue-600 border border-blue-100 uppercase">
                             {reg.customerName?.charAt(0)}
@@ -270,7 +274,11 @@ const Dashboard = () => {
                           {reg.productId?.productName || "N/A"}
                         </span>
                       </td>
-                      <td className="px-8 py-5">
+                      <td
+                        className="px-8 py-5 cursor-pointer"
+                        onClick={() => navigate(`/services?q=${encodeURIComponent(reg.serialNumber)}`)}
+                        title="View service tracking"
+                      >
                         <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-[11px] font-mono font-bold border border-slate-200">
                           {reg.serialNumber}
                         </span>
