@@ -30,9 +30,7 @@ import {
   ChevronRight,
   AlertCircle ,
   RefreshCw ,
-  ExternalLink,
-  PlusCircle,
-  Wrench
+  ExternalLink 
 } from "lucide-react";
 import { useToast } from "../components/Toast";
 
@@ -49,7 +47,7 @@ const Customers = () => {
   const [searchParams] = useSearchParams();
 
   const [isFilterSidebarOpen, setIsFilterSidebarOpen] = useState(false);
-  const [filterType, setFilterType] = useState("all"); // all, active, expired
+  const [filterType, setFilterType] = useState("all"); // all, active, expired, manual
   const [dateFilter, setDateFilter] = useState("all"); // all, today, yesterday, week, month, year, custom
   const [customStartDate, setCustomStartDate] = useState("");
   const [customEndDate, setCustomEndDate] = useState("");
@@ -59,23 +57,6 @@ const Customers = () => {
   const [editForm, setEditForm] = useState({});
   const [isUpdating, setIsUpdating] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
-
-  // Manual service state
-  const [showManualServiceModal, setShowManualServiceModal] = useState(false);
-  const [manualServiceForm, setManualServiceForm] = useState({
-    serialNumber: '',
-    modelNumber: '',
-    customerName: '',
-    phone: '',
-    shopName: '',
-    issueDescription: '',
-    notes: '',
-    serviceCost: 0,
-    technicianNotes: ''
-  });
-  const [manualCustomers, setManualCustomers] = useState([]);
-  const [manualCustomersLoading, setManualCustomersLoading] = useState(false);
-  const [viewMode, setViewMode] = useState("registered"); // 'registered' or 'manual'
 
   const [confirmModal, setConfirmModal] = useState({
     isOpen: false,
@@ -111,77 +92,24 @@ const Customers = () => {
     }
   }, [searchParams]);
 
-  // Fetch manual customers
-  const fetchManualCustomers = async () => {
-    setManualCustomersLoading(true);
-    try {
-      const { data } = await API.get("/service/manual-customers");
-      setManualCustomers(data.manualCustomers || []);
-    } catch (err) {
-      console.error("Error fetching manual customers:", err);
-    } finally {
-      setManualCustomersLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchManualCustomers();
-  }, []);
-
-  const handleManualServiceOpen = () => {
-    setManualServiceForm({
-      serialNumber: '',
-      modelNumber: '',
-      customerName: '',
-      phone: '',
-      shopName: '',
-      issueDescription: '',
-      notes: '',
-      serviceCost: 0,
-      technicianNotes: ''
-    });
-    setShowManualServiceModal(true);
-  };
-
-  const handleManualServiceSubmit = async (e) => {
-    e.preventDefault();
-    setConfirmModal({
-      isOpen: true,
-      title: "Create Manual Service",
-      message: `Create a manual service request for ${manualServiceForm.customerName}? This will not count as a warranty claim.`,
-      type: "info",
-      confirmText: "Create Record",
-      onConfirm: async () => {
-        setConfirmModal(prev => ({ ...prev, isOpen: false }));
-        setIsUpdating(true);
-        try {
-          await API.post('/service', { ...manualServiceForm, manualEntry: true });
-          showSuccess("Manual service record created!");
-          setShowManualServiceModal(false);
-          fetchManualCustomers();
-        } catch (err) {
-          showError(err.response?.data?.message || "Failed to create record");
-        } finally {
-          setIsUpdating(false);
-        }
-      }
-    });
-  };
-
   // When using server-side pagination, `customers` already reflects the current page.
   // All filtering/search is done on the server via query params, so we only need
   // to apply client-side status/date filters if necessary.
   const filteredCustomers = customers.filter((c) => {
     // 1. Status filter (Active/Expired)
     const isExpired = new Date(c.expiryDate) < new Date();
-    if (filterType === "active" && isExpired) return false;
-    if (filterType === "expired" && !isExpired) return false;
 
+    if (filterType === "active") {
+      if (isExpired) return false;
+    } else if (filterType === "expired") {
+      if (!isExpired) return false;
+    }
+    
     // 2. Date range filter
     if (dateFilter !== "all") {
-      const createdAt = new Date(c.createdAt || new Date());
-      const now = new Date();
-      const startOfToday = new Date(now.setHours(0, 0, 0, 0));
+      const createdAt = new Date(c.createdAt);
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
 
       if (dateFilter === "today") {
         if (createdAt < startOfToday) return false;
@@ -212,19 +140,23 @@ const Customers = () => {
     return true;
   });
 
+  const activeCount = customers.filter((c) => new Date(c.expiryDate) >= new Date()).length;
+  const expiredCount = customers.filter((c) => new Date(c.expiryDate) < new Date()).length;
+  const newTodayCount = customers.filter((c) => {
+    const createdAt = new Date(c.createdAt);
+    const today = new Date();
+    return (
+      createdAt.getDate() === today.getDate() &&
+      createdAt.getMonth() === today.getMonth() &&
+      createdAt.getFullYear() === today.getFullYear()
+    );
+  }).length;
+
   const stats = {
     total: customers.length,
-    active: customers.filter((c) => new Date(c.expiryDate) >= new Date()).length,
-    expired: customers.filter((c) => new Date(c.expiryDate) < new Date()).length,
-    newToday: customers.filter((c) => {
-      const createdAt = new Date(c.createdAt);
-      const today = new Date();
-      return (
-        createdAt.getDate() === today.getDate() &&
-        createdAt.getMonth() === today.getMonth() &&
-        createdAt.getFullYear() === today.getFullYear()
-      );
-    }).length,
+    active: activeCount,
+    expired: expiredCount,
+    newToday: newTodayCount,
   };
 
   const currentItems = filteredCustomers;
@@ -257,37 +189,11 @@ const Customers = () => {
     setActiveDropdown(null);
   };
 
-  const handleUpdate = async (e) => {
-    e.preventDefault();
-    
-    setConfirmModal({
-      isOpen: true,
-      title: "Update Customer?",
-      message: `Are you sure you want to save the changes for ${editingCustomer.customerName}? This will overwrite existing profile information.`,
-      type: "info",
-      confirmText: "Save Changes",
-      onConfirm: async () => {
-        setConfirmModal(prev => ({ ...prev, isOpen: false }));
-        setIsUpdating(true);
-        try {
-          await API.put(`/register/${editingCustomer._id}`, editForm);
-          showSuccess("Customer updated");
-          setIsEditModalOpen(false);
-          fetchCustomers();
-        } catch (error) {
-          showError(error.response?.data?.message || "Update failed");
-        } finally {
-          setIsUpdating(false);
-        }
-      }
-    });
-  };
-
   return (
-    <div className="min-h-screen bg-neutral-50/70" onClick={() => setActiveDropdown(null)}>
+    <div className="flex flex-col min-h-screen bg-neutral-50/30">
       <Navbar />
 
-      <main className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto w-full">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 mb-8">
           <div>
@@ -308,14 +214,6 @@ const Customers = () => {
               Add Customer
             </button>
 
-            <button
-              onClick={handleManualServiceOpen}
-              className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 active:scale-[0.98] transition-all shadow-sm"
-            >
-              <PlusCircle size={16} />
-              Manual Service
-            </button>
-
             <button className="flex items-center gap-2 px-5 py-2.5 bg-white border border-neutral-200 rounded-xl text-sm font-medium text-neutral-700 hover:bg-neutral-50 active:scale-[0.98] transition-all shadow-sm">
               <Download size={16} />
               Export
@@ -324,7 +222,7 @@ const Customers = () => {
         </div>
 
         {/* Stats Tiles */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {[
             {
               label: 'Total Customers',
@@ -332,11 +230,10 @@ const Customers = () => {
               color: 'text-neutral-700',
               bg: 'bg-neutral-50',
               onClick: () => {
-                setViewMode('registered');
                 setFilterType('all');
                 setDateFilter('all');
               },
-              active: viewMode === 'registered' && filterType === 'all' && dateFilter === 'all',
+              active: filterType === 'all' && dateFilter === 'all',
               count: stats.total,
             },
             {
@@ -345,13 +242,10 @@ const Customers = () => {
               color: 'text-emerald-700',
               bg: 'bg-emerald-50',
               onClick: () => {
-                setViewMode('registered');
-                setSearchTerm('');
-                setCurrentPage(1);
                 setFilterType('active');
                 setDateFilter('all');
               },
-              active: viewMode === 'registered' && filterType === 'active',
+              active: filterType === 'active',
               count: stats.active,
             },
             {
@@ -360,13 +254,12 @@ const Customers = () => {
               color: 'text-red-700',
               bg: 'bg-red-50',
               onClick: () => {
-                setViewMode('registered');
                 setSearchTerm('');
                 setCurrentPage(1);
                 setFilterType('expired');
                 setDateFilter('all');
               },
-              active: viewMode === 'registered' && filterType === 'expired',
+              active: filterType === 'expired',
               count: stats.expired,
             },
             {
@@ -375,28 +268,13 @@ const Customers = () => {
               color: 'text-amber-700',
               bg: 'bg-amber-50',
               onClick: () => {
-                setViewMode('registered');
                 setSearchTerm('');
                 setCurrentPage(1);
                 setDateFilter('today');
-                setFilterType('all');
+                setFilterType('all');            // clear status when picking timeline
               },
-              active: viewMode === 'registered' && dateFilter === 'today',
+              active: dateFilter === 'today',
               count: stats.newToday,
-            },
-            {
-              label: 'Service Only',
-              icon: Wrench,
-              color: 'text-blue-700',
-              bg: 'bg-blue-50',
-              badge: manualCustomers.length > 0 ? manualCustomers.length : null,
-              onClick: () => {
-                setViewMode('manual');
-                setFilterType('all');
-                setDateFilter('all');
-              },
-              active: viewMode === 'manual',
-              count: manualCustomers.length,
             },
           ].map((tile) => (
             <button
@@ -415,14 +293,7 @@ const Customers = () => {
                 <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">
                   {tile.label}
                 </p>
-                <div className="flex items-center gap-2">
-                  <p className="text-2xl font-bold text-neutral-900">{tile.count}</p>
-                  {tile.badge && (
-                    <span className="px-2 py-0.5 text-[10px] font-bold bg-blue-600 text-white rounded-full">
-                      {tile.badge} new
-                    </span>
-                  )}
-                </div>
+                <p className="text-2xl font-bold text-neutral-900">{tile.count}</p>
               </div>
             </button>
           ))}
@@ -677,7 +548,6 @@ const Customers = () => {
         )}
 
         {/* Table Card */}
-        {viewMode === 'registered' ? (
         <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full min-w-max">
@@ -911,224 +781,7 @@ const Customers = () => {
             </div>
           )}
         </div>
-        ) : (
-        /* Manual Customers Table */
-        <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
-          <div className="px-6 py-5 border-b border-neutral-100 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-sm">
-                <Wrench size={20} />
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold text-neutral-900">Service-Only Customers</h2>
-                <p className="text-sm text-neutral-500">Customers with no warranty — service requests only</p>
-              </div>
-            </div>
-            <span className="text-xs font-bold text-neutral-500 bg-neutral-100 px-3 py-1.5 rounded-full">
-              {manualCustomers.length} records
-            </span>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-max">
-              <thead>
-                <tr className="bg-neutral-50/80 border-b border-neutral-100">
-                  {["Customer", "Contact", "Model", "Serial", "Shop", "Services", "Last Service", "Status", ""].map((header, i) => (
-                    <th key={header} className={`px-5 py-4 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider ${i === 8 ? 'text-right' : ''}`}>
-                      {header}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-100">
-                {manualCustomersLoading ? (
-                  <tr>
-                    <td colSpan={9} className="py-24 text-center">
-                      <div className="inline-flex flex-col items-center gap-4">
-                        <Loader2 className="animate-spin text-blue-600" size={28} />
-                        <p className="text-neutral-500 font-medium tracking-wide uppercase text-xs">Loading...</p>
-                      </div>
-                    </td>
-                  </tr>
-                ) : manualCustomers.length === 0 ? (
-                  <tr>
-                    <td colSpan={9} className="py-24 text-center">
-                      <p className="text-neutral-500 font-medium tracking-wide uppercase text-xs">No manual service customers found</p>
-                    </td>
-                  </tr>
-                ) : (
-                  manualCustomers.map((mc, idx) => (
-                    <tr key={idx} className="group hover:bg-neutral-50/70 transition-colors">
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white font-semibold text-sm shadow-sm">
-                            {mc.customerName?.[0]?.toUpperCase() || "?"}
-                          </div>
-                          <div>
-                            <div className="font-medium text-neutral-900 text-sm truncate max-w-[140px]">
-                              {mc.customerName}
-                            </div>
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-bold rounded border border-blue-100 mt-0.5">
-                              <Wrench size={10} />
-                              Service Only
-                            </span>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-2 text-sm text-neutral-700">
-                          <Phone size={14} className="text-neutral-400" />
-                          {mc.phone}
-                        </div>
-                      </td>
-                      <td className="px-5 py-4">
-                        <span className="inline-flex px-2.5 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-md border border-blue-100">
-                          {mc.modelNumber || "—"}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4">
-                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-neutral-100 text-neutral-700 text-xs font-mono font-medium rounded-md border border-neutral-200">
-                          <Hash size={13} className="text-neutral-400" />
-                          {mc.serialNumber || "—"}
-                        </div>
-                      </td>
-                      <td className="px-5 py-4 text-sm text-neutral-600 truncate max-w-[140px]">
-                        {mc.shopName || "—"}
-                      </td>
-                      <td className="px-5 py-4">
-                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-neutral-100 text-neutral-800 text-xs font-bold rounded-md border border-neutral-200">
-                          {mc.totalServices}
-                        </div>
-                      </td>
-                      <td className="px-5 py-4 text-sm text-neutral-600">
-                        {mc.lastServiceDate
-                          ? new Date(mc.lastServiceDate).toLocaleDateString("en-US", {
-                              month: "short", day: "numeric", year: "numeric",
-                            })
-                          : "—"}
-                      </td>
-                      <td className="px-5 py-4">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium ${
-                          mc.latestStatus === 'Returned'
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-                            : mc.latestStatus === 'In Progress'
-                            ? 'bg-amber-50 text-amber-700 border border-amber-100'
-                            : 'bg-blue-50 text-blue-700 border border-blue-100'
-                        }`}>
-                          {mc.latestStatus === 'Returned' ? 'Returned' : mc.latestStatus}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4 text-right">
-                        <button
-                          onClick={() => navigate(`/services?q=${encodeURIComponent(mc.serialNumber || mc.phone)}`)}
-                          className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-semibold text-xs transition-colors uppercase tracking-widest"
-                        >
-                          <ExternalLink size={14} />
-                          Track
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-        )}
       </main>
-
-      {/* Manual Service Modal */}
-      {showManualServiceModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-lg sm:max-w-xl shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden border border-neutral-200">
-            <div className="px-6 py-5 border-b border-neutral-100 flex items-center justify-between bg-neutral-50/70">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-blue-600 rounded-xl">
-                  <Wrench className="text-white" size={20} />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold text-neutral-900">Manual Service Entry</h2>
-                  <p className="text-sm text-neutral-500">Add a service-only customer record</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowManualServiceModal(false)}
-                className="p-2 rounded-lg hover:bg-neutral-100 text-neutral-500 hover:text-neutral-900 transition-colors"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <form onSubmit={handleManualServiceSubmit} className="p-6 sm:p-8 space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6">
-                {[
-                  { label: "Customer Name", icon: User, key: "customerName", required: true, placeholder: "Full name" },
-                  { label: "Phone Number", icon: Phone, key: "phone", required: true, placeholder: "Phone number" },
-                  { label: "Shop Name", icon: MapPin, key: "shopName", required: false, placeholder: "Shop / location" },
-                  { label: "Model Number", icon: Hash, key: "modelNumber", required: false, placeholder: "Model number" },
-                  { label: "Serial Number", icon: Hash, key: "serialNumber", required: false, placeholder: "Serial (optional)" },
-                  { label: "Service Cost", icon: Hash, key: "serviceCost", required: false, placeholder: "0", type: "number" },
-                ].map((field) => (
-                  <div key={field.key} className="space-y-1.5">
-                    <label className="text-xs font-medium text-neutral-600 uppercase tracking-wide">
-                      {field.label}
-                      {field.required && <span className="text-red-500 ml-1">*</span>}
-                    </label>
-                    <div className="relative">
-                      <field.icon
-                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400"
-                        size={16}
-                      />
-                      <input
-                        type={field.type || "text"}
-                        className="w-full pl-10 pr-4 py-3 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:border-neutral-400 focus:bg-white outline-none transition-all"
-                        placeholder={field.placeholder}
-                        value={manualServiceForm[field.key]}
-                        onChange={(e) =>
-                          setManualServiceForm({ ...manualServiceForm, [field.key]: e.target.value })
-                        }
-                        required={field.required}
-                      />
-                    </div>
-                  </div>
-                ))}
-
-                <div className="space-y-1.5 sm:col-span-2">
-                  <label className="text-xs font-medium text-neutral-600 uppercase tracking-wide">
-                    Issue Description <span className="text-red-500">*</span>
-                  </label>
-                  <textarea
-                    className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:border-neutral-400 focus:bg-white outline-none transition-all resize-none"
-                    rows={3}
-                    placeholder="Describe the issue..."
-                    value={manualServiceForm.issueDescription}
-                    onChange={(e) =>
-                      setManualServiceForm({ ...manualServiceForm, issueDescription: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-4 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowManualServiceModal(false)}
-                  className="flex-1 py-3.5 bg-neutral-100 text-neutral-700 font-medium rounded-xl hover:bg-neutral-200 transition-all"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 py-3.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-all shadow-sm"
-                >
-                  Submit Service
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       <ManualWarrantyModal
         isOpen={isAddModalOpen}
