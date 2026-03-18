@@ -363,56 +363,59 @@ const Products = () => {
         <title>Bulk QR Batch</title>
         <style>
           @page { size: 50mm 15mm; margin: 0; }
-          * { margin:0; padding:0; box-sizing:border-box; }
-          html, body { margin: 0; padding: 0; width: 50mm; height: 15mm; }
+          * { margin:0; padding:0; box-sizing:border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          html, body { margin: 0; padding: 0; width: 50mm; height: 15mm; overflow: hidden; }
           .label { 
             display:flex; 
             width:50mm; 
             height:15mm; 
             background: #fff;
             align-items: center; 
-            padding: 0 1mm;
+            padding: 0 1.5mm;
             page-break-after: always;
             box-sizing: border-box;
+            overflow: hidden;
           }
           .left { 
-            flex:1; 
-            display:flex; 
-            flex-direction:column; 
-            justify-content:center;
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center;
             overflow: hidden;
             padding-right: 1mm;
           }
           .left div { 
             font-family: Tahoma, Geneva, sans-serif;
             font-weight: normal; 
-            font-size: 13px; 
-            line-height: 1.2; 
+            font-size: 12px; 
+            line-height: 1.1; 
             white-space: nowrap; 
             color: #000;
             text-align: left;
             margin: 0;
           }
           .left .serial {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: normal;
           }
           .left .model-line {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: normal;
           }
           .right { 
-            flex: 0 0 14mm; 
-            display:flex; 
-            align-items:center; 
-            justify-content:center; 
+            flex: 0 0 13mm; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            overflow: hidden;
           }
           .right img { 
-            width: 14mm; 
-            height: 14mm; 
+            width: 13mm; 
+            height: 13mm; 
             display: block; 
             image-rendering: pixelated;
             image-rendering: -webkit-optimize-contrast;
+            object-fit: contain;
           }
         </style>
       </head>
