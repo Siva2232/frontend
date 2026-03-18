@@ -37,7 +37,7 @@ import { useToast } from "../components/Toast";
 const Customers = () => {
   const navigate = useNavigate();
   const { show, showSuccess, showError } = useToast();
-  const { customers, customersMeta, loading: dataLoading, fetchCustomers } = useData();
+  const { customers, customersMeta, customerStats, loading: dataLoading, fetchCustomers } = useData();
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -140,23 +140,11 @@ const Customers = () => {
     return true;
   });
 
-  const activeCount = customers.filter((c) => new Date(c.expiryDate) >= new Date()).length;
-  const expiredCount = customers.filter((c) => new Date(c.expiryDate) < new Date()).length;
-  const newTodayCount = customers.filter((c) => {
-    const createdAt = new Date(c.createdAt);
-    const today = new Date();
-    return (
-      createdAt.getDate() === today.getDate() &&
-      createdAt.getMonth() === today.getMonth() &&
-      createdAt.getFullYear() === today.getFullYear()
-    );
-  }).length;
-
   const stats = {
-    total: customers.length,
-    active: activeCount,
-    expired: expiredCount,
-    newToday: newTodayCount,
+    total: customerStats.totalAll,
+    active: customerStats.active,
+    expired: customerStats.expired,
+    newToday: customerStats.newToday,
   };
 
   const currentItems = filteredCustomers;

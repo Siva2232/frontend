@@ -21,6 +21,7 @@ export const DataProvider = ({ children }) => {
     const [products, setProducts] = useState([]);
     const [customers, setCustomers] = useState([]);
     const [customersMeta, setCustomersMeta] = useState({ total: 0, page: 1, limit: 0 });
+    const [customerStats, setCustomerStats] = useState({ totalAll: 0, active: 0, expired: 0, newToday: 0 });
     const [recentServices, setRecentServices] = useState([]);
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
@@ -92,6 +93,7 @@ export const DataProvider = ({ children }) => {
             if (data && data.data && Array.isArray(data.data)) {
                 setCustomers(data.data);
                 setCustomersMeta({ total: data.total || 0, page: data.page || page, limit: data.limit || limit });
+                if (data.stats) setCustomerStats(data.stats);
             } else {
                 setCustomers(data);
                 setCustomersMeta({ total: Array.isArray(data) ? data.length : 0, page: 1, limit: 0 });
@@ -158,7 +160,7 @@ export const DataProvider = ({ children }) => {
         <DataContext.Provider value={{
             stats, setStats, fetchStats,
             products, setProducts, productsMeta, setProductsMeta, fetchProducts,
-            customers, setCustomers, customersMeta, setCustomersMeta, fetchCustomers,
+            customers, setCustomers, customersMeta, setCustomersMeta, customerStats, fetchCustomers,
             recentServices, setRecentServices, fetchRecentServices,
             notifications, setNotifications, fetchNotifications,
             unreadCount, setUnreadCount, fetchUnreadCount,
