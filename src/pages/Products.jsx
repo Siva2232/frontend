@@ -168,6 +168,15 @@ const Products = () => {
 
   const handleBulkSubmit = async (e) => {
     e.preventDefault();
+
+    if (!bulkForm.prefix) {
+      showError("Starting Serial/Prefix is required.");
+      return;
+    }
+    if (!bulkForm.count || bulkForm.count <= 0) {
+      showError("Count must be greater than zero.");
+      return;
+    }
     
     setConfirmModal({
       isOpen: true,
@@ -356,81 +365,103 @@ const Products = () => {
       return;
     }
 
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Bulk QR Batch</title>
-        <style>
-          @page { size: 50mm 15mm; margin: 0; }
-          * { margin:0; padding:0; box-sizing:border-box; }
-          html, body { margin: 0; padding: 0; width: 50mm; height: 15mm; }
-          .label { 
-            display:flex; 
-            width:50mm; 
-            height:15mm; 
-            background: #fff;
-            align-items: center; 
-            padding: 0 1mm;
-            page-break-after: always;
-            box-sizing: border-box;
-          }
-          .left { 
-            flex:1; 
-            display:flex; 
-            flex-direction:column; 
-            justify-content:center;
-            overflow: hidden;
-            padding-right: 1mm;
-          }
-          .left div { 
-            font-family: Tahoma, Geneva, sans-serif;
-            font-weight: normal; 
-            font-size: 13px; 
-            line-height: 1.2; 
-            white-space: nowrap; 
-            color: #000;
-            text-align: left;
-            margin: 0;
-          }
-          .left .serial {
-            font-size: 13px;
-            font-weight: normal;
-          }
-          .left .model-line {
-            font-size: 13px;
-            font-weight: normal;
-          }
-          .right { 
-            flex: 0 0 13mm; 
-            height: 100%;
-            display:flex; 
-            align-items:center; 
-            justify-content:center; 
-            padding-right: 1mm;
-          }
-          .right img { 
-            width: 12.5mm; 
-            height: 12.5mm; 
-            display: block; 
-            image-rendering: pixelated;
-            image-rendering: -webkit-optimize-contrast;
-          }
-        </style>
-      </head>
-      <body>
-        ${labelsHTML}
-        <script>
-          window.onload=function(){
-             setTimeout(() => {
-                window.print();
-                window.close();
-             }, 300);
-          };
-        </script>
-      </body>
-      </html>
-    `);
+printWindow.document.write(` 
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Bulk QR Batch</title>
+
+  <!-- Dot Matrix Font -->
+  <link href="https://fonts.cdnfonts.com/css/dot-matrix" rel="stylesheet">
+
+  <style>
+    @page { size: 50mm 15mm; margin: 0; }
+    * { margin:0; padding:0; box-sizing:border-box; }
+
+    html, body { 
+      margin: 0; 
+      padding: 0; 
+      width: 50mm; 
+      height: 15mm; 
+    }
+
+    .label { 
+      display:flex; 
+      width:50mm; 
+      height:15mm; 
+      background: #fff;
+      align-items: center; 
+      padding: 0 1mm;
+      page-break-after: always;
+      box-sizing: border-box;
+    }
+
+    .left { 
+      flex:1; 
+      display:flex; 
+      flex-direction:column; 
+      justify-content:center;
+      overflow: hidden;
+      padding-right: 1mm;
+    }
+
+    .left div { 
+      font-family: Tahoma, Geneva, sans-serif;
+      font-weight: normal; 
+      font-size: 13px; 
+      line-height: 1.2; 
+      white-space: nowrap; 
+      color: #000;
+      text-align: left;
+      margin: 0;
+    }
+
+    /* 🔥 ONLY SERIAL FONT CHANGED */
+    .left .serial {
+        font-family: 'Dot Matrix', monospace;
+        font-size: 15px; /* ⬅️ increased from 13px */
+        letter-spacing: 1px;
+        -webkit-font-smoothing: none;
+      }
+
+    .left .model-line {
+      font-size: 13px;
+      font-weight: normal;
+    }
+
+    .right { 
+      flex: 0 0 13mm; 
+      height: 100%;
+      display:flex; 
+      align-items:center; 
+      justify-content:center; 
+      padding-right: 1mm;
+    }
+
+    .right img { 
+      width: 12.5mm; 
+      height: 12.5mm; 
+      display: block; 
+      image-rendering: pixelated;
+      image-rendering: -webkit-optimize-contrast;
+    }
+  </style>
+</head>
+
+<body>
+  ${labelsHTML}
+
+  <script>
+    window.onload=function(){
+      setTimeout(() => {
+        window.print();
+        window.close();
+      }, 300);
+    };
+  </script>
+</body>
+</html>
+`);
     printWindow.document.close();
   };
 
