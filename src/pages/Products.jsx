@@ -31,14 +31,6 @@ import {
 const Products = () => {
   const { show, showSuccess, showError } = useToast();
   const { products, productsMeta, loading: dataLoading, fetchProducts } = useData();
-  const [activeMode, setActiveMode] = useState("single"); // 'single' or 'bulk'
-  const [form, setForm] = useState({
-    productName: "",
-    modelNumber: "",
-    serialNumber: "",
-    manufactureDate: new Date().toISOString().split('T')[0],
-    warrantyPeriodMonths: 12,
-  });
 
   const [bulkForm, setBulkForm] = useState({
     productName: "",
@@ -57,10 +49,8 @@ const Products = () => {
     }
   }, []);
 
-  const [qr, setQr] = useState("");
   const [bulkResults, setBulkResults] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedQR, setSelectedQR] = useState(null);
@@ -114,46 +104,6 @@ const Products = () => {
     setSearchDebounce(timer);
     return () => clearTimeout(timer);
   }, [searchTerm, itemsPerPage, fetchProducts]);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    setConfirmModal({
-      isOpen: true,
-      title: "Create Product?",
-      message: `Do you want to create a new registration for "${form.productName}"? This action will generate a new unique QR code.`,
-      type: "info",
-      confirmText: "Create Now",
-      onConfirm: async () => {
-        setConfirmModal(prev => ({ ...prev, isOpen: false }));
-        setLoading(true);
-        setError("");
-        setSuccess(false);
-
-        try {
-          const { data } = await API.post("/products", form);
-          setQr(data.qrCodeUrl);
-          setSuccess(true);
-          showSuccess("Product created successfully!");
-          setForm({
-            productName: "",
-            modelNumber: "",
-            serialNumber: "",
-            manufactureDate: new Date().toISOString().split('T')[0],
-            warrantyPeriodMonths: 12,
-          });
-          fetchProducts(); 
-        } catch (err) {
-          console.error("Error creating product:", err);
-          const msg = err.response?.data?.message || "Connection failed. Ensure backend is running.";
-          setError(msg);
-          showError(msg);
-        } finally {
-          setLoading(false);
-        }
-      }
-    });
-  };
 
   const getNextSerial = (serial) => {
     if (!serial) return "";
@@ -635,30 +585,14 @@ printWindow.document.write(`
             <p className="text-slate-500 mt-1">Generate assets, serial numbers, and encrypted QR labels.</p>
           </div>
           
-          {/* Mode Switcher */}
-          <div className="bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-1">
-            <button 
-              onClick={() => setActiveMode("single")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                activeMode === "single" 
-                ? "bg-blue-600 text-white shadow-md shadow-blue-100" 
-                : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
-              }`}
-            >
-              <PlusCircle className="w-3.5 h-3.5" />
-              Single Entry
-            </button>
-            <button 
-              onClick={() => setActiveMode("bulk")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                activeMode === "bulk" 
-                ? "bg-blue-600 text-white shadow-md shadow-blue-100" 
-                : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
-              }`}
-            >
-              <FileStack className="w-3.5 h-3.5" />
-              Bulk Generator
-            </button>
+          <div className="bg-white p-2 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+            <div className="p-2 bg-blue-50 rounded-lg">
+              <FileStack className="text-blue-600 w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-slate-800">Bulk QR Generation</h2>
+              <p className="text-sm text-slate-500">Generate multiple QR labels in one batch.</p>
+            </div>
           </div>
         </div>
 
@@ -670,286 +604,201 @@ printWindow.document.write(`
               <div className="p-2 bg-blue-50 rounded-lg">
                 <PlusCircle className="text-blue-600 w-6 h-6" />
               </div>
-              <h2 className="text-xl font-bold text-slate-800">
-                {activeMode === "single" ? "New Product Entry" : "Bulk QR Generation"}
-              </h2>
+              <h2 className="text-xl font-bold text-slate-800">Bulk QR Generation</h2>
             </div>
 
-            {activeMode === "single" ? (
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="space-y-2 md:col-span-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Official Product Name</label>
-                    <div className="relative group">
-                      <Package className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors w-5 h-5" />
-                      <input
-                        type="text"
-                        placeholder="e.g. Industrial Printer X1"
-                        required
-                        className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-slate-700 font-bold"
-                        onChange={(e) => setForm({ ...form, productName: e.target.value })}
-                        value={form.productName}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 md:col-span-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Model Number</label>
-                    <div className="relative group">
-                      <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors w-5 h-5" />
-                      <input
-                        type="text"
-                        placeholder="e.g. MOD-1234-AX"
-                        className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-slate-700 font-bold"
-                        onChange={(e) => setForm({ ...form, modelNumber: e.target.value })}
-                        value={form.modelNumber}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Asset Serial ID</label>
-                    <div className="relative group">
-                      <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors w-5 h-5" />
-                      <input
-                        type="text"
-                        placeholder="SN-1000-2024"
-                        required
-                        className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-slate-700 font-mono font-bold"
-                        onChange={(e) => setForm({ ...form, serialNumber: e.target.value })}
-                        value={form.serialNumber}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Mfg Date</label>
-                    <div className="relative group">
-                      <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors w-5 h-5" />
-                      <input
-                        type="date"
-                        required
-                        className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-slate-700 font-bold"
-                        onChange={(e) => setForm({ ...form, manufactureDate: e.target.value })}
-                        value={form.manufactureDate}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 md:col-span-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Warranty Term (Months)</label>
-                    <div className="relative group">
-                      <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors w-5 h-5" />
-                      <input
-                        type="number"
-                        className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-slate-700 font-bold"
-                        onChange={(e) => setForm({ ...form, warrantyPeriodMonths: parseInt(e.target.value) })}
-                        value={form.warrantyPeriodMonths}
-                      />
-                    </div>
+            <form onSubmit={handleBulkSubmit} className="space-y-6">
+              {/* Common Fields Row */}
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-2 md:col-span-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Product Name Template</label>
+                  <div className="relative group">
+                    <Package className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors w-5 h-5" />
+                    <input
+                      type="text"
+                      placeholder="Industrial Gear-Box"
+                      required
+                      className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-blue-500 outline-none transition-all font-bold"
+                      onChange={(e) => setBulkForm({ ...bulkForm, productName: e.target.value })}
+                      value={bulkForm.productName}
+                    />
                   </div>
                 </div>
 
-                {error && (
-                  <div className="p-4 bg-red-50 border border-red-100 text-red-600 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
-                    <AlertCircle className="w-5 h-5 shrink-0" />
-                    <span className="text-xs font-bold uppercase">{error}</span>
-                  </div>
-                )}
-
-                <button 
-                  disabled={loading}
-                  className="w-full py-4 bg-slate-900 hover:bg-blue-600 text-white font-bold text-sm uppercase tracking-widest rounded-2xl shadow-lg transition-all flex items-center justify-center gap-3 disabled:opacity-50 active:scale-[0.98]"
-                >
-                  {loading ? <Loader2 className="animate-spin w-5 h-5" /> : (
-                    <>
-                      <QrCode className="w-5 h-5" />
-                      Finalize & Generate QR
-                    </>
-                  )}
-                </button>
-              </form>
-            ) : (
-              <form onSubmit={handleBulkSubmit} className="space-y-6">
-                 {/* Common Fields Row */}
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="space-y-2 md:col-span-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Product Name Template</label>
-                    <div className="relative group">
-                      <Package className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors w-5 h-5" />
-                      <input
-                        type="text"
-                        placeholder="Industrial Gear-Box"
-                        required
-                        className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-blue-500 outline-none transition-all font-bold"
-                        onChange={(e) => setBulkForm({ ...bulkForm, productName: e.target.value })}
-                        value={bulkForm.productName}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Model Number</label>
-                    <div className="relative group">
-                      <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors w-5 h-5" />
-                      <input
-                        type="text"
-                        placeholder="MOD-BULK"
-                        className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-blue-500 outline-none transition-all font-bold"
-                        onChange={(e) => setBulkForm({ ...bulkForm, modelNumber: e.target.value })}
-                        value={bulkForm.modelNumber}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Starting Serial Number</label>
-                    <div className="relative group">
-                      <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors w-5 h-5" />
-                      <input
-                        type="text"
-                        placeholder="e.g. 26051000 or SN-1000"
-                        required
-                        className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-blue-500 outline-none transition-all font-mono font-bold"
-                        onChange={(e) => setBulkForm({ ...bulkForm, prefix: e.target.value })}
-                        value={bulkForm.prefix}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Count (Max 100)</label>
-                    <div className="relative group">
-                      <FileStack className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors w-5 h-5" />
-                      <input
-                        type="number"
-                        max="100"
-                        required
-                        className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-blue-500 outline-none transition-all font-bold"
-                        onChange={(e) => setBulkForm({ ...bulkForm, count: Math.min(100, parseInt(e.target.value)) })}
-                        value={bulkForm.count}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Mfg Date</label>
-                    <div className="relative group">
-                      <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors w-5 h-5" />
-                      <input
-                        type="date"
-                        required
-                        className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-blue-500 outline-none transition-all font-bold"
-                        onChange={(e) => setBulkForm({ ...bulkForm, manufactureDate: e.target.value })}
-                        value={bulkForm.manufactureDate}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Warranty Period</label>
-                    <div className="relative group">
-                      <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors w-5 h-5" />
-                      <input
-                        type="number"
-                        className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-blue-500 outline-none transition-all font-bold"
-                        onChange={(e) => setBulkForm({ ...bulkForm, warrantyPeriodMonths: parseInt(e.target.value) })}
-                        value={bulkForm.warrantyPeriodMonths}
-                      />
-                    </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Model Number</label>
+                  <div className="relative group">
+                    <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors w-5 h-5" />
+                    <input
+                      type="text"
+                      placeholder="MOD-BULK"
+                      className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-blue-500 outline-none transition-all font-bold"
+                      onChange={(e) => setBulkForm({ ...bulkForm, modelNumber: e.target.value })}
+                      value={bulkForm.modelNumber}
+                    />
                   </div>
                 </div>
 
-                <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl">
-                  <p className="text-[11px] text-amber-700 font-bold leading-relaxed">
-                    System will generate <span className="underline">{bulkForm.count}</span> {parseInt(bulkForm.count) === 1 ? 'ID' : 'IDs'} starting from the provided base number.
-                    <br/>Example: If Input=26051000 & Count=10, generated IDs will be 26051001 to 26051010.
-                  </p>
-                  {bulkResults && bulkResults.length > 0 && (
-                    (() => {
-                      const lastSerial = bulkResults[bulkResults.length - 1].serialNumber;
-                      const nextSerial = getNextSerial(lastSerial);
-                      return (
-                        <div className="mt-3 text-[11px] text-slate-700">
-                          <div className="flex flex-wrap gap-2 items-center">
-                            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 text-slate-700 font-semibold">
-                              Last generated:
-                              <span className="font-mono text-slate-800">{lastSerial}</span>
-                            </span>
-                            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 text-slate-700 font-semibold">
-                              Next start:
-                              <span className="font-mono text-slate-800">{nextSerial}</span>
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => navigator.clipboard.writeText(nextSerial)}
-                              className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 font-semibold hover:bg-blue-100 transition"
-                            >
-                              Copy next serial
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setBulkForm(prev => ({ ...prev, prefix: nextSerial }))}
-                              className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 font-semibold hover:bg-emerald-100 transition"
-                            >
-                              Continue from here
-                            </button>
-                          </div>
-                          <p className="mt-2 text-[10px] text-slate-500">After generation, the form will be prefilled to start from the next serial.</p>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Starting Serial Number</label>
+                  <div className="relative group">
+                    <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors w-5 h-5" />
+                    <input
+                      type="text"
+                      placeholder="e.g. 26051000 or SN-1000"
+                      required
+                      className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-blue-500 outline-none transition-all font-mono font-bold"
+                      onChange={(e) => setBulkForm({ ...bulkForm, prefix: e.target.value })}
+                      value={bulkForm.prefix}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Count (Max 100)</label>
+                  <div className="relative group">
+                    <FileStack className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors w-5 h-5" />
+                    <input
+                      type="number"
+                      max="100"
+                      required
+                      className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-blue-500 outline-none transition-all font-bold"
+                      onChange={(e) => setBulkForm({ ...bulkForm, count: Math.min(100, parseInt(e.target.value)) })}
+                      value={bulkForm.count}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Mfg Date</label>
+                  <div className="relative group">
+                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors w-5 h-5" />
+                    <input
+                      type="date"
+                      required
+                      className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-blue-500 outline-none transition-all font-bold"
+                      onChange={(e) => setBulkForm({ ...bulkForm, manufactureDate: e.target.value })}
+                      value={bulkForm.manufactureDate}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Warranty Period</label>
+                  <div className="relative group">
+                    <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors w-5 h-5" />
+                    <input
+                      type="number"
+                      className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-blue-500 outline-none transition-all font-bold"
+                      onChange={(e) => setBulkForm({ ...bulkForm, warrantyPeriodMonths: parseInt(e.target.value) })}
+                      value={bulkForm.warrantyPeriodMonths}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {error && (
+                <div className="p-4 bg-red-50 border border-red-100 text-red-600 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+                  <AlertCircle className="w-5 h-5 shrink-0" />
+                  <span className="text-xs font-bold uppercase">{error}</span>
+                </div>
+              )}
+
+              <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl">
+                <p className="text-[11px] text-amber-700 font-bold leading-relaxed">
+                  System will generate <span className="underline">{bulkForm.count}</span> {parseInt(bulkForm.count) === 1 ? 'ID' : 'IDs'} starting from the provided base number.
+                  <br/>Example: If Input=26051000 & Count=10, generated IDs will be 26051001 to 26051010.
+                </p>
+                {bulkResults && bulkResults.length > 0 && (
+                  (() => {
+                    const lastSerial = bulkResults[bulkResults.length - 1].serialNumber;
+                    const nextSerial = getNextSerial(lastSerial);
+                    return (
+                      <div className="mt-3 text-[11px] text-slate-700">
+                        <div className="flex flex-wrap gap-2 items-center">
+                          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 text-slate-700 font-semibold">
+                            Last generated:
+                            <span className="font-mono text-slate-800">{lastSerial}</span>
+                          </span>
+                          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 text-slate-700 font-semibold">
+                            Next start:
+                            <span className="font-mono text-slate-800">{nextSerial}</span>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => navigator.clipboard.writeText(nextSerial)}
+                            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 font-semibold hover:bg-blue-100 transition"
+                          >
+                            Copy next serial
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setBulkForm(prev => ({ ...prev, prefix: nextSerial }))}
+                            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 font-semibold hover:bg-emerald-100 transition"
+                          >
+                            Continue from here
+                          </button>
                         </div>
-                      );
-                    })()
-                  )}
-                </div>
+                        <p className="mt-2 text-[10px] text-slate-500">After generation, the form will be prefilled to start from the next serial.</p>
+                      </div>
+                    );
+                  })()
+                )}
+              </div>
 
-                <button 
-                  disabled={loading}
-                  className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-black text-sm uppercase tracking-widest rounded-2xl shadow-lg transition-all flex items-center justify-center gap-3 disabled:opacity-50"
-                >
-                  {loading ? <Loader2 className="animate-spin w-5 h-5" /> : (
-                    <>
-                      <LayoutGrid className="w-5 h-5" />
-                      Process Bulk Batch
-                    </>
-                  )}
-                </button>
-              </form>
-            )}
+              <button 
+                disabled={loading}
+                className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-black text-sm uppercase tracking-widest rounded-2xl shadow-lg transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+              >
+                {loading ? <Loader2 className="animate-spin w-5 h-5" /> : (
+                  <>
+                    <LayoutGrid className="w-5 h-5" />
+                    Process Bulk Batch
+                  </>
+                )}
+              </button>
+            </form>
           </div>
 
           {/* Result Side - Span 5 */}
           <div className="lg:col-span-5 flex flex-col gap-6">
             <div className="bg-white p-8 shadow-xl shadow-slate-200/50 rounded-[2rem] border border-slate-100 flex flex-col items-center justify-center text-center min-h-[500px] relative overflow-hidden">
-              {!qr && (
+              {bulkResults && bulkResults.length > 0 ? (
+                <div className="w-full">
+                  <div className="mb-4 text-left">
+                    <h3 className="text-xl font-bold text-slate-800">Batch Generated</h3>
+                    <p className="text-slate-500 text-sm">{bulkResults.length} labels generated. You can print them using the button below.</p>
+                  </div>
+
+                  <div className="max-h-64 overflow-auto mb-6 space-y-2">
+                    {bulkResults.slice(0, 10).map((p) => (
+                      <div key={p._id} className="flex items-center justify-between gap-2 bg-slate-50 p-3 rounded-xl border border-slate-100 text-sm font-mono">
+                        <span className="truncate">{p.serialNumber}</span>
+                        <span className="text-slate-500 text-xs">{p.modelNumber}</span>
+                      </div>
+                    ))}
+                    {bulkResults.length > 10 && (
+                      <div className="text-xs text-slate-400">Showing first 10 of {bulkResults.length}</div>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={() => setIsBulkPrintOpen(true)}
+                    className="w-full py-3.5 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-all shadow-md flex items-center justify-center gap-2"
+                  >
+                    <Printer className="w-4 h-4" />
+                    Print Bulk Labels
+                  </button>
+                </div>
+              ) : (
                 <div className="space-y-4 animate-in fade-in duration-700">
                   <div className="w-24 h-24 bg-slate-50 rounded-[2rem] flex items-center justify-center mx-auto border border-slate-100">
                     <QrCode className="w-10 h-10 text-slate-200" />
                   </div>
-                  <h3 className="text-lg font-bold text-slate-400 tracking-tight">Label Preview</h3>
-                  <p className="text-slate-400 text-xs max-w-[200px] leading-relaxed italic">The encrypted QR label will appear here after submission.</p>
-                </div>
-              )}
-
-              {qr && (
-                <div className="animate-in fade-in zoom-in duration-500 w-full">
-                  <div className="mb-6 inline-flex items-center gap-2 bg-emerald-50 text-emerald-600 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-100">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    System Synchronized
-                  </div>
-                  <div className="p-6 bg-white rounded-3xl border border-slate-100 shadow-inner mb-6 mx-auto w-fit relative group">
-                    <LabelCard product={{ productName: form.productName, serialNumber: form.serialNumber, qrCodeUrl: qr, modelNumber: form.modelNumber }} />
-                  </div>
-                  <h3 className="text-2xl font-bold text-slate-800 mb-1 tracking-tight">{form.productName}</h3>
-                  <p className="text-slate-400 font-mono text-xs mb-8 bg-slate-50 px-4 py-1.5 rounded-full border border-slate-100 inline-block">
-                    {form.serialNumber}
+                  <h3 className="text-lg font-bold text-slate-400 tracking-tight">Batch Preview</h3>
+                  <p className="text-slate-400 text-xs max-w-[200px] leading-relaxed italic">
+                    After running the bulk generator, you can preview and print labels here.
                   </p>
-                  <button 
-                    onClick={() => handleSinglePrint({ productName: form.productName, serialNumber: form.serialNumber, qrCodeUrl: qr, manufactureDate: form.manufactureDate, warrantyPeriodMonths: form.warrantyPeriodMonths })}
-                    className="w-full py-3.5 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-all shadow-md flex items-center justify-center gap-2"
-                  >
-                    <Printer className="w-4 h-4" />
-                    Print Technical Label
-                  </button>
                 </div>
               )}
             </div>
@@ -1163,7 +1012,10 @@ printWindow.document.write(`
                 <div className="space-y-1 mb-6">
                   <h3 className="text-xl font-bold text-slate-800 tracking-tight leading-tight">{selectedQR.productName}</h3>
                   <div className="flex flex-col items-center gap-1.5">
-                    <span className="text-slate-400 font-mono text-[10px] bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100 uppercase tracking-wider">
+                    <span
+                      className="text-slate-400 text-[13px] bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100 uppercase tracking-wider"
+                      style={{ fontFamily: "'Jersey 10', monospace" }}
+                    >
                       {selectedQR.serialNumber}
                     </span>
                     <span className="text-slate-400 font-bold text-[9px] uppercase">

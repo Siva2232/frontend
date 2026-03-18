@@ -373,7 +373,41 @@ const ServiceTracker = () => {
               { label: 'Processing', status: 'In Progress', icon: Clock, color: 'text-blue-700', bg: 'bg-blue-50' },
               { label: 'Returned to Customer', status: 'Returned', icon: CheckCircle, color: 'text-green-700', bg: 'bg-green-50' },
               { label: 'Pending', status: 'Received', icon: Clock, color: 'text-yellow-700', bg: 'bg-yellow-50' },
+              { label: 'Manual Customers', status: 'Manual', icon: List, color: 'text-purple-700', bg: 'bg-purple-50' },
             ].map(tile => {
+              if (tile.status === 'Manual') {
+                const active = statusFilter === 'Manual';
+                return (
+                  <button
+                    key={tile.label}
+                    onClick={() => {
+                      const newFilter = active ? 'all' : 'Manual';
+                      setStatusFilter(newFilter);
+                      if (newFilter === 'Manual') {
+                        fetchRecentServices({ manualOnly: true });
+                      } else {
+                        fetchRecentServices();
+                      }
+                    }}
+                    className={`w-full bg-white p-5 rounded-2xl border transition-shadow flex items-center gap-4 flex-1 min-w-[120px] ${
+                      active ? 'border-purple-900 shadow-lg' : 'border-neutral-200 shadow-sm'
+                    }`}
+                  >
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                      active ? 'bg-purple-900 text-white' : `${tile.bg} ${tile.color}`
+                    }`}>
+                      <tile.icon size={24} />
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">
+                        {tile.label}
+                      </p>
+                      <p className="text-2xl font-bold text-neutral-900">View List</p>
+                    </div>
+                  </button>
+                );
+              }
+
               const count = recentServices.filter(r => r.status === tile.status).length;
               const active = statusFilter === tile.status;
               return (
@@ -596,9 +630,9 @@ const ServiceTracker = () => {
                         {record.status !== 'Returned' && (
                           <div className="mt-4 flex gap-2 flex-wrap">
                             <button
-                              disabled={record.status === 'Returned'}
+                              disabled={record.status !== 'In Progress'}
                               onClick={() => openStatusModal(record, 'Returned')}
-                              title={record.status === 'Returned' ? "Already returned to customer" : "Mark as returned"}
+                              title={record.status !== 'In Progress' ? "Enable 'In Progress' first" : "Mark as returned"}
                               className="px-5 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               Returned to Customer

@@ -49,6 +49,7 @@ const LabelCard = ({ product, small = false, className = "" }) => {
         <span
           className="truncate font-bold"
           style={{
+            fontFamily: "'Jersey 10', monospace",
             fontSize: small ? "10pt" : "16px",
             lineHeight: "1.1",
           }}

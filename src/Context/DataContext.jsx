@@ -103,10 +103,10 @@ export const DataProvider = ({ children }) => {
         }
     }, []);
 
-    const fetchRecentServices = useCallback(async () => {
+    const fetchRecentServices = useCallback(async (params = {}) => {
         setLoading(prev => ({ ...prev, services: true }));
         try {
-            const { data } = await API.get("/service/history");
+            const { data } = await API.get("/service/history", { params });
             if (data.recentServices) {
                 setRecentServices(data.recentServices);
             }
