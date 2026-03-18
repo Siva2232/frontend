@@ -258,14 +258,11 @@ const Products = () => {
           }
         </style>
       </head>
-      <body>
         <div class="label">
           <div class="left">
             <div class="serial">SR/No:${product.serialNumber}</div>
-            ${product.modelNumber ? product.modelNumber.split(' ').reduce((acc, word, i) => {
-              if (i === 2) return acc + '</div><div class="model-line">' + word;
-              return acc + ' ' + word;
-            }, '<div class="model-line">') + '</div>' : ''}
+            <div class="model-line">${product.modelNumber ? product.modelNumber.split(' ').slice(0, 2).join(' ') : ''}</div>
+            ${product.modelNumber && product.modelNumber.split(' ').length > 2 ? `<div class="model-line">${product.modelNumber.split(' ').slice(2).join(' ')}</div>` : ''}
           </div>
           <div class="right">
             <img src="${product.qrCodeUrl}" alt="QR" />
@@ -296,10 +293,9 @@ const Products = () => {
           <div class="label">
             <div class="left">
               <div class="serial">SR/No:${p.serialNumber}</div>
-              ${p.modelNumber ? p.modelNumber.split(' ').reduce((acc, word, i) => {
-                if (i === 2) return acc + '</div><div class="model-line">' + word;
-                return acc + ' ' + word;
-              }, '<div class="model-line">') + '</div>' : ''}
+              <div class="model-line" style="white-space: normal; word-break: break-word; max-width: 35mm; line-height: 1.1; font-size: 13px;">
+                ${p.modelNumber || ''}
+              </div>
             </div>
             <div class="right">
               <img src="${p.qrCodeUrl}" alt="QR"/>
@@ -315,7 +311,7 @@ const Products = () => {
       return;
     }
 
-printWindow.document.write(` 
+    printWindow.document.write(` 
 <!DOCTYPE html>
 <html>
 <head>
@@ -359,19 +355,23 @@ printWindow.document.write(`
       font-family: Tahoma, Geneva, sans-serif;
       font-weight: normal; 
       font-size: 13px; 
-      line-height: 1.2; 
-      white-space: nowrap; 
+      line-height: 1.1; 
+      white-space: normal; 
+      word-break: break-all;
       color: #000;
       text-align: left;
       margin: 0;
+      max-width: 35mm;
     }
 
     /* 🔥 ONLY SERIAL FONT CHANGED */
     .left .serial {
         font-family: 'Dot Matrix', monospace;
         font-size: 15px; /* ⬅️ increased from 13px */
-        letter-spacing: 1px;
+        letter-spacing: 0.5px;
         -webkit-font-smoothing: none;
+        white-space: nowrap;
+        margin-bottom: 1px;
       }
 
     .left .model-line {
@@ -762,7 +762,80 @@ printWindow.document.write(`
 
           {/* Result Side - Span 5 */}
           <div className="lg:col-span-5 flex flex-col gap-6">
-            <div className="bg-white p-8 shadow-xl shadow-slate-200/50 rounded-[2rem] border border-slate-100 flex flex-col items-center justify-center text-center min-h-[500px] relative overflow-hidden">
+            {/* Live Preview Section */}
+            <div className="bg-white p-6 shadow-xl shadow-slate-200/50 rounded-[2rem] border border-slate-100">
+              <div className="flex items-center justify-between mb-4 px-2">
+                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Live Layout Preview</h3>
+                <span className="text-[9px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full uppercase">50mm x 15mm</span>
+              </div>
+              
+              <div className="flex justify-center bg-slate-50 p-6 rounded-2xl border border-dashed border-slate-200">
+                <div 
+                  className="bg-white shadow-lg overflow-hidden flex items-center" 
+                  style={{ 
+                    width: '50mm', 
+                    height: '15mm', 
+                    padding: '0 1mm',
+                    display: 'flex',
+                    backgroundColor: '#fff',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  <div style={{ 
+                    flex: 1, 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    justifyContent: 'center', 
+                    overflow: 'hidden', 
+                    paddingRight: '1mm' 
+                  }}>
+                    <div 
+                      style={{ 
+                        fontFamily: "'Dot Matrix', monospace", 
+                        fontSize: '15px', 
+                        letterSpacing: '0.5px', 
+                        whiteSpace: 'nowrap',
+                        color: '#000',
+                        lineHeight: '1.1',
+                        marginBottom: '1px'
+                      }}
+                    >
+                      SR/No:{bulkForm.prefix || "2605XXXX"}
+                    </div>
+                    <div 
+                      style={{ 
+                        fontFamily: "Tahoma, Geneva, sans-serif", 
+                        fontSize: '13px', 
+                        lineHeight: '1.1', 
+                        whiteSpace: 'normal', 
+                        wordBreak: 'break-word',
+                        color: '#000',
+                        maxWidth: '35mm'
+                      }}
+                    >
+                      {bulkForm.modelNumber || <span style={{color: '#ccc'}}>Model Number</span>}
+                    </div>
+                  </div>
+                  <div style={{ 
+                    flex: '0 0 13mm', 
+                    height: '100%', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    paddingRight: '1mm' 
+                  }}>
+                    <div className="w-[12.5mm] h-[12.5mm] bg-slate-50 rounded flex items-center justify-center border border-slate-100">
+                      <QrCode className="w-6 h-6 text-slate-200" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <p className="mt-4 text-[10px] text-slate-400 font-medium italic text-center">
+                This mirrors the exact print spacing and font scale.
+              </p>
+            </div>
+
+            <div className="bg-white p-8 shadow-xl shadow-slate-200/50 rounded-[2rem] border border-slate-100 flex flex-col items-center justify-center text-center min-h-[300px] relative overflow-hidden">
               {bulkResults && bulkResults.length > 0 ? (
                 <div className="w-full">
                   <div className="mb-4 text-left">
@@ -1077,41 +1150,114 @@ printWindow.document.write(`
 
       {/* Bulk Print Fullscreen View - OUTSIDE print:hidden parent */}
       {isBulkPrintOpen && bulkResults && (
-        <div id="bulk-print-area" className="fixed inset-0 bg-white z-[200] overflow-y-auto">
-          <div className="no-print sticky top-0 bg-white/80 backdrop-blur-md border-b border-slate-100 p-6 flex justify-between items-center z-10">
+        <div id="bulk-print-area" className="fixed inset-0 bg-white z-[200] overflow-y-auto font-sans antialiased">
+          <div className="no-print sticky top-0 bg-white/90 backdrop-blur-md border-b border-slate-100 p-6 flex justify-between items-center z-10 shadow-sm">
             <div>
-              <h2 className="text-xl font-black text-slate-900 uppercase tracking-widest">Bulk Printing Batch</h2>
+              <h2 className="text-xl font-black text-slate-900 uppercase tracking-widest">Bulk Label Preview</h2>
               <p className="text-xs text-slate-400 font-bold uppercase mt-1">
-                Ready to print {bulkResults.length} unique labels (3 copies each)
+                {bulkResults.length} unique labels (3 copies each) • 50mm x 15mm layout
               </p>
             </div>
             <div className="flex gap-4">
               <button 
                 onClick={() => setIsBulkPrintOpen(false)}
-                className="px-6 py-2.5 text-slate-500 font-bold text-xs uppercase tracking-widest hover:bg-slate-50 rounded-xl transition-all"
+                className="px-6 py-2.5 text-slate-500 font-bold text-xs uppercase tracking-widest hover:bg-slate-100 rounded-xl transition-all"
               >
-                Close Batch
+                Exit Preview
               </button>
               <button 
                 onClick={handleBulkPrint}
                 className="px-8 py-2.5 bg-blue-600 text-white font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all flex items-center gap-2"
               >
                 <Printer className="w-4 h-4" />
-                Print Group
+                Trigger Print
               </button>
             </div>
           </div>
 
-          <div className="bulk-print-content p-10 max-w-6xl mx-auto">
-            <div className="flex flex-col gap-2">
-              {bulkResults.map((p) => (
-                <div key={p._id} className="flex gap-2">
+          <div className="bulk-print-content p-10 max-w-5xl mx-auto flex flex-col items-center gap-8 bg-slate-50 min-h-full">
+            <style>
+              {`
+                @import url('https://fonts.cdnfonts.com/css/dot-matrix');
+                .preview-label { 
+                  display:flex; 
+                  width:50mm; 
+                  height:15mm; 
+                  background: #fff;
+                  align-items: center; 
+                  padding: 0 1mm;
+                  box-sizing: border-box;
+                  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                  border: 1px solid #eee;
+                }
+                .preview-left { 
+                  flex:1; 
+                  display:flex; 
+                  flex-direction:column; 
+                  justify-content:center;
+                  overflow: hidden;
+                  padding-right: 1mm;
+                }
+                .preview-left div { 
+                  font-family: Tahoma, Geneva, sans-serif;
+                  font-weight: normal; 
+                  font-size: 13px; 
+                  line-height: 1.2; 
+                  white-space: nowrap; 
+                  color: #000;
+                  text-align: left;
+                  margin: 0;
+                }
+                .preview-serial {
+                  font-family: 'Dot Matrix', monospace !important;
+                  font-size: 15px !important;
+                  letter-spacing: 1px;
+                }
+                .preview-right { 
+                  flex: 0 0 13mm; 
+                  height: 100%;
+                  display:flex; 
+                  align-items:center; 
+                  justify-content:center; 
+                  padding-right: 1mm;
+                }
+                .preview-right img { 
+                  width: 12.5mm; 
+                  height: 12.5mm; 
+                  display: block; 
+                  image-rendering: -webkit-optimize-contrast;
+                }
+              `}
+            </style>
+            
+            {bulkResults.map((p, idx) => (
+              <div key={p._id} className="flex flex-col gap-2 p-4 bg-white rounded-2xl border border-slate-200 shadow-sm w-fit">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center border-b border-slate-50 pb-2 mb-2">
+                  Label Batch #{idx + 1} (3 Copies)
+                </span>
+                <div className="flex gap-4">
                   {[1, 2, 3].map((copy) => (
-                    <LabelCard key={copy} product={p} small />
+                    <div key={copy} className="preview-label">
+                      <div className="preview-left">
+                        <div className="preview-serial">SR/No:${p.serialNumber}</div>
+                        {p.modelNumber?.split(' ').map((word, i, arr) => {
+                          if (i === 0) {
+                            return <div key={i} className="model-line">{word} {arr[1] || ''}</div>;
+                          }
+                          if (i === 2) {
+                            return <div key={i} className="model-line">{word} {arr.slice(3).join(' ')}</div>;
+                          }
+                          return null;
+                        })}
+                      </div>
+                      <div className="preview-right">
+                        <img src={p.qrCodeUrl} alt="QR" />
+                      </div>
+                    </div>
                   ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
