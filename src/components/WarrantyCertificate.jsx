@@ -213,7 +213,7 @@ const WarrantyCertificate = ({ registration }) => {
           className="group flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full font-semibold transition-all shadow-lg hover:shadow-indigo-200 active:scale-95 cursor-pointer"
         >
           <Download className="w-4 h-4 group-hover:animate-bounce" />
-          Export Certificate
+          Download Warranty Certificate
         </button>
       </div>
 
