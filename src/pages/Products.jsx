@@ -368,7 +368,7 @@ const Products = () => {
     }
 
     /* SERIAL NUMBER FONT */
-    .left .serial {
+ .left .serial {
   font-family:'ProggyCleanTTSZBP', monospace !important;
   font-size:18px;
   font-weight:bold;
@@ -377,7 +377,7 @@ const Products = () => {
   text-rendering:optimizeSpeed;
   white-space:nowrap;
   margin-bottom:1px;
-  margin-top:2px;
+  transform: translateY(0.5mm); /* tiny downward shift */
 }
 
     .left .model-line {
