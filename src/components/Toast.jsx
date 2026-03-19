@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from "react";
+import { createContext, useContext, useState, useCallback,useEffect  } from "react";
 import { CheckCircle2, AlertCircle, Info, X } from "lucide-react";
 
 const ToastContext = createContext(null);
@@ -36,15 +36,6 @@ const getAudioContext = () => {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     if (!AudioContext) return null;
     audioCtx = new AudioContext();
-
-    const resumeOnInteraction = () => {
-      unlockAudio();
-      document.removeEventListener("pointerdown", resumeOnInteraction);
-      document.removeEventListener("keydown", resumeOnInteraction);
-    };
-
-    document.addEventListener("pointerdown", resumeOnInteraction, { passive: true });
-    document.addEventListener("keydown", resumeOnInteraction, { passive: true });
   }
   return audioCtx;
 };
@@ -91,6 +82,27 @@ const playToastSound = async (type = "info") => {
 
 export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
+
+  // Ensure audio is unlocked as soon as the user interacts with the page.
+  // This avoids browser autoplay restrictions when showing toast sounds.
+  useEffect(() => {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
+    const handleInteraction = () => {
+      unlockAudio();
+      document.removeEventListener("pointerdown", handleInteraction);
+      document.removeEventListener("keydown", handleInteraction);
+    };
+
+    document.addEventListener("pointerdown", handleInteraction, { passive: true });
+    document.addEventListener("keydown", handleInteraction, { passive: true });
+
+    return () => {
+      document.removeEventListener("pointerdown", handleInteraction);
+      document.removeEventListener("keydown", handleInteraction);
+    };
+  }, []);
 
   const remove = useCallback((id) => {
     setToasts((t) => t.filter((x) => x.id !== id));

@@ -318,10 +318,12 @@ const Products = () => {
 <head>
   <title>Bulk QR Batch</title>
 
-  <!-- Dot Matrix Font -->
-  <link href="https://fonts.cdnfonts.com/css/dot-matrix" rel="stylesheet">
+  <!-- ProggyClean Font -->
+  <link href="https://fonts.cdnfonts.com/css/proggy-clean" rel="stylesheet">
 
   <style>
+    @import url('https://fonts.cdnfonts.com/css/proggy-clean');
+
     @page { size: 50mm 15mm; margin: 0; }
     * { margin:0; padding:0; box-sizing:border-box; }
 
@@ -336,11 +338,11 @@ const Products = () => {
       display:flex; 
       width:50mm; 
       height:15mm; 
-      background: #fff;
-      align-items: center; 
-      padding: 0 1mm;
-      page-break-after: always;
-      box-sizing: border-box;
+      background:#fff;
+      align-items:center; 
+      padding:0 1mm;
+      page-break-after:always;
+      box-sizing:border-box;
     }
 
     .left { 
@@ -348,53 +350,54 @@ const Products = () => {
       display:flex; 
       flex-direction:column; 
       justify-content:center;
-      overflow: hidden;
-      padding-right: 1mm;
+      overflow:hidden;
+      padding-right:1mm;
     }
 
     .left div { 
-      font-family: Tahoma, Geneva, sans-serif;
-      font-weight: normal; 
-      font-size: 13px; 
-      line-height: 1.1; 
-      white-space: normal; 
-      word-break: break-all;
-      color: #000;
-      text-align: left;
-      margin: 0;
-      max-width: 35mm;
+      font-family:Tahoma, Geneva, sans-serif;
+      font-weight:normal; 
+      font-size:13px; 
+      line-height:1.1; 
+      white-space:normal; 
+      word-break:break-all;
+      color:#000;
+      text-align:left;
+      margin:0;
+      max-width:35mm;
     }
 
-    /* 🔥 ONLY SERIAL FONT CHANGED */
+    /* SERIAL NUMBER FONT */
     .left .serial {
-        font-family: 'Dot Matrix', monospace;
-        font-size: 15px; /* ⬅️ increased from 13px */
-        letter-spacing: 0.5px;
-        -webkit-font-smoothing: none;
-        white-space: nowrap;
-        margin-bottom: 1px;
-      }
+      font-family:'ProggyCleanTTSZBP', monospace !important;
+      font-size:15px; /* unchanged */
+      letter-spacing:0.5px;
+      -webkit-font-smoothing:none;
+      text-rendering:optimizeSpeed;
+      white-space:nowrap;
+      margin-bottom:1px;
+    }
 
     .left .model-line {
-      font-size: 13px;
-      font-weight: normal;
+      font-size:13px;
+      font-weight:normal;
     }
 
     .right { 
-      flex: 0 0 13mm; 
-      height: 100%;
+      flex:0 0 13mm; 
+      height:100%;
       display:flex; 
       align-items:center; 
       justify-content:center; 
-      padding-right: 1mm;
+      padding-right:1mm;
     }
 
     .right img { 
-      width: 12.5mm; 
-      height: 12.5mm; 
-      display: block; 
-      image-rendering: pixelated;
-      image-rendering: -webkit-optimize-contrast;
+      width:12.5mm; 
+      height:12.5mm; 
+      display:block;
+      image-rendering:pixelated;
+      image-rendering:-webkit-optimize-contrast;
     }
   </style>
 </head>
