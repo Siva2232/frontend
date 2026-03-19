@@ -377,6 +377,7 @@ const Products = () => {
   text-rendering:optimizeSpeed;
   white-space:nowrap;
   margin-bottom:1px;
+  margin-top:2px;
 }
 
     .left .model-line {
@@ -395,6 +396,7 @@ const Products = () => {
 
     .right img { 
       width:12.5mm; 
+      margin-top:3px;
       height:12.5mm; 
       display:block;
       image-rendering:pixelated;
