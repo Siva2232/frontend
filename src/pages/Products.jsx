@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { useData } from "../Context/DataContext";
+import { AuthContext } from "../Context/AuthContext";
 import API from "../api/axios";
 import Navbar from "../components/Navbar";
 import LabelCard from "../components/LabelCard";
@@ -30,6 +31,7 @@ import {
 
 const Products = () => {
   const { show, showSuccess, showError } = useToast();
+  const { admin, verifyPassword } = useContext(AuthContext);
   const { products, productsMeta, loading: dataLoading, fetchProducts } = useData();
 
   const [bulkForm, setBulkForm] = useState({
@@ -65,6 +67,15 @@ const Products = () => {
     confirmText: "Proceed"
   });
 
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    isLoading: false,
+    password: "",
+    ids: [],
+    message: "",
+  });
+
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
@@ -80,6 +91,80 @@ const Products = () => {
       p.serialNumber?.toLowerCase().includes(lower)
     );
   });
+
+  const toggleSelect = (id) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      const allSelected = currentItems.every((p) => next.has(p._id));
+      if (allSelected) {
+        currentItems.forEach((p) => next.delete(p._id));
+      } else {
+        currentItems.forEach((p) => next.add(p._id));
+      }
+      return next;
+    });
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const openDeleteModal = (ids, message) => {
+    setDeleteModal({
+      isOpen: true,
+      isLoading: false,
+      password: "",
+      ids,
+      message: message || `This will delete ${ids.length} product${ids.length === 1 ? '' : 's'}.`,
+    });
+  };
+
+  const closeDeleteModal = () => {
+    setDeleteModal((prev) => ({ ...prev, isOpen: false, password: "" }));
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteModal.ids || deleteModal.ids.length === 0) {
+      showError("No products selected for deletion.");
+      return;
+    }
+
+    if (!deleteModal.password) {
+      showError("Password is required to confirm deletion.");
+      return;
+    }
+
+    setDeleteModal((prev) => ({ ...prev, isLoading: true }));
+
+    try {
+      const verify = await verifyPassword(deleteModal.password);
+      if (!verify.success) {
+        showError(verify.message || "Password verification failed.");
+        setDeleteModal((prev) => ({ ...prev, isLoading: false }));
+        return;
+      }
+
+      await API.delete("/products", { data: { ids: deleteModal.ids } });
+      showSuccess(`Deleted ${deleteModal.ids.length} product${deleteModal.ids.length === 1 ? '' : 's'}.`);
+      clearSelection();
+      fetchProducts({ page: currentPage, limit: itemsPerPage, q: searchTerm });
+    } catch (error) {
+      const msg = error.response?.data?.message || "Delete failed";
+      showError(msg);
+    } finally {
+      setDeleteModal((prev) => ({ ...prev, isLoading: false, isOpen: false, password: "" }));
+    }
+  };
 
   const currentItems = filteredProducts;
   const totalPages = Math.max(1, Math.ceil((productsMeta.total || 0) / itemsPerPage));
@@ -910,8 +995,21 @@ const Products = () => {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <div className="bg-white border border-slate-200 text-slate-600 px-5 py-2.5 rounded-2xl font-bold text-xs shadow-sm whitespace-nowrap">
-                Current Stock: <span className="text-blue-600 ml-1">{products.length} Units</span>
+
+              <div className="flex items-center gap-3">
+                {selectedIds.size > 0 && (
+                  <button
+                    onClick={() => openDeleteModal(Array.from(selectedIds))}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-2xl text-xs font-semibold hover:bg-red-700 transition"
+                  >
+                    <X className="w-4 h-4" />
+                    Delete Selected
+                  </button>
+                )}
+
+                <div className="bg-white border border-slate-200 text-slate-600 px-5 py-2.5 rounded-2xl font-bold text-xs shadow-sm whitespace-nowrap">
+                  Current Stock: <span className="text-blue-600 ml-1">{products.length} Units</span>
+                </div>
               </div>
             </div>
           </div>
@@ -921,6 +1019,14 @@ const Products = () => {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50/50 border-b border-slate-100">
+                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                      <input
+                        type="checkbox"
+                        checked={currentItems.length > 0 && currentItems.every((p) => selectedIds.has(p._id))}
+                        onChange={toggleSelectAll}
+                        className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-400"
+                      />
+                    </th>
                     <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Asset Detail</th>
                     <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Identification</th>
                     <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Coverage</th>
@@ -932,14 +1038,14 @@ const Products = () => {
                 <tbody className="divide-y divide-slate-50">
                   {(loading || dataLoading.products) && products.length === 0 ? (
                     <tr>
-                      <td colSpan="6" className="px-8 py-20 text-center">
+                      <td colSpan="7" className="px-8 py-20 text-center">
                         <Loader2 className="animate-spin w-8 h-8 text-blue-600 mx-auto mb-3" />
                         <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Querying Inventory...</p>
                       </td>
                     </tr>
                   ) : currentItems.length === 0 ? (
                     <tr>
-                      <td colSpan="6" className="px-8 py-20 text-center">
+                      <td colSpan="7" className="px-8 py-20 text-center">
                         <div className="text-slate-300 italic text-sm">No assets match your search criteria.</div>
                       </td>
                     </tr>
@@ -953,6 +1059,14 @@ const Products = () => {
 
                       return (
                         <tr key={p._id} className="group hover:bg-slate-50/50 transition-colors">
+                          <td className="px-8 py-5">
+                            <input
+                              type="checkbox"
+                              checked={selectedIds.has(p._id)}
+                              onChange={() => toggleSelect(p._id)}
+                              className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-400"
+                            />
+                          </td>
                           <td className="px-8 py-5">
                             <div className="font-bold text-slate-800 text-sm">{p.productName || "Unknown Product"}</div>
                             <div className="text-[10px] text-slate-400 mt-0.5">MFG: {p.manufactureDate ? new Date(p.manufactureDate).toLocaleDateString() : 'N/A'}</div>
@@ -999,13 +1113,20 @@ const Products = () => {
                               </div>
                             )}
                           </td>
-                          <td className="px-8 py-5 text-right">
+                          <td className="px-8 py-5 text-right space-y-2">
                             <button 
                               onClick={() => setSelectedQR(p)}
                               className="inline-flex items-center gap-2 text-slate-400 hover:text-blue-600 font-bold text-xs transition-colors uppercase tracking-widest"
                             >
                               <Eye className="w-4 h-4" />
                               Preview
+                            </button>
+                            <button
+                              onClick={() => openDeleteModal([p._id], `Permanently delete product \"${p.productName}\"?`)}
+                              className="inline-flex items-center gap-2 text-red-500 hover:text-red-700 font-bold text-xs transition-colors uppercase tracking-widest"
+                            >
+                              <X className="w-4 h-4" />
+                              Delete
                             </button>
                           </td>
                         </tr>
@@ -1288,6 +1409,28 @@ const Products = () => {
         confirmText={confirmModal.confirmText}
         isLoading={loading}
       />
+
+      <ConfirmationModal
+        isOpen={deleteModal.isOpen}
+        onClose={closeDeleteModal}
+        onConfirm={handleConfirmDelete}
+        title="Confirm Delete"
+        message={deleteModal.message}
+        type="danger"
+        confirmText="Delete"
+        isLoading={deleteModal.isLoading}
+      >
+        <div className="mt-4">
+          <label className="text-xs font-semibold text-slate-600 uppercase">Admin Password</label>
+          <input
+            type="password"
+            value={deleteModal.password}
+            onChange={(e) => setDeleteModal(prev => ({ ...prev, password: e.target.value }))}
+            className="w-full mt-2 p-3 bg-slate-50 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm"
+            placeholder="Enter admin password"
+          />
+        </div>
+      </ConfirmationModal>
     </div>
   );
 };

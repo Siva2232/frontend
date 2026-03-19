@@ -1,23 +1,74 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useData } from '../Context/DataContext';
+import { useAuth } from '../Context/AuthContext';
 import API from '../api/axios';
 import Navbar from "../components/Navbar";
 import Footer from "../layouts/Footer";
 import ConfirmationModal from "../components/ConfirmationModal";
-import { Search, PenTool, CheckCircle,CheckCircle2, Clock, Calendar, PlusCircle, List, Loader2 } from 'lucide-react';
+import { Search, PenTool, CheckCircle,CheckCircle2, Clock, Calendar, PlusCircle, List, Loader2, MoreVertical, Trash2, X, Eye } from 'lucide-react';
 import { useToast } from '../components/Toast';
 
 const ServiceTracker = () => {
   const [searchParams] = useSearchParams();
   const { show, showSuccess, showError } = useToast();
   const { recentServices, loading: dataLoading, fetchRecentServices } = useData();
+  const { verifyPassword } = useAuth();
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(null);
   const [filteredRecent, setFilteredRecent] = useState([]);
   const [filterPeriod, setFilterPeriod] = useState('all');
   const [customDates, setCustomDates] = useState({ start: '', end: '' });
+  const [activeMenu, setActiveMenu] = useState(null);
+  const menuRef = useRef(null);
+
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    recordId: null,
+    password: "",
+    isSubmitting: false
+  });
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setActiveMenu(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleDeleteRecord = async () => {
+    if (!deleteModal.password) {
+      showError("Please enter your password");
+      return;
+    }
+
+    setDeleteModal(prev => ({ ...prev, isSubmitting: true }));
+    try {
+      const result = await verifyPassword(deleteModal.password);
+      if (!result.success) {
+        showError(result.message || "Invalid password");
+        setDeleteModal(prev => ({ ...prev, isSubmitting: false }));
+        return;
+      }
+
+      await API.delete(`/service/${deleteModal.recordId}`);
+      showSuccess("Service record deleted");
+      
+      // Refresh current search results and recent services list
+      if (searchQuery.trim()) {
+        handleSearch({ preventDefault: () => {} });
+      }
+      fetchRecentServices();
+      setDeleteModal({ isOpen: false, recordId: null, password: "", isSubmitting: false });
+    } catch (err) {
+      showError(err.response?.data?.message || "Delete failed");
+      setDeleteModal(prev => ({ ...prev, isSubmitting: false }));
+    }
+  };
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [showNewEntry, setShowNewEntry] = useState(false);
@@ -597,9 +648,54 @@ const ServiceTracker = () => {
                               {record.priority || 'Medium'}
                             </span>
                           </div>
-                          <div className="text-right">
-                            <div className="text-xl font-bold text-slate-900">₹{record.serviceCost.toLocaleString('en-IN')}</div>
-                            <div className="text-xs text-slate-500">{record.paymentStatus}</div>
+                          <div className="text-right flex items-start gap-4">
+                            <div>
+                                <div className="text-xl font-bold text-slate-900">₹{record.serviceCost.toLocaleString('en-IN')}</div>
+                                <div className="text-xs text-slate-500">{record.paymentStatus}</div>
+                            </div>
+                            
+                            {/* Action Menu (3 Dots) */}
+                            <div className="relative" ref={activeMenu === record._id ? menuRef : null}>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setActiveMenu(activeMenu === record._id ? null : record._id);
+                                    }}
+                                    className="p-1 hover:bg-slate-200 rounded-md transition-colors"
+                                >
+                                    <MoreVertical size={20} className="text-slate-500" />
+                                </button>
+                                
+                                {activeMenu === record._id && (
+                                    <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-lg shadow-xl z-20 py-1 overflow-hidden animate-in fade-in zoom-in duration-100 origin-top-right">
+                                        <button
+                                            onClick={() => {
+                                                fetchServiceHistory(record.serialNumber);
+                                                setActiveMenu(null);
+                                            }}
+                                            className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                                        >
+                                            <Eye size={16} />
+                                            View Details
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setDeleteModal({
+                                                    isOpen: true,
+                                                    recordId: record._id,
+                                                    password: "",
+                                                    isSubmitting: false
+                                                });
+                                                setActiveMenu(null);
+                                            }}
+                                            className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 border-t border-slate-100"
+                                        >
+                                            <Trash2 size={16} />
+                                            Delete Record
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                           </div>
                         </div>
 
@@ -863,13 +959,49 @@ const ServiceTracker = () => {
                 })}
               </td>
 
-              <td className="px-6 py-5 text-right">
-                <button
-                  onClick={() => fetchServiceHistory(service.serialNumber)}
-                  className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors"
-                >
-                  View Details →
-                </button>
+              <td className="px-6 py-5 text-right flex items-center justify-end">
+                {/* Inline Action Menu for Table */}
+                <div className="relative" ref={activeMenu === service._id ? menuRef : null}>
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveMenu(activeMenu === service._id ? null : service._id);
+                        }}
+                        className="p-1 hover:bg-neutral-200 rounded-md transition-colors"
+                    >
+                        <MoreVertical size={18} className="text-neutral-500" />
+                    </button>
+                    
+                    {activeMenu === service._id && (
+                        <div className="absolute right-0 mt-2 w-48 bg-white border border-neutral-200 rounded-lg shadow-xl z-20 py-1 overflow-hidden animate-in fade-in zoom-in duration-100 origin-top-right">
+                            <button
+                                onClick={() => {
+                                    fetchServiceHistory(service.serialNumber);
+                                    setActiveMenu(null);
+                                }}
+                                className="w-full text-left px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
+                            >
+                                <Eye size={16} />
+                                View Details
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setDeleteModal({
+                                        isOpen: true,
+                                        recordId: service._id,
+                                        password: "",
+                                        isSubmitting: false
+                                    });
+                                    setActiveMenu(null);
+                                }}
+                                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 border-t border-neutral-100"
+                            >
+                                <Trash2 size={16} />
+                                Delete Request
+                            </button>
+                        </div>
+                    )}
+                </div>
               </td>
             </tr>
           ))
@@ -1151,6 +1283,66 @@ const ServiceTracker = () => {
           </div>
         )}
       </ConfirmationModal>
+
+      {/* Delete Confirmation Modal with Password */}
+      <div className={`fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 transition-all duration-300 ${deleteModal.isOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
+          <div className={`bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden transition-all duration-300 transform ${deleteModal.isOpen ? 'scale-100' : 'scale-95'}`}>
+              <div className="p-8">
+                  <div className="flex justify-between items-center mb-6">
+                      <div className="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center text-red-600">
+                          <Trash2 size={24} />
+                      </div>
+                      <button 
+                          onClick={() => setDeleteModal(prev => ({ ...prev, isOpen: false }))}
+                          className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+                      >
+                          <X size={20} className="text-slate-400" />
+                      </button>
+                  </div>
+
+                  <h3 className="text-2xl font-bold text-slate-900 mb-2">Confirm Delete</h3>
+                  <p className="text-slate-500 mb-8">
+                      This action cannot be undone. Please enter your administrator password to confirm the deletion of this service record.
+                  </p>
+
+                  <div className="space-y-4">
+                      <div>
+                          <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 block">Admin Password</label>
+                          <input 
+                              type="password"
+                              value={deleteModal.password}
+                              onChange={(e) => setDeleteModal(prev => ({ ...prev, password: e.target.value }))}
+                              placeholder="Enter password..."
+                              className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-red-100 focus:border-red-400 outline-none transition-all font-medium"
+                              onKeyPress={(e) => e.key === 'Enter' && handleDeleteRecord()}
+                              autoFocus
+                          />
+                      </div>
+
+                      <div className="flex gap-3 pt-4">
+                          <button 
+                              onClick={() => setDeleteModal(prev => ({ ...prev, isOpen: false }))}
+                              className="flex-1 px-6 py-4 rounded-2xl text-slate-600 font-bold hover:bg-slate-50 transition-all border border-transparent hover:border-slate-200"
+                          >
+                              Cancel
+                          </button>
+                          <button 
+                              onClick={handleDeleteRecord}
+                              disabled={deleteModal.isSubmitting || !deleteModal.password}
+                              className="flex-[1.5] px-6 py-4 bg-red-600 text-white rounded-2xl font-bold hover:bg-red-700 shadow-lg shadow-red-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                          >
+                              {deleteModal.isSubmitting ? (
+                                  <>
+                                      <Loader2 className="w-5 h-5 animate-spin" />
+                                      Deleting...
+                                  </>
+                              ) : "Confirm Delete"}
+                          </button>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </div>
 
       <ConfirmationModal
         isOpen={statusModal.isOpen}

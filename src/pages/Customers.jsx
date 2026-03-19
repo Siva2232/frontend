@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useContext } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useData } from "../Context/DataContext";
+import { AuthContext } from "../Context/AuthContext";
 import API from "../api/axios";
 import Navbar from "../components/Navbar";
 import Footer from "../layouts/Footer";
@@ -38,6 +39,7 @@ import { useToast } from "../components/Toast";
 const Customers = () => {
   const navigate = useNavigate();
   const { show, showSuccess, showError } = useToast();
+  const { admin, verifyPassword } = useContext(AuthContext);
   const { customers: allCustomers, customersMeta, customerStats, loading: dataLoading, fetchCustomers } = useData();
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -69,6 +71,14 @@ const Customers = () => {
     onConfirm: () => {},
     type: "info",
     confirmText: "Proceed"
+  });
+
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    isLoading: false,
+    password: "",
+    ids: [],
+    message: "",
   });
 
   const hasSearchMounted = useRef(false);
@@ -188,8 +198,85 @@ const Customers = () => {
     manualServices: customerStats.manual || 0,
   };
 
+  const [selectedIds, setSelectedIds] = useState(new Set());
+
+  const toggleSelect = (id) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   const currentItems = filteredCustomers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
   const totalPages = Math.max(1, Math.ceil(filteredCustomers.length / itemsPerPage));
+
+  const isAllSelectedOnPage = currentItems.length > 0 && currentItems.every((c) => selectedIds.has(c._id));
+
+  const toggleSelectAll = () => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (isAllSelectedOnPage) {
+        currentItems.forEach((c) => next.delete(c._id));
+      } else {
+        currentItems.forEach((c) => next.add(c._id));
+      }
+      return next;
+    });
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const openDeleteModal = (ids, message) => {
+    setDeleteModal({
+      isOpen: true,
+      isLoading: false,
+      password: "",
+      ids,
+      message: message || `This will delete ${ids.length} record${ids.length === 1 ? '' : 's'}.`,
+    });
+  };
+
+  const closeDeleteModal = () => setDeleteModal((prev) => ({ ...prev, isOpen: false, password: "" }));
+
+  const handleConfirmDelete = async () => {
+    if (!deleteModal.ids || deleteModal.ids.length === 0) {
+      showError("No records selected for deletion.");
+      return;
+    }
+
+    if (!deleteModal.password) {
+      showError("Password is required to confirm deletion.");
+      return;
+    }
+
+    setDeleteModal((prev) => ({ ...prev, isLoading: true }));
+
+    try {
+      const verify = await verifyPassword(deleteModal.password);
+      if (!verify.success) {
+        showError(verify.message || "Password verification failed.");
+        setDeleteModal((prev) => ({ ...prev, isLoading: false }));
+        return;
+      }
+
+      if (deleteModal.ids.length === 1) {
+        await API.delete(`/register/${deleteModal.ids[0]}`);
+      } else {
+        await API.delete(`/register`, { data: { ids: deleteModal.ids } });
+      }
+
+      showSuccess(`Deleted ${deleteModal.ids.length} record${deleteModal.ids.length === 1 ? '' : 's'}.`);
+      clearSelection();
+      fetchCustomers({ page: currentPage, limit: itemsPerPage, q: searchTerm });
+    } catch (error) {
+      const msg = error.response?.data?.message || "Deletion failed";
+      showError(msg);
+    } finally {
+      setDeleteModal((prev) => ({ ...prev, isLoading: false, isOpen: false, password: "" }));
+    }
+  };
 
   const paginate = (pageNumber) => {
     if (pageNumber < 1 || pageNumber > totalPages) return;
@@ -245,6 +332,16 @@ const Customers = () => {
               <RefreshCw size={16} />
               Manual Service
             </button>
+
+            {selectedIds.size > 0 && (
+              <button
+                onClick={() => openDeleteModal(Array.from(selectedIds))}
+                className="flex items-center gap-2 px-5 py-2.5 bg-red-600 text-white rounded-xl text-sm font-medium hover:bg-red-700 active:scale-[0.98] transition-all shadow-sm"
+              >
+                <X size={16} />
+                Delete Selected ({selectedIds.size})
+              </button>
+            )}
 
             <button className="flex items-center gap-2 px-5 py-2.5 bg-white border border-neutral-200 rounded-xl text-sm font-medium text-neutral-700 hover:bg-neutral-50 active:scale-[0.98] transition-all shadow-sm">
               <Download size={16} />
@@ -599,35 +696,43 @@ const Customers = () => {
             <table className="w-full min-w-max">
               <thead>
                 <tr className="bg-neutral-50/80 border-b border-neutral-100">
-                  {[
-                    "Customer",
-                    "Contact",
-                    "Model",
-                    "Car Model",
-                    "Serial",
-                    "Shop",
-                    "Purchase",
-                    "Expiry",
-                    "Registered",
-                    "",
-                  ].map((header, i) => (
-                    <th
-                      key={header}
-                      className={`px-5 py-4 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider ${
-                        i === 9 ? "text-right" : ""
-                      }`}
-                    >
-                      {header}
-                      {header === "Customer" && <ArrowUpDown size={12} className="inline ml-1 opacity-60" />}
-                    </th>
-                  ))}
-                </tr>
+                <th className="px-5 py-4 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">
+                  <input
+                    type="checkbox"
+                    checked={isAllSelectedOnPage}
+                    onChange={toggleSelectAll}
+                    className="h-4 w-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-400"
+                  />
+                </th>
+                {[
+                  "Customer",
+                  "Contact",
+                  "Model",
+                  "Car Model",
+                  "Serial",
+                  "Shop",
+                  "Purchase",
+                  "Expiry",
+                  "Registered",
+                  "",
+                ].map((header, i) => (
+                  <th
+                    key={header}
+                    className={`px-5 py-4 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider ${
+                      i === 9 ? "text-right" : ""
+                    }`}
+                  >
+                    {header}
+                    {header === "Customer" && <ArrowUpDown size={12} className="inline ml-1 opacity-60" />}
+                  </th>
+                ))}
+              </tr>
               </thead>
 
               <tbody className="divide-y divide-neutral-100">
                 {dataLoading.customers && allCustomers.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="px-5 py-24 text-center">
+                    <td colSpan={11} className="px-5 py-24 text-center">
                       <div className="inline-flex flex-col items-center gap-4">
                         <Loader2 className="animate-spin text-blue-600" size={28} />
                         <p className="text-neutral-500 font-medium tracking-wide uppercase text-xs">Syncing Customers...</p>
@@ -636,7 +741,7 @@ const Customers = () => {
                   </tr>
                 ) : currentItems.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="py-24 text-center">
+                    <td colSpan={11} className="py-24 text-center">
                       <p className="text-neutral-500 font-medium tracking-wide uppercase text-xs">No customers found</p>
                     </td>
                   </tr>
@@ -648,6 +753,14 @@ const Customers = () => {
                         key={c._id}
                         className="group hover:bg-neutral-50/70 transition-colors"
                       >
+                        <td className="px-5 py-4">
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.has(c._id)}
+                            onChange={() => toggleSelect(c._id)}
+                            className="h-4 w-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-400"
+                          />
+                        </td>
                         <td
                           className="px-5 py-4 cursor-pointer"
                           onClick={() => navigate(`/services?q=${encodeURIComponent(c.serialNumber)}`)}
@@ -769,6 +882,13 @@ const Customers = () => {
                               >
                                 <ExternalLink size={16} />
                                 View Track
+                              </button>
+                              <button
+                                onClick={() => openDeleteModal([c._id], `Delete customer ${c.customerName || 'this record'}?`)}
+                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 font-semibold hover:bg-red-50 transition-colors"
+                              >
+                                <X size={16} />
+                                Delete
                               </button>
                             </div>
                           )}
@@ -988,6 +1108,28 @@ const Customers = () => {
         confirmText={confirmModal.confirmText}
         isLoading={isUpdating}
       />
+
+      <ConfirmationModal
+        isOpen={deleteModal.isOpen}
+        onClose={closeDeleteModal}
+        onConfirm={handleConfirmDelete}
+        title="Confirm Delete"
+        message={deleteModal.message}
+        type="danger"
+        confirmText="Delete"
+        isLoading={deleteModal.isLoading}
+      >
+        <div className="mt-4">
+          <label className="text-xs font-semibold text-slate-600 uppercase">Admin Password</label>
+          <input
+            type="password"
+            value={deleteModal.password}
+            onChange={(e) => setDeleteModal(prev => ({ ...prev, password: e.target.value }))}
+            className="w-full mt-2 p-3 bg-slate-50 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm"
+            placeholder="Enter admin password"
+          />
+        </div>
+      </ConfirmationModal>
     </div>
   );
 };

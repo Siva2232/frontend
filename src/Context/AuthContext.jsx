@@ -1,8 +1,10 @@
-import { createContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 import axios from "axios";
 import API from "../api/axios";
 
 export const AuthContext = createContext();
+
+export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
   const [admin, setAdmin] = useState(null);
@@ -11,14 +13,42 @@ export const AuthProvider = ({ children }) => {
   // Check token on page load
   useEffect(() => {
     const token = localStorage.getItem("token");
+    const email = localStorage.getItem("adminEmail");
 
     if (token) {
-      setAdmin({ token });
+      setAdmin({ token, email });
       axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
     }
 
     setLoading(false);
   }, []);
+
+  // Verify password (re-auth) - used for sensitive actions like delete
+  const verifyPassword = async (password) => {
+    if (!admin?.email) {
+      return { success: false, message: "No admin email stored. Please log in again." };
+    }
+
+    try {
+      const { data } = await API.post("/auth/login", {
+        email: admin.email,
+        password,
+      });
+
+      // Refresh token on successful re-auth
+      localStorage.setItem("token", data.token);
+      axios.defaults.headers.common["Authorization"] = `Bearer ${data.token}`;
+      setAdmin((prev) => ({ ...prev, token: data.token }));
+
+      return { success: true };
+    } catch (error) {
+      let message = "Password verification failed.";
+      if (error.response) {
+        message = error.response.data?.message || message;
+      }
+      return { success: false, message };
+    }
+  };
 
   // Login
   const login = async (email, password) => {
@@ -29,9 +59,9 @@ export const AuthProvider = ({ children }) => {
       });
 
       localStorage.setItem("token", data.token);
+      localStorage.setItem("adminEmail", email);
       axios.defaults.headers.common["Authorization"] = `Bearer ${data.token}`;
-      setAdmin({ token: data.token });
-
+      setAdmin({ token: data.token, email });
       return { success: true };
     } catch (error) {
       console.error("Login error:", error);
@@ -56,7 +86,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ admin, login, logout, loading }}>
+    <AuthContext.Provider value={{ admin, login, logout, loading, verifyPassword }}>
       {children}
     </AuthContext.Provider>
   );
