@@ -26,7 +26,8 @@ import {
   LayoutGrid,
   FileStack,
   ChevronRight,
-  ChevronLeft
+  ChevronLeft,
+  MoreVertical
 } from "lucide-react";
 
 const Products = () => {
@@ -75,6 +76,9 @@ const Products = () => {
     ids: [],
     message: "",
   });
+
+  const [activeDropdown, setActiveDropdown] = useState(null);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0, flipUp: false });
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -1113,20 +1117,26 @@ const Products = () => {
                               </div>
                             )}
                           </td>
-                          <td className="px-8 py-5 text-right space-y-2">
-                            <button 
-                              onClick={() => setSelectedQR(p)}
-                              className="inline-flex items-center gap-2 text-slate-400 hover:text-blue-600 font-bold text-xs transition-colors uppercase tracking-widest"
-                            >
-                              <Eye className="w-4 h-4" />
-                              Preview
-                            </button>
+                          <td className="px-8 py-5 text-right">
                             <button
-                              onClick={() => openDeleteModal([p._id], `Permanently delete product \"${p.productName}\"?`)}
-                              className="inline-flex items-center gap-2 text-red-500 hover:text-red-700 font-bold text-xs transition-colors uppercase tracking-widest"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (activeDropdown === p._id) {
+                                  setActiveDropdown(null);
+                                } else {
+                                  const rect = e.currentTarget.getBoundingClientRect();
+                                  const flipUp = rect.bottom + 120 > window.innerHeight;
+                                  setDropdownPos({
+                                    top: flipUp ? rect.top : rect.bottom + 4,
+                                    right: window.innerWidth - rect.right,
+                                    flipUp
+                                  });
+                                  setActiveDropdown(p._id);
+                                }
+                              }}
+                              className="p-2 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition-colors shadow-sm border border-transparent hover:border-slate-200"
                             >
-                              <X className="w-4 h-4" />
-                              Delete
+                              <MoreVertical size={18} />
                             </button>
                           </td>
                         </tr>
@@ -1188,6 +1198,47 @@ const Products = () => {
             )}
           </div>
         </div>
+
+        {/* Fixed-position dropdown portal */}
+        {activeDropdown && (() => {
+          const p = currentItems.find((prod) => prod._id === activeDropdown) || products.find((prod) => prod._id === activeDropdown);
+          if (!p) return null;
+          return (
+            <>
+              <div className="fixed inset-0 z-[999]" onClick={() => setActiveDropdown(null)} />
+              <div
+                className="fixed w-44 bg-white border border-slate-200 rounded-xl shadow-xl shadow-slate-200/40 py-1.5 z-[1000] animate-in fade-in zoom-in-95 duration-150"
+                style={{
+                  ...(dropdownPos.flipUp
+                    ? { bottom: `${window.innerHeight - dropdownPos.top + 4}px` }
+                    : { top: `${dropdownPos.top}px` }),
+                  right: `${dropdownPos.right}px`
+                }}
+              >
+                <button
+                  onClick={() => {
+                    setActiveDropdown(null);
+                    setSelectedQR(p);
+                  }}
+                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors"
+                >
+                  <Eye size={16} />
+                  Preview
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveDropdown(null);
+                    openDeleteModal([p._id], `Permanently delete product \"${p.productName}\"?`);
+                  }}
+                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors border-t border-slate-100"
+                >
+                  <X size={16} />
+                  Delete
+                </button>
+              </div>
+            </>
+          );
+        })()}
 
         {/* Modal Overlay */}
         {selectedQR && (

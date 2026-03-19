@@ -275,7 +275,7 @@ const ServiceTracker = () => {
       phone: '',
       shopName: '',
       issueDescription: '',
-      priority: 'Medium',
+      priority: '',
       serviceCost: 0,
       technicianNotes: ''
     });
