@@ -385,23 +385,23 @@ const Products = () => {
       font-weight:normal;
     }
 
-    .right { 
-      flex:0 0 13mm; 
-      height:100%;
-      display:flex; 
-      align-items:center; 
-      justify-content:center; 
-      padding-right:1mm;
-    }
+  .right { 
+  flex:0 0 13mm; 
+  height:100%;
+  display:flex; 
+  align-items:center; 
+  justify-content:center; 
+  padding-right:1mm;
+}
 
-    .right img { 
-      width:12.5mm; 
-      margin-top:3px;
-      height:12.5mm; 
-      display:block;
-      image-rendering:pixelated;
-      image-rendering:-webkit-optimize-contrast;
-    }
+.right img { 
+  width:12.5mm; 
+  height:12.5mm; 
+  display:block;
+  transform: translateY(1.5mm); /* move QR slightly down */
+  image-rendering:pixelated;
+  image-rendering:-webkit-optimize-contrast;
+}
   </style>
 </head>
 
