@@ -112,7 +112,12 @@ const Customers = () => {
       startOfToday.setHours(0, 0, 0, 0);
 
       if (dateFilter === "today") {
+        // Clear time components for comparison to handle records created exactly at midnight or later
         if (createdAt < startOfToday) return false;
+        // Also ensure it's not in the future (though unlikely)
+        const endOfToday = new Date(startOfToday);
+        endOfToday.setHours(23, 59, 59, 999);
+        if (createdAt > endOfToday) return false;
       } else if (dateFilter === "yesterday") {
         const startOfYesterday = new Date(startOfToday);
         startOfYesterday.setDate(startOfYesterday.getDate() - 1);
