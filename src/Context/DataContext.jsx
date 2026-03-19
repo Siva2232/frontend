@@ -81,11 +81,26 @@ export const DataProvider = ({ children }) => {
     const fetchCustomers = useCallback(async (options = {}) => {
         setLoading(prev => ({ ...prev, customers: true }));
         try {
-            const { page = 1, limit = DEFAULT_PAGE_SIZE, q = "" } = options;
+            const {
+                page = 1,
+                limit = DEFAULT_PAGE_SIZE,
+                q = "",
+                status,
+                dateFilter,
+                startDate,
+                endDate,
+                isManual,
+            } = options;
+
             const params = new URLSearchParams();
             if (page) params.append("page", page);
             if (limit) params.append("limit", limit);
             if (q) params.append("q", q);
+            if (status) params.append("status", status);
+            if (dateFilter) params.append("dateFilter", dateFilter);
+            if (startDate) params.append("startDate", startDate);
+            if (endDate) params.append("endDate", endDate);
+            if (typeof isManual === "boolean") params.append("isManual", String(isManual));
 
             const url = `/register${params.toString() ? `?${params.toString()}` : ""}`;
             const { data } = await API.get(url);

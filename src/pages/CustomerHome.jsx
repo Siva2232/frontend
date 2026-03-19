@@ -27,7 +27,7 @@ const supportCategories = [
     description: "Chat with our team instantly",
     icon: MessageCircle,
     color: "from-green-500/10 to-emerald-600/5",
-    link: () => "https://wa.me/919876543210?text=Hello%2C+I+need+help+with+my+Lancaster+product", // ← CHANGE THIS NUMBER
+    link: () => "https://wa.me/+919567269840?text=Hello%2C+I+need+help+with+my+Lancaster+product", // ← CHANGE THIS NUMBER
     highlight: true,
   },
 ];

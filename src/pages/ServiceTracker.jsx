@@ -19,6 +19,7 @@ const ServiceTracker = () => {
   const [filterPeriod, setFilterPeriod] = useState('all');
   const [customDates, setCustomDates] = useState({ start: '', end: '' });
   const [statusFilter, setStatusFilter] = useState('all');
+  const [priorityFilter, setPriorityFilter] = useState('all');
   const [showNewEntry, setShowNewEntry] = useState(false);
   const [showManualEntry, setShowManualEntry] = useState(false);
 
@@ -30,6 +31,7 @@ const ServiceTracker = () => {
     shopName: '',
     issueDescription: '',
     notes: '',
+    priority: 'Medium',
     serviceCost: 0,
     technicianNotes: ''
   });
@@ -56,7 +58,9 @@ const ServiceTracker = () => {
   const [statusModal, setStatusModal] = useState({
     isOpen: false,
     recordId: null,
+    serialNumber: '',
     status: null,
+    priority: 'Medium',
     technicianName: "",
     shopName: "",
     serviceCost: "",
@@ -160,8 +164,13 @@ const ServiceTracker = () => {
     if (statusFilter !== 'all') {
       arr = arr.filter(r => r.status === statusFilter);
     }
+
+    if (priorityFilter !== 'all') {
+      arr = arr.filter(r => (r.priority || 'Medium') === priorityFilter);
+    }
+
     setFilteredRecent(arr);
-  }, [recentServices, filterPeriod, customDates, statusFilter]);
+  }, [recentServices, filterPeriod, customDates, statusFilter, priorityFilter]);
 
   const [newEntry, setNewEntry] = useState({
     serialNumber: '',
@@ -170,6 +179,7 @@ const ServiceTracker = () => {
     phone: '',
     shopName: '',
     issueDescription: '',
+    priority: 'Medium',
     serviceCost: 0,
     technicianNotes: ''
   });
@@ -188,7 +198,8 @@ const ServiceTracker = () => {
         customerName: res.data.registration?.customerName || '',
         phone: res.data.registration?.phone || '',
         shopName: res.data.registration?.purchaseShopName || '',
-        modelNumber: res.data.registration?.modelNumber || ''
+        modelNumber: res.data.registration?.modelNumber || '',
+        priority: res.data.serviceHistory?.[0]?.priority || 'Medium'
       }));
       return res.data;
     } catch (err) {
@@ -198,6 +209,13 @@ const ServiceTracker = () => {
       return null;
     } finally {
       setLoading(false);
+    }
+
+    // refresh detail view if we have a serial set
+    if (statusModal.serialNumber) {
+      fetchServiceHistory(statusModal.serialNumber);
+    } else if (searchQuery.trim()) {
+      handleSearch({ preventDefault: () => {} });
     }
   };
 
@@ -216,6 +234,7 @@ const ServiceTracker = () => {
       phone: '',
       shopName: '',
       issueDescription: '',
+      priority: 'Medium',
       serviceCost: 0,
       technicianNotes: ''
     });
@@ -297,10 +316,13 @@ const ServiceTracker = () => {
   };
 
   const openStatusModal = (record, status) => {
+    setSearchQuery(record.serialNumber || '');
     setStatusModal({
       isOpen: true,
       recordId: record._id,
+      serialNumber: record.serialNumber || '',
       status,
+      priority: record.priority || 'Medium',
       technicianName: record.technicianName || "",
       shopName: record.shopName || "",
       serviceCost: record.serviceCost != null ? String(record.serviceCost) : "",
@@ -329,7 +351,7 @@ const ServiceTracker = () => {
       return;
     }
 
-    const payload = { status };
+    const payload = { status, priority: statusModal.priority || 'Medium' };
     if (status === 'In Progress') payload.technicianName = technicianName.trim();
     if (status === 'Returned') {
       payload.serviceCost = Number(serviceCost);
@@ -370,11 +392,14 @@ const ServiceTracker = () => {
             {/* status tiles moved here */}
           <div className="mt-6 mb-8 flex flex-wrap gap-4">
             {[
+              { label: 'All Services', status: 'all', icon: List, color: 'text-slate-700', bg: 'bg-slate-50' },
               { label: 'Processing', status: 'In Progress', icon: Clock, color: 'text-blue-700', bg: 'bg-blue-50' },
               { label: 'Returned to Customer', status: 'Returned', icon: CheckCircle, color: 'text-green-700', bg: 'bg-green-50' },
               { label: 'Pending', status: 'Received', icon: Clock, color: 'text-yellow-700', bg: 'bg-yellow-50' },
             ].map(tile => {
-              const count = recentServices.filter(r => r.status === tile.status).length;
+              const count = tile.status === 'all'
+                ? recentServices.length
+                : recentServices.filter(r => r.status === tile.status).length;
               const active = statusFilter === tile.status;
               return (
                 <button
@@ -488,6 +513,9 @@ const ServiceTracker = () => {
                   <div className="space-y-4 text-sm">
                     <div><div className="text-xs text-slate-500 uppercase">Name</div><div className="font-semibold">{data.registration.customerName}</div></div>
                     <div><div className="text-xs text-slate-500 uppercase">Phone</div><div className="font-semibold">{data.registration.phone}</div></div>
+                    {data.registration.carModelName && (
+                      <div><div className="text-xs text-slate-500 uppercase">Car Model</div><div className="font-semibold">{data.registration.carModelName}</div></div>
+                    )}
                     <div><div className="text-xs text-slate-500 uppercase">Registered</div><div className="font-semibold">{new Date(data.registration.registrationDate).toLocaleDateString('en-IN')}</div></div>
                   </div>
                 </div>
@@ -496,6 +524,18 @@ const ServiceTracker = () => {
               <button
                 onClick={() => {
                   if (data.registration) {
+                    setNewEntry(prev => ({
+                      ...prev,
+                      serialNumber: data.registration.serialNumber || '',
+                      customerName: data.registration.customerName || '',
+                      phone: data.registration.phone || '',
+                      shopName: data.registration.purchaseShopName || '',
+                      modelNumber: data.registration.modelNumber || '',
+                      priority: 'Medium',
+                      issueDescription: '',
+                      serviceCost: 0,
+                      technicianNotes: ''
+                    }));
                     setShowNewEntry(true);
                   } else {
                     // No registration = manual flow
@@ -508,6 +548,7 @@ const ServiceTracker = () => {
                       shopName: lastRecord?.shopName || '',
                       issueDescription: '',
                       notes: '',
+                      priority: 'Medium',
                       serviceCost: 0,
                       technicianNotes: ''
                     });
@@ -538,14 +579,24 @@ const ServiceTracker = () => {
                     data.serviceHistory.map((record) => (
                       <div key={record._id} className="p-5 hover:bg-slate-50/60 transition-colors">
                         <div className="flex justify-between items-start mb-4">
-                          <span className={`inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-semibold border ${
-                            record.status === 'Returned' ? 'bg-green-100 text-green-800 border-green-200' :
-                            record.status === 'Received' ? 'bg-blue-100 text-blue-800 border-blue-200' :
-                            'bg-yellow-100 text-yellow-800 border-yellow-200'
-                          }`}>
-                            {record.status === 'Returned' ? <CheckCircle className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />}
-                            {record.status === 'Returned' ? 'Returned to Customer' : record.status}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className={`inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-semibold border ${
+                              record.status === 'Returned' ? 'bg-green-100 text-green-800 border-green-200' :
+                              record.status === 'Received' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                              'bg-yellow-100 text-yellow-800 border-yellow-200'
+                            }`}>
+                              {record.status === 'Returned' ? <CheckCircle className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />}
+                              {record.status === 'Returned' ? 'Returned to Customer' : record.status}
+                            </span>
+
+                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-semibold uppercase ${
+                              record.priority === 'High' ? 'bg-rose-50 text-rose-700 border border-rose-100' :
+                              record.priority === 'Low' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
+                              'bg-slate-50 text-slate-700 border border-slate-100'
+                            }`}>
+                              {record.priority || 'Medium'}
+                            </span>
+                          </div>
                           <div className="text-right">
                             <div className="text-xl font-bold text-slate-900">₹{record.serviceCost.toLocaleString('en-IN')}</div>
                             <div className="text-xs text-slate-500">{record.paymentStatus}</div>
@@ -593,26 +644,43 @@ const ServiceTracker = () => {
                           </div>
                         </div>
 
-                        {record.status !== 'Returned' && (
-                          <div className="mt-4 flex gap-2 flex-wrap">
-                            <button
-                              disabled={record.status === 'Returned'}
-                              onClick={() => openStatusModal(record, 'Returned')}
-                              title={record.status === 'Returned' ? "Already returned to customer" : "Mark as returned"}
-                              className="px-5 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              Returned to Customer
-                            </button>
-                            <button
-                              disabled={record.status === 'In Progress'}
-                              onClick={() => openStatusModal(record, 'In Progress')}
-                              title={record.status === 'In Progress' ? "Now status in progress" : "Mark as in progress"}
-                              className="px-5 py-2 bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              In Progress
-                            </button>
-                          </div>
-                        )}
+                        <div className="mt-4 flex gap-2 flex-wrap">
+                          <button
+                            onClick={() => openStatusModal(record, 'In Progress')}
+                            title={
+                              record.status === 'Received'
+                                ? 'Mark as in progress'
+                                : record.status === 'In Progress'
+                                ? 'Already in progress'
+                                : 'Cannot mark in progress'
+                            }
+                            disabled={record.status !== 'Received'}
+                            className={`px-5 py-2 text-white text-xs font-semibold rounded-lg transition-colors ${
+                              record.status === 'Received'
+                                ? 'bg-yellow-500 hover:bg-yellow-600'
+                                : 'bg-yellow-500 opacity-50 cursor-not-allowed'
+                            }`}
+                          >
+                            In Progress
+                          </button>
+
+                          <button
+                            onClick={() => openStatusModal(record, 'Returned')}
+                            title={
+                              record.status === 'In Progress'
+                                ? 'Mark as returned'
+                                : 'Must be in progress first'
+                            }
+                            disabled={record.status !== 'In Progress'}
+                            className={`px-5 py-2 text-white text-xs font-semibold rounded-lg transition-colors ${
+                              record.status === 'In Progress'
+                                ? 'bg-green-600 hover:bg-green-700'
+                                : 'bg-green-600 opacity-50 cursor-not-allowed'
+                            }`}
+                          >
+                            Returned to Customer
+                          </button>
+                        </div>
                       </div>
                     ))
                   )}
@@ -654,6 +722,17 @@ const ServiceTracker = () => {
         <option value="custom">Custom Range</option>
       </select>
 
+      <select
+        value={priorityFilter}
+        onChange={(e) => setPriorityFilter(e.target.value)}
+        className="text-sm font-medium border border-neutral-200 rounded-lg px-4 py-2.5 bg-white focus:border-neutral-400 focus:ring-1 focus:ring-neutral-300/50 outline-none transition-all shadow-sm"
+      >
+        <option value="all">All Priorities</option>
+        <option value="High">High Priority</option>
+        <option value="Medium">Medium Priority</option>
+        <option value="Low">Low Priority</option>
+      </select>
+
       {filterPeriod === 'custom' && (
         <div className="flex items-center gap-3 bg-neutral-50 px-4 py-2.5 rounded-lg border border-neutral-200">
           <Calendar size={16} className="text-neutral-500" />
@@ -677,6 +756,7 @@ const ServiceTracker = () => {
         onClick={() => {
           setFilterPeriod('all');
           setCustomDates({ start: '', end: '' });
+          setPriorityFilter('all');
         }}
         className="text-sm text-neutral-500 hover:text-red-600 font-medium transition-colors px-2"
       >
@@ -691,6 +771,7 @@ const ServiceTracker = () => {
       <thead>
         <tr className="bg-neutral-50/80 border-b border-neutral-100">
           <th className="px-6 py-5 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Status</th>
+          <th className="px-6 py-5 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Priority</th>
           <th className="px-6 py-5 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Serial</th>
           <th className="px-6 py-5 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Customer</th>
           <th className="px-6 py-5 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Technician</th>
@@ -703,7 +784,7 @@ const ServiceTracker = () => {
       <tbody className="divide-y divide-neutral-100 text-sm text-neutral-700">
         {filteredRecent.length === 0 ? (
           <tr>
-            <td colSpan={7} className="py-24 text-center">
+            <td colSpan={8} className="py-24 text-center">
               <div className="flex flex-col items-center justify-center gap-4 opacity-70">
                 <div className="w-16 h-16 rounded-full bg-neutral-100 flex items-center justify-center">
                   <Search className="w-8 h-8 text-neutral-400" />
@@ -735,6 +816,18 @@ const ServiceTracker = () => {
                     <Clock size={14} />
                   )}
                   {service.status === 'Returned' ? 'Returned to Customer' : service.status}
+                </span>
+              </td>
+
+              <td className="px-6 py-5">
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-semibold uppercase ${
+                  service.priority === 'High'
+                    ? 'bg-rose-50 text-rose-700 border border-rose-100'
+                    : service.priority === 'Low'
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                    : 'bg-slate-50 text-slate-700 border border-slate-100'
+                }`}>
+                  {service.priority || 'Medium'}
                 </span>
               </td>
 
@@ -899,13 +992,16 @@ const ServiceTracker = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div>
-                  <label className="text-xs font-semibold text-slate-600 uppercase mb-1.5 block">Phone *</label>
-                  <input
+                  <label className="text-xs font-semibold text-slate-600 uppercase mb-1.5 block">Priority</label>
+                  <select
                     className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm"
-                    value={newEntry.phone}
-                    onChange={e => setNewEntry({ ...newEntry, phone: e.target.value })}
-                    required
-                  />
+                    value={newEntry.priority}
+                    onChange={e => setNewEntry({ ...newEntry, priority: e.target.value })}
+                  >
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                  </select>
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-slate-600 uppercase mb-1.5 block">Est. Cost (₹)</label>
@@ -1006,6 +1102,7 @@ const ServiceTracker = () => {
                     onChange={e => setManualEntry({ ...manualEntry, modelNumber: e.target.value })}
                   />
                 </div>
+
                 <div>
                   <label className="text-xs font-semibold text-slate-600 uppercase mb-1.5 block">Est. Cost (₹)</label>
                   <input
@@ -1092,6 +1189,19 @@ const ServiceTracker = () => {
         {statusModal.error && (
           <div className="text-sm text-red-600 mb-3">{statusModal.error}</div>
         )}
+
+        <div className="space-y-2">
+          <label className="text-xs font-semibold text-slate-600 uppercase">Priority</label>
+          <select
+            value={statusModal.priority}
+            onChange={(e) => setStatusModal(prev => ({ ...prev, priority: e.target.value }))}
+            className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm"
+          >
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
+          </select>
+        </div>
 
         {statusModal.status === 'In Progress' && (
           <div className="space-y-2">

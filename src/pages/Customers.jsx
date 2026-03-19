@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useData } from "../Context/DataContext";
 import API from "../api/axios";
@@ -69,23 +69,56 @@ const Customers = () => {
     confirmText: "Proceed"
   });
 
+  const hasMounted = useRef(false);
+  const hasSearchMounted = useRef(false);
+
   useEffect(() => {
     // load the first page of customers once
-    fetchCustomers({ page: 1, limit: itemsPerPage });
+    refreshCustomers({ page: 1 });
   }, []);
 
   useEffect(() => {
+    if (!hasSearchMounted.current) {
+      hasSearchMounted.current = true;
+      return;
+    }
+
     // debounced search + pagination
     if (searchDebounce) clearTimeout(searchDebounce);
 
     const timer = setTimeout(() => {
-      setCurrentPage(1);
-      fetchCustomers({ page: 1, limit: itemsPerPage, q: searchTerm });
+      refreshCustomers({ page: 1, q: searchTerm });
     }, 250);
 
     setSearchDebounce(timer);
     return () => clearTimeout(timer);
   }, [searchTerm, itemsPerPage, fetchCustomers]);
+
+  const buildCustomerQuery = ({ page = 1, q = "" } = {}) => {
+    const params = { page, limit: itemsPerPage };
+
+    if (q) params.q = q;
+    if (filterType === "active") params.status = "active";
+    if (filterType === "expired") params.status = "expired";
+    if (filterType === "manual") params.isManual = true;
+
+    if (dateFilter && dateFilter !== "all") {
+      params.dateFilter = dateFilter;
+      if (dateFilter === "custom") {
+        if (customStartDate) params.startDate = customStartDate;
+        if (customEndDate) params.endDate = customEndDate;
+      }
+    }
+
+    return params;
+  };
+
+  const refreshCustomers = (opts = {}) => {
+    const page = opts.page || 1;
+    setCurrentPage(page);
+    const q = opts.q !== undefined ? opts.q : searchTerm;
+    fetchCustomers(buildCustomerQuery({ page, q }));
+  };
 
   useEffect(() => {
     const q = searchParams.get("search");
@@ -94,60 +127,15 @@ const Customers = () => {
     }
   }, [searchParams]);
 
-  // When using server-side pagination, `customers` already reflects the current page.
-  // All filtering/search is done on the server via query params, so we only need
-  // to apply client-side status/date filters if necessary.
-  const filteredCustomers = customers.filter((c) => {
-    // 1. Status filter (Active/Expired)
-    const isExpired = new Date(c.expiryDate) < new Date();
-
-    if (filterType === "active") {
-      if (isExpired) return false;
-    } else if (filterType === "expired") {
-      if (!isExpired) return false;
-    } else if (filterType === "manual") {
-      if (!c.isManual) return false;
-    }
-    
-    // 2. Date range filter
-    if (dateFilter !== "all") {
-      const createdAt = new Date(c.createdAt);
-      const startOfToday = new Date();
-      startOfToday.setHours(0, 0, 0, 0);
-
-      if (dateFilter === "today") {
-        // Clear time components for comparison to handle records created exactly at midnight or later
-        if (createdAt < startOfToday) return false;
-        // Also ensure it's not in the future (though unlikely)
-        const endOfToday = new Date(startOfToday);
-        endOfToday.setHours(23, 59, 59, 999);
-        if (createdAt > endOfToday) return false;
-      } else if (dateFilter === "yesterday") {
-        const startOfYesterday = new Date(startOfToday);
-        startOfYesterday.setDate(startOfYesterday.getDate() - 1);
-        if (createdAt < startOfYesterday || createdAt >= startOfToday) return false;
-      } else if (dateFilter === "week") {
-        const lastWeek = new Date(startOfToday);
-        lastWeek.setDate(lastWeek.getDate() - 7);
-        if (createdAt < lastWeek) return false;
-      } else if (dateFilter === "month") {
-        const lastMonth = new Date(startOfToday);
-        lastMonth.setMonth(lastMonth.getMonth() - 1);
-        if (createdAt < lastMonth) return false;
-      } else if (dateFilter === "year") {
-        const lastYear = new Date(startOfToday);
-        lastYear.setFullYear(lastYear.getFullYear() - 1);
-        if (createdAt < lastYear) return false;
-      } else if (dateFilter === "custom" && customStartDate && customEndDate) {
-        const start = new Date(customStartDate);
-        const end = new Date(customEndDate);
-        end.setHours(23, 59, 59, 999);
-        if (createdAt < start || createdAt > end) return false;
-      }
+  useEffect(() => {
+    if (!hasMounted.current) {
+      hasMounted.current = true;
+      return;
     }
 
-    return true;
-  });
+    setCurrentPage(1);
+    refreshCustomers({ page: 1 });
+  }, [filterType, dateFilter, customStartDate, customEndDate]);
 
   const stats = {
     total: customerStats.totalAll,
@@ -157,13 +145,12 @@ const Customers = () => {
     manualServices: customerStats.manual || 0,
   };
 
-  const currentItems = filteredCustomers;
+  const currentItems = customers;
   const totalPages = Math.max(1, Math.ceil((customersMeta.total || 0) / itemsPerPage));
 
   const paginate = (pageNumber) => {
     if (pageNumber < 1 || pageNumber > totalPages) return;
-    setCurrentPage(pageNumber);
-    fetchCustomers({ page: pageNumber, limit: itemsPerPage, q: searchTerm });
+    refreshCustomers({ page: pageNumber });
   };
 
   useEffect(() => {
@@ -199,7 +186,7 @@ const Customers = () => {
               Customers
             </h1>
             <p className="mt-1.5 text-neutral-600 text-sm">
-              Manage registered warranty customers • {customersMeta.total || 0} total
+              Manage registered warranty customers • {customerStats.totalAll || 0} total
             </p>
           </div>
 
@@ -236,6 +223,8 @@ const Customers = () => {
               color: 'text-neutral-700',
               bg: 'bg-neutral-50',
               onClick: () => {
+                setSearchTerm('');
+                setCurrentPage(1);
                 setFilterType('all');
                 setDateFilter('all');
               },
@@ -248,6 +237,8 @@ const Customers = () => {
               color: 'text-emerald-700',
               bg: 'bg-emerald-50',
               onClick: () => {
+                setSearchTerm('');
+                setCurrentPage(1);
                 setFilterType('active');
                 setDateFilter('all');
               },
@@ -578,6 +569,7 @@ const Customers = () => {
                     "Customer",
                     "Contact",
                     "Model",
+                    "Car Model",
                     "Serial",
                     "Shop",
                     "Purchase",
@@ -588,7 +580,7 @@ const Customers = () => {
                     <th
                       key={header}
                       className={`px-5 py-4 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider ${
-                        i === 8 ? "text-right" : ""
+                        i === 9 ? "text-right" : ""
                       }`}
                     >
                       {header}
@@ -601,7 +593,7 @@ const Customers = () => {
               <tbody className="divide-y divide-neutral-100">
                 {dataLoading.customers && customers.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="py-24 text-center">
+                    <td colSpan={10} className="px-5 py-24 text-center">
                       <div className="inline-flex flex-col items-center gap-4">
                         <Loader2 className="animate-spin text-blue-600" size={28} />
                         <p className="text-neutral-500 font-medium tracking-wide uppercase text-xs">Syncing Customers...</p>
@@ -610,7 +602,7 @@ const Customers = () => {
                   </tr>
                 ) : currentItems.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="py-24 text-center">
+                    <td colSpan={10} className="py-24 text-center">
                       <p className="text-neutral-500 font-medium tracking-wide uppercase text-xs">No customers found</p>
                     </td>
                   </tr>
@@ -660,6 +652,12 @@ const Customers = () => {
                         <td className="px-5 py-4">
                           <span className="inline-flex px-2.5 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-md border border-blue-100">
                             {c.modelNumber || c.productId?.modelNumber || "—"}
+                          </span>
+                        </td>
+
+                        <td className="px-5 py-4">
+                          <span className="text-xs font-semibold text-neutral-700">
+                            {c.carModelName || "—"}
                           </span>
                         </td>
 
@@ -812,13 +810,13 @@ const Customers = () => {
       <ManualWarrantyModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        onSuccess={fetchCustomers}
+        onSuccess={() => refreshCustomers({ page: 1 })}
       />
 
       <ManualServiceModal
         isOpen={isManualServiceModalOpen}
         onClose={() => setIsManualServiceModalOpen(false)}
-        onSuccess={() => fetchCustomers({ page: 1, limit: itemsPerPage })}
+        onSuccess={() => refreshCustomers({ page: 1 })}
       />
 
       {/* Edit Modal – cleaner & more modern */}
@@ -850,6 +848,7 @@ const Customers = () => {
                   { label: "Phone Number", icon: Phone, key: "phone", required: true },
                   { label: "Email Address", icon: Mail, key: "email" },
                   { label: "Shop Name", icon: MapPin, key: "purchaseShopName" },
+                  { label: "Car Model Name", icon: ShoppingBag, key: "carModelName" },
                   { label: "Model Number", icon: Hash, key: "modelNumber" },
                 ].map((field) => (
                   <div key={field.key} className="space-y-1.5">
