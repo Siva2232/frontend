@@ -62,21 +62,6 @@ const ServiceTracker = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [showNewEntry, setShowNewEntry] = useState(false);
-  const [showManualEntry, setShowManualEntry] = useState(false);
-
-  const [manualEntry, setManualEntry] = useState({
-    serialNumber: '',
-    modelNumber: '',
-    customerName: '',
-    phone: '',
-    shopName: '',
-    issueDescription: '',
-    notes: '',
-    priority: '',
-    serviceCost: 0,
-    technicianNotes: ''
-  });
-
   const [confirmModal, setConfirmModal] = useState({
     isOpen: false,
     title: "",
@@ -84,9 +69,7 @@ const ServiceTracker = () => {
     onConfirm: () => {},
     type: "info",
     confirmText: "Proceed",
-    isSubmitting: false,
-    showNotesField: false,
-    manualNote: ""
+    isSubmitting: false
   });
 
   const normalizeName = (name) => {
@@ -267,20 +250,7 @@ const ServiceTracker = () => {
     await fetchServiceHistory(query);
   };
 
-  const handleManualEntry = () => {
-    setManualEntry({
-      serialNumber: '',
-      modelNumber: '',
-      customerName: '',
-      phone: '',
-      shopName: '',
-      issueDescription: '',
-      priority: '',
-      serviceCost: 0,
-      technicianNotes: ''
-    });
-    setShowManualEntry(true);
-  };
+
 
   const handleCreateEntry = async (e) => {
     e.preventDefault();
@@ -313,46 +283,6 @@ const ServiceTracker = () => {
           setConfirmModal(prev => ({ ...prev, isOpen: false, isSubmitting: false }));
         }
       }
-    });
-  };
-
-  const createManualConfirmHandler = (note) => async () => {
-    setConfirmModal(prev => ({ ...prev, isSubmitting: true }));
-    try {
-      await API.post('/service', { ...manualEntry, manualEntry: true, notes: note });
-      showSuccess("Manual service record created!");
-      setShowManualEntry(false);
-      // Keep claims count unchanged because manual entries are excluded from stats
-      fetchRecentServices();
-
-      if (manualEntry.serialNumber) {
-        setTimeout(() => {
-          setLoading(true);
-          API.get(`/service/history?q=${manualEntry.serialNumber}`)
-            .then(res => setData(res.data))
-            .catch(() => showError("Record created, fetch failed"))
-            .finally(() => setLoading(false));
-        }, 400);
-      }
-    } catch (err) {
-      showError(err.response?.data?.message || "Failed to create record");
-    } finally {
-      setConfirmModal(prev => ({ ...prev, isOpen: false, isSubmitting: false }));
-    }
-  };
-
-  const handleCreateManualEntry = async (e) => {
-    e.preventDefault();
-
-    setConfirmModal({
-      isOpen: true,
-      title: "New Manual Service Request",
-      message: `Create a manual service request for ${manualEntry.customerName}${manualEntry.serialNumber ? ` (${manualEntry.serialNumber})` : ''}? This will not count as a warranty claim.`,
-      type: "info",
-      confirmText: "Create Manual Record",
-      showNotesField: true,
-      manualNote: manualEntry.notes || "",
-      onConfirm: createManualConfirmHandler(manualEntry.notes || "")
     });
   };
 
@@ -486,14 +416,6 @@ const ServiceTracker = () => {
               {loading ? "Searching..." : "Track"}
             </button>
 
-            <button
-              type="button"
-              onClick={handleManualEntry}
-              className="px-6 py-3.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-semibold shadow-md transition-all flex items-center gap-2 text-base"
-            >
-              <PlusCircle className="w-5 h-5" />
-              Manual
-            </button>
           </form>
         
         </div>
@@ -565,37 +487,21 @@ const ServiceTracker = () => {
 
               <button
                 onClick={() => {
-                  if (data.registration) {
-                    setNewEntry(prev => ({
-                      ...prev,
-                      serialNumber: data.registration.serialNumber || '',
-                      customerName: data.registration.customerName || '',
-                      phone: data.registration.phone || '',
-                      shopName: data.registration.purchaseShopName || '',
-                      modelNumber: data.registration.modelNumber || '',
-                      priority: '',
-                      issueDescription: '',
-                      serviceCost: 0,
-                      technicianNotes: ''
-                    }));
-                    setShowNewEntry(true);
-                  } else {
-                    // No registration = manual flow
-                    const lastRecord = data.serviceHistory[0];
-                    setManualEntry({
-                      serialNumber: lastRecord?.serialNumber || '',
-                      modelNumber: lastRecord?.modelNumber || '',
-                      customerName: lastRecord?.customerName || '',
-                      phone: lastRecord?.phone || '',
-                      shopName: lastRecord?.shopName || '',
-                      issueDescription: '',
-                      notes: '',
-                      priority: '',
-                      serviceCost: 0,
-                      technicianNotes: ''
-                    });
-                    setShowManualEntry(true);
-                  }
+                  const reg = data.registration;
+                  const lastRecord = data.serviceHistory[0];
+                  setNewEntry(prev => ({
+                    ...prev,
+                    serialNumber: reg?.serialNumber || lastRecord?.serialNumber || '',
+                    customerName: reg?.customerName || lastRecord?.customerName || '',
+                    phone: reg?.phone || lastRecord?.phone || '',
+                    shopName: reg?.purchaseShopName || lastRecord?.shopName || '',
+                    modelNumber: reg?.modelNumber || lastRecord?.modelNumber || '',
+                    priority: '',
+                    issueDescription: '',
+                    serviceCost: 0,
+                    technicianNotes: ''
+                  }));
+                  setShowNewEntry(true);
                 }}
                 className="w-full py-3.5 bg-gradient-to-r from-slate-800 to-slate-950 hover:from-slate-900 hover:to-black text-white rounded-xl font-semibold shadow-lg transition-all flex items-center justify-center gap-2 text-base"
               >
@@ -1107,106 +1013,6 @@ const ServiceTracker = () => {
         </div>
       )}
 
-      {showManualEntry && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 border border-slate-200/60">
-            <h2 className="text-xl font-bold text-slate-800 mb-6">Manual Service Request</h2>
-
-            <form onSubmit={handleCreateManualEntry} className="space-y-5">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div>
-                  <label className="text-xs font-semibold text-slate-600 uppercase mb-1.5 block">
-                    Serial No (optional)
-                  </label>
-                  <input
-                    className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm"
-                    value={manualEntry.serialNumber}
-                    onChange={e => setManualEntry({ ...manualEntry, serialNumber: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-slate-600 uppercase mb-1.5 block">Customer *</label>
-                  <input
-                    className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm"
-                    value={manualEntry.customerName}
-                    onChange={e => setManualEntry({ ...manualEntry, customerName: e.target.value })}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div>
-                  <label className="text-xs font-semibold text-slate-600 uppercase mb-1.5 block">Shop Name</label>
-                  <input
-                    className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm"
-                    value={manualEntry.shopName}
-                    onChange={e => setManualEntry({ ...manualEntry, shopName: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-slate-600 uppercase mb-1.5 block">Phone *</label>
-                  <input
-                    className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm"
-                    value={manualEntry.phone}
-                    onChange={e => setManualEntry({ ...manualEntry, phone: e.target.value })}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-slate-600 uppercase mb-1.5 block">Issue Description *</label>
-                <textarea
-                  className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm h-28 resize-none"
-                  placeholder="Describe the issue..."
-                  value={manualEntry.issueDescription}
-                  onChange={e => setManualEntry({ ...manualEntry, issueDescription: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div>
-                  <label className="text-xs font-semibold text-slate-600 uppercase mb-1.5 block">Model (optional)</label>
-                  <input
-                    className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm"
-                    value={manualEntry.modelNumber}
-                    onChange={e => setManualEntry({ ...manualEntry, modelNumber: e.target.value })}
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-slate-600 uppercase mb-1.5 block">Est. Cost (₹)</label>
-                  <input
-                    type="number"
-                    className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm"
-                    value={manualEntry.serviceCost}
-                    onChange={e => setManualEntry({ ...manualEntry, serviceCost: Number(e.target.value) || 0 })}
-                  />
-                </div>
-              </div>
-
-              <div className="pt-4 flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowManualEntry(false)}
-                  className="flex-1 py-3 text-slate-600 font-semibold hover:bg-slate-100 rounded-xl transition-colors text-sm"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition-all text-sm"
-                >
-                  Create Manual Record
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
       <ConfirmationModal 
         isOpen={confirmModal.isOpen}
         onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
@@ -1216,26 +1022,7 @@ const ServiceTracker = () => {
         type={confirmModal.type}
         confirmText={confirmModal.confirmText}
         isLoading={confirmModal.isSubmitting}
-      >
-        {confirmModal.showNotesField && (
-          <div className="mt-4">
-            <label className="text-xs font-semibold text-slate-600 uppercase">Notes (optional)</label>
-            <textarea
-              className="w-full mt-2 p-3 bg-slate-50 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm h-24 resize-none"
-              placeholder="Reason for manual entry / additional details"
-              value={confirmModal.manualNote}
-              onChange={(e) => {
-                const note = e.target.value;
-                setConfirmModal(prev => ({
-                  ...prev,
-                  manualNote: note,
-                  onConfirm: createManualConfirmHandler(note)
-                }));
-              }}
-            />
-          </div>
-        )}
-      </ConfirmationModal>
+      />
 
       {/* Delete Confirmation Modal with Password */}
       <div className={`fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 transition-all duration-300 ${deleteModal.isOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
