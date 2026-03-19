@@ -159,7 +159,8 @@ const Products = () => {
             count: bulkForm.count,
           });
 
-          fetchProducts();
+          // Fetch only the first page with a small limit to avoid loading all products at once
+          fetchProducts({ page: 1, limit: itemsPerPage });
           setIsBulkPrintOpen(true); // Open bulk print view automatically
         } catch (err) {
           const msg = err.response?.data?.message || "Bulk generation failed";
@@ -750,7 +751,12 @@ const Products = () => {
                 disabled={loading}
                 className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-black text-sm uppercase tracking-widest rounded-2xl shadow-lg transition-all flex items-center justify-center gap-3 disabled:opacity-50"
               >
-                {loading ? <Loader2 className="animate-spin w-5 h-5" /> : (
+                {loading ? (
+                  <>
+                    <Loader2 className="animate-spin w-5 h-5" />
+                    Generating labels...
+                  </>
+                ) : (
                   <>
                     <LayoutGrid className="w-5 h-5" />
                     Process Bulk Batch

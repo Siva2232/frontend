@@ -4,7 +4,7 @@ import API from "../api/axios";
 import { Users, ShoppingBag, X, Save } from "lucide-react";
 import { useToast } from "./Toast";
 
-const ManualWarrantyModal = ({ isOpen, onClose, onSuccess }) => {
+const ManualWarrantyModal = ({ isOpen, onClose, onSuccess, isManualService = false }) => {
   const { show, showSuccess, showError } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newCustomer, setNewCustomer] = useState({
@@ -14,7 +14,8 @@ const ManualWarrantyModal = ({ isOpen, onClose, onSuccess }) => {
     modelNumber: "",
     serialNumber: "",
     purchaseShopName: "",
-    purchaseDate: ""
+    purchaseDate: "",
+    isManual: isManualService
   });
 
   const handleInputChange = (e) => {
@@ -29,7 +30,7 @@ const ManualWarrantyModal = ({ isOpen, onClose, onSuccess }) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      await API.post("/register", newCustomer);
+      await API.post("/register", { ...newCustomer, isManual: isManualService });
       setNewCustomer({
         customerName: "",
         phone: "",
@@ -37,14 +38,15 @@ const ManualWarrantyModal = ({ isOpen, onClose, onSuccess }) => {
         modelNumber: "",
         serialNumber: "",
         purchaseShopName: "",
-        purchaseDate: ""
+        purchaseDate: "",
+        isManual: isManualService
       });
-      showSuccess("Customer registered successfully!");
+      showSuccess(isManualService ? "Manual Service registered successfully!" : "Customer registered successfully!");
       onSuccess();
       onClose();
     } catch (error) {
       console.error("Error adding customer:", error);
-      showError(error.response?.data?.message || "Failed to add customer. Ensure Serial Number exists.");
+      showError(error.response?.data?.message || `Failed to add ${isManualService ? 'service' : 'customer'}.`);
     } finally {
       setIsSubmitting(false);
     }
@@ -69,8 +71,8 @@ const ManualWarrantyModal = ({ isOpen, onClose, onSuccess }) => {
         {/* Header – fixed height, never scrolls away */}
         <div className="shrink-0 px-5 py-4 sm:p-12 border-b border-slate-100 flex justify-between items-center bg-slate-50/70">
           <div>
-            <h3 className="text-base sm:text-lg font-bold text-slate-900">Add Customer Manually</h3>
-            <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">Register warranty via phone/email request.</p>
+            <h3 className="text-base sm:text-lg font-bold text-slate-900">{isManualService ? 'Register Manual Service' : 'Add Customer Manually'}</h3>
+            <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">{isManualService ? 'Log a direct service request without serial verification.' : 'Register warranty via phone/email request.'}</p>
           </div>
           <button
             onClick={onClose}

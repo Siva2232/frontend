@@ -5,6 +5,7 @@ import API from "../api/axios";
 import Navbar from "../components/Navbar";
 import Footer from "../layouts/Footer";
 import ManualWarrantyModal from "../components/ManualWarrantyModal";
+import ManualServiceModal from "../components/ManualServiceModal";
 import ConfirmationModal from "../components/ConfirmationModal";
 import {
   Users,
@@ -40,6 +41,7 @@ const Customers = () => {
   const { customers, customersMeta, customerStats, loading: dataLoading, fetchCustomers } = useData();
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isManualServiceModalOpen, setIsManualServiceModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [searchDebounce, setSearchDebounce] = useState(null);
@@ -103,6 +105,8 @@ const Customers = () => {
       if (isExpired) return false;
     } else if (filterType === "expired") {
       if (!isExpired) return false;
+    } else if (filterType === "manual") {
+      if (!c.isManual) return false;
     }
     
     // 2. Date range filter
@@ -150,6 +154,7 @@ const Customers = () => {
     active: customerStats.active,
     expired: customerStats.expired,
     newToday: customerStats.newToday,
+    manualServices: customerStats.manual || 0,
   };
 
   const currentItems = filteredCustomers;
@@ -207,6 +212,14 @@ const Customers = () => {
               Add Customer
             </button>
 
+            <button
+              onClick={() => setIsManualServiceModalOpen(true)}
+              className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700 active:scale-[0.98] transition-all shadow-sm"
+            >
+              <RefreshCw size={16} />
+              Manual Service
+            </button>
+
             <button className="flex items-center gap-2 px-5 py-2.5 bg-white border border-neutral-200 rounded-xl text-sm font-medium text-neutral-700 hover:bg-neutral-50 active:scale-[0.98] transition-all shadow-sm">
               <Download size={16} />
               Export
@@ -254,6 +267,20 @@ const Customers = () => {
               },
               active: filterType === 'expired',
               count: stats.expired,
+            },
+            {
+              label: 'Manual Services',
+              icon: RefreshCw,
+              color: 'text-indigo-700',
+              bg: 'bg-indigo-50',
+              onClick: () => {
+                setSearchTerm('');
+                setCurrentPage(1);
+                setFilterType('manual');
+                setDateFilter('all');
+              },
+              active: filterType === 'manual',
+              count: stats.manualServices,
             },
             {
               label: 'New Today',
@@ -384,13 +411,14 @@ const Customers = () => {
             {/* Warranty Status */}
             <div>
               <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                Warranty Status
+                Type & Status
               </h3>
               <div className="space-y-2">
                 {[
-                  { id: 'all',     label: 'All Warranties',     icon: Users,        activeColor: 'bg-gray-800 text-white' },
-                  { id: 'active',  label: 'Active Only',        icon: ShieldCheck,  activeColor: 'bg-emerald-600 text-white' },
-                  { id: 'expired', label: 'Expired Only',       icon: AlertCircle,  activeColor: 'bg-rose-600 text-white' },
+                  { id: 'all',     label: 'All Customers',      icon: Users,        activeColor: 'bg-gray-800 text-white' },
+                  { id: 'active',  label: 'Active Warranties',  icon: ShieldCheck,  activeColor: 'bg-emerald-600 text-white' },
+                  { id: 'expired', label: 'Expired Warranties', icon: AlertCircle,  activeColor: 'bg-rose-600 text-white' },
+                  { id: 'manual',  label: 'Manual Services',    icon: RefreshCw,    activeColor: 'bg-indigo-600 text-white' },
                 ].map((item) => (
                   <button
                     key={item.id}
@@ -606,6 +634,11 @@ const Customers = () => {
                             <div className="font-medium text-neutral-900 text-sm truncate max-w-[140px]">
                               {c.customerName}
                             </div>
+                            {c.isManual && (
+                              <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-700 uppercase tracking-tighter">
+                                Service
+                              </span>
+                            )}
                           </div>
                         </td>
 
@@ -780,6 +813,12 @@ const Customers = () => {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onSuccess={fetchCustomers}
+      />
+
+      <ManualServiceModal
+        isOpen={isManualServiceModalOpen}
+        onClose={() => setIsManualServiceModalOpen(false)}
+        onSuccess={() => fetchCustomers({ page: 1, limit: itemsPerPage })}
       />
 
       {/* Edit Modal – cleaner & more modern */}
