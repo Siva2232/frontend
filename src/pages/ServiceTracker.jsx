@@ -101,7 +101,7 @@ const ServiceTracker = () => {
     recordId: null,
     serialNumber: '',
     status: null,
-    priority: 'Medium',
+    priority: '',
     technicianName: "",
     shopName: "",
     serviceCost: "",
@@ -573,7 +573,7 @@ const ServiceTracker = () => {
                       phone: data.registration.phone || '',
                       shopName: data.registration.purchaseShopName || '',
                       modelNumber: data.registration.modelNumber || '',
-                      priority: 'Medium',
+                      priority: '',
                       issueDescription: '',
                       serviceCost: 0,
                       technicianNotes: ''
@@ -590,7 +590,7 @@ const ServiceTracker = () => {
                       shopName: lastRecord?.shopName || '',
                       issueDescription: '',
                       notes: '',
-                      priority: 'Medium',
+                      priority: '',
                       serviceCost: 0,
                       technicianNotes: ''
                     });
