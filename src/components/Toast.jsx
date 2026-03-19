@@ -3,6 +3,91 @@ import { CheckCircle2, AlertCircle, Info, X } from "lucide-react";
 
 const ToastContext = createContext(null);
 let toastId = 0;
+let audioCtx = null;
+let audioUnlocked = false;
+
+const unlockAudio = async () => {
+  const ctx = audioCtx || getAudioContext();
+  if (!ctx || audioUnlocked) return;
+
+  try {
+    await ctx.resume();
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.frequency.value = 440;
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.02);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.02);
+  } catch {
+    // ignore
+  } finally {
+    audioUnlocked = true;
+  }
+};
+
+const getAudioContext = () => {
+  if (!audioCtx) {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return null;
+    audioCtx = new AudioContext();
+
+    const resumeOnInteraction = () => {
+      unlockAudio();
+      document.removeEventListener("pointerdown", resumeOnInteraction);
+      document.removeEventListener("keydown", resumeOnInteraction);
+    };
+
+    document.addEventListener("pointerdown", resumeOnInteraction, { passive: true });
+    document.addEventListener("keydown", resumeOnInteraction, { passive: true });
+  }
+  return audioCtx;
+};
+
+const playToastSound = async (type = "info") => {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
+  // Ensure the audio context is unlocked first
+  if (!audioUnlocked) {
+    await unlockAudio();
+  }
+
+  if (ctx.state === "suspended") {
+    try {
+      await ctx.resume();
+    } catch {
+      return; // still not allowed
+    }
+  }
+
+  try {
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+
+    // Set tone frequency based on toast type
+    oscillator.frequency.value =
+      type === "success" ? 880 : type === "error" ? 360 : 640;
+    oscillator.type = "sine";
+
+    gainNode.gain.setValueAtTime(0, ctx.currentTime);
+    gainNode.gain.linearRampToValueAtTime(0.18, ctx.currentTime + 0.01);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.24);
+
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
+
+    oscillator.start(ctx.currentTime);
+    oscillator.stop(ctx.currentTime + 0.25);
+  } catch {
+    // Silent failure if audio playback isn't allowed
+  }
+};
 
 export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
@@ -11,15 +96,16 @@ export const ToastProvider = ({ children }) => {
     setToasts((t) => t.filter((x) => x.id !== id));
   }, []);
 
-  const show = useCallback((message, type = "info", duration = 4200) => {
+  const show = useCallback((message, type = "info", duration = 4200, details = "") => {
+    playToastSound(type);
     const id = ++toastId;
-    setToasts((t) => [...t, { id, message, type }]);
+    setToasts((t) => [...t, { id, message, type, details }]);
     setTimeout(() => remove(id), duration);
   }, [remove]);
 
-  const showSuccess = useCallback((msg, duration) => show(msg, "success", duration), [show]);
-  const showError   = useCallback((msg, duration) => show(msg, "error",   duration), [show]);
-  const showInfo    = useCallback((msg, duration) => show(msg, "info",    duration), [show]);
+  const showSuccess = useCallback((msg, details = "", duration) => show(msg, "success", duration, details), [show]);
+  const showError = useCallback((msg, details = "", duration) => show(msg, "error", duration, details), [show]);
+  const showInfo = useCallback((msg, details = "", duration) => show(msg, "info", duration, details), [show]);
 
   return (
     <ToastContext.Provider value={{ show, showSuccess, showError, showInfo }}>
@@ -58,7 +144,14 @@ export const ToastProvider = ({ children }) => {
             </div>
 
             {/* Message */}
-            <span className="flex-1 pr-2">{t.message}</span>
+            <div className="flex-1 pr-2">
+              <div className="font-semibold">{t.message}</div>
+              {t.details && (
+                <div className="text-[12px] opacity-90 mt-1 whitespace-pre-wrap">
+                  {t.details}
+                </div>
+              )}
+            </div>
 
             {/* Close button – subtle until hover */}
             <button
