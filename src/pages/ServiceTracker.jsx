@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useData } from '../Context/DataContext';
 import { useAuth } from '../Context/AuthContext';
@@ -21,7 +21,7 @@ const ServiceTracker = () => {
   const [filterPeriod, setFilterPeriod] = useState('all');
   const [customDates, setCustomDates] = useState({ start: '', end: '' });
   const [activeMenu, setActiveMenu] = useState(null);
-  const menuRef = useRef(null);
+  const [menuPos, setMenuPos] = useState({ top: 0, right: 0, flipUp: false });
 
   const [deleteModal, setDeleteModal] = useState({
     isOpen: false,
@@ -29,16 +29,6 @@ const ServiceTracker = () => {
     password: "",
     isSubmitting: false
   });
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setActiveMenu(null);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   const handleDeleteRecord = async () => {
     if (!deleteModal.password) {
@@ -82,7 +72,7 @@ const ServiceTracker = () => {
     shopName: '',
     issueDescription: '',
     notes: '',
-    priority: 'Medium',
+    priority: '',
     serviceCost: 0,
     technicianNotes: ''
   });
@@ -217,7 +207,7 @@ const ServiceTracker = () => {
     }
 
     if (priorityFilter !== 'all') {
-      arr = arr.filter(r => (r.priority || 'Medium') === priorityFilter);
+      arr = arr.filter(r => (r.priority || '') === priorityFilter);
     }
 
     setFilteredRecent(arr);
@@ -230,7 +220,7 @@ const ServiceTracker = () => {
     phone: '',
     shopName: '',
     issueDescription: '',
-    priority: 'Medium',
+    priority: '',
     serviceCost: 0,
     technicianNotes: ''
   });
@@ -250,7 +240,7 @@ const ServiceTracker = () => {
         phone: res.data.registration?.phone || '',
         shopName: res.data.registration?.purchaseShopName || '',
         modelNumber: res.data.registration?.modelNumber || '',
-        priority: res.data.serviceHistory?.[0]?.priority || 'Medium'
+        priority: res.data.serviceHistory?.[0]?.priority || ''
       }));
       return res.data;
     } catch (err) {
@@ -373,7 +363,7 @@ const ServiceTracker = () => {
       recordId: record._id,
       serialNumber: record.serialNumber || '',
       status,
-      priority: record.priority || 'Medium',
+      priority: record.priority || '',
       technicianName: record.technicianName || "",
       shopName: record.shopName || "",
       serviceCost: record.serviceCost != null ? String(record.serviceCost) : "",
@@ -402,7 +392,8 @@ const ServiceTracker = () => {
       return;
     }
 
-    const payload = { status, priority: statusModal.priority || 'Medium' };
+    const payload = { status };
+    if (statusModal.priority) payload.priority = statusModal.priority;
     if (status === 'In Progress') payload.technicianName = technicianName.trim();
     if (status === 'Returned') {
       payload.serviceCost = Number(serviceCost);
@@ -645,7 +636,7 @@ const ServiceTracker = () => {
                               record.priority === 'Low' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
                               'bg-slate-50 text-slate-700 border border-slate-100'
                             }`}>
-                              {record.priority || 'Medium'}
+                              {record.priority || '—'}
                             </span>
                           </div>
                           <div className="text-right flex items-start gap-4">
@@ -655,46 +646,27 @@ const ServiceTracker = () => {
                             </div>
                             
                             {/* Action Menu (3 Dots) */}
-                            <div className="relative" ref={activeMenu === record._id ? menuRef : null}>
+                            <div className="relative">
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        setActiveMenu(activeMenu === record._id ? null : record._id);
+                                        if (activeMenu === record._id) {
+                                            setActiveMenu(null);
+                                        } else {
+                                            const rect = e.currentTarget.getBoundingClientRect();
+                                            const flipUp = rect.bottom + 120 > window.innerHeight;
+                                            setMenuPos({
+                                                top: flipUp ? rect.top : rect.bottom + 4,
+                                                right: window.innerWidth - rect.right,
+                                                flipUp
+                                            });
+                                            setActiveMenu(record._id);
+                                        }
                                     }}
                                     className="p-1 hover:bg-slate-200 rounded-md transition-colors"
                                 >
                                     <MoreVertical size={20} className="text-slate-500" />
                                 </button>
-                                
-                                {activeMenu === record._id && (
-                                    <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-lg shadow-xl z-20 py-1 overflow-hidden animate-in fade-in zoom-in duration-100 origin-top-right">
-                                        <button
-                                            onClick={() => {
-                                                fetchServiceHistory(record.serialNumber);
-                                                setActiveMenu(null);
-                                            }}
-                                            className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                                        >
-                                            <Eye size={16} />
-                                            View Details
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                setDeleteModal({
-                                                    isOpen: true,
-                                                    recordId: record._id,
-                                                    password: "",
-                                                    isSubmitting: false
-                                                });
-                                                setActiveMenu(null);
-                                            }}
-                                            className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 border-t border-slate-100"
-                                        >
-                                            <Trash2 size={16} />
-                                            Delete Record
-                                        </button>
-                                    </div>
-                                )}
                             </div>
                           </div>
                         </div>
@@ -923,7 +895,7 @@ const ServiceTracker = () => {
                     ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
                     : 'bg-slate-50 text-slate-700 border border-slate-100'
                 }`}>
-                  {service.priority || 'Medium'}
+                  {service.priority || '—'}
                 </span>
               </td>
 
@@ -961,46 +933,27 @@ const ServiceTracker = () => {
 
               <td className="px-6 py-5 text-right flex items-center justify-end">
                 {/* Inline Action Menu for Table */}
-                <div className="relative" ref={activeMenu === service._id ? menuRef : null}>
+                <div className="relative">
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
-                            setActiveMenu(activeMenu === service._id ? null : service._id);
+                            if (activeMenu === service._id) {
+                                setActiveMenu(null);
+                            } else {
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                const flipUp = rect.bottom + 120 > window.innerHeight;
+                                setMenuPos({
+                                    top: flipUp ? rect.top : rect.bottom + 4,
+                                    right: window.innerWidth - rect.right,
+                                    flipUp
+                                });
+                                setActiveMenu(service._id);
+                            }
                         }}
                         className="p-1 hover:bg-neutral-200 rounded-md transition-colors"
                     >
                         <MoreVertical size={18} className="text-neutral-500" />
                     </button>
-                    
-                    {activeMenu === service._id && (
-                        <div className="absolute right-0 mt-2 w-48 bg-white border border-neutral-200 rounded-lg shadow-xl z-20 py-1 overflow-hidden animate-in fade-in zoom-in duration-100 origin-top-right">
-                            <button
-                                onClick={() => {
-                                    fetchServiceHistory(service.serialNumber);
-                                    setActiveMenu(null);
-                                }}
-                                className="w-full text-left px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
-                            >
-                                <Eye size={16} />
-                                View Details
-                            </button>
-                            <button
-                                onClick={() => {
-                                    setDeleteModal({
-                                        isOpen: true,
-                                        recordId: service._id,
-                                        password: "",
-                                        isSubmitting: false
-                                    });
-                                    setActiveMenu(null);
-                                }}
-                                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 border-t border-neutral-100"
-                            >
-                                <Trash2 size={16} />
-                                Delete Request
-                            </button>
-                        </div>
-                    )}
                 </div>
               </td>
             </tr>
@@ -1377,6 +1330,7 @@ const ServiceTracker = () => {
             onChange={(e) => setStatusModal(prev => ({ ...prev, priority: e.target.value }))}
             className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm"
           >
+            <option value="">Select priority</option>
             <option value="High">High</option>
             <option value="Medium">Medium</option>
             <option value="Low">Low</option>
@@ -1412,6 +1366,53 @@ const ServiceTracker = () => {
           </div>
         )}
       </ConfirmationModal>
+
+      {/* Fixed-position dropdown portal for 3-dot menus */}
+      {activeMenu && (() => {
+        const allRecords = [...(data?.serviceHistory || []), ...filteredRecent];
+        const record = allRecords.find(r => r._id === activeMenu);
+        if (!record) return null;
+        return (
+          <>
+            <div className="fixed inset-0 z-[999]" onClick={() => setActiveMenu(null)} />
+            <div
+              className="fixed w-48 bg-white border border-slate-200 rounded-lg shadow-xl z-[1000] py-1 animate-in fade-in zoom-in duration-100"
+              style={{
+                ...(menuPos.flipUp
+                  ? { bottom: `${window.innerHeight - menuPos.top + 4}px` }
+                  : { top: `${menuPos.top}px` }),
+                right: `${menuPos.right}px`
+              }}
+            >
+              <button
+                onClick={() => {
+                  fetchServiceHistory(record.serialNumber);
+                  setActiveMenu(null);
+                }}
+                className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+              >
+                <Eye size={16} />
+                View Details
+              </button>
+              <button
+                onClick={() => {
+                  setDeleteModal({
+                    isOpen: true,
+                    recordId: record._id,
+                    password: "",
+                    isSubmitting: false
+                  });
+                  setActiveMenu(null);
+                }}
+                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 border-t border-slate-100"
+              >
+                <Trash2 size={16} />
+                Delete Record
+              </button>
+            </div>
+          </>
+        );
+      })()}
     </div>
   );
 };

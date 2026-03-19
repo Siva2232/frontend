@@ -11,6 +11,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [activeDropdown, setActiveDropdown] = useState(null);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0, flipUp: false });
   const [filters, setFilters] = useState({
     startDate: "",
     endDate: "",
@@ -292,35 +293,27 @@ const Dashboard = () => {
                           })}
                         </span>
                       </td>
-                      <td className="px-8 py-5 text-right relative">
+                      <td className="px-8 py-5 text-right">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              setActiveDropdown(activeDropdown === reg._id ? null : reg._id);
+                              if (activeDropdown === reg._id) {
+                                setActiveDropdown(null);
+                              } else {
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                const flipUp = rect.bottom + 120 > window.innerHeight;
+                                setDropdownPos({
+                                  top: flipUp ? rect.top : rect.bottom + 4,
+                                  right: window.innerWidth - rect.right,
+                                  flipUp
+                                });
+                                setActiveDropdown(reg._id);
+                              }
                             }}
                             className="p-2 rounded-lg hover:bg-white text-slate-400 hover:text-slate-900 transition-colors shadow-sm border border-transparent hover:border-slate-200"
                           >
                             <MoreVertical size={16} />
                           </button>
-
-                          {activeDropdown === reg._id && (
-                            <div className="absolute right-8 top-full mt-1 w-48 bg-white border border-slate-200 rounded-xl shadow-xl shadow-slate-200/40 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
-                              <button
-                                onClick={() => navigate(`/customers?search=${reg.serialNumber}`)}
-                                className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors group"
-                              >
-                                <Eye size={14} className="text-slate-400 group-hover:text-blue-600" />
-                                View Details
-                              </button>
-                              <button
-                                onClick={() => navigate(`/services?q=${reg.serialNumber}`)}
-                                className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-blue-600 hover:bg-blue-50 transition-colors group border-t border-slate-50"
-                              >
-                                <ClipboardList size={14} className="text-blue-400 group-hover:text-blue-600" />
-                                Track Service
-                              </button>
-                            </div>
-                          )}
                       </td>
                     </tr>
                   ))}
@@ -331,6 +324,40 @@ const Dashboard = () => {
         </div>
       </main>
       <Footer />
+
+      {/* Fixed-position dropdown portal */}
+      {activeDropdown && stats.recentRegistrations.find(r => r._id === activeDropdown) && (() => {
+        const reg = stats.recentRegistrations.find(r => r._id === activeDropdown);
+        return (
+          <>
+            <div className="fixed inset-0 z-[999]" onClick={() => setActiveDropdown(null)} />
+            <div
+              className="fixed w-48 bg-white border border-slate-200 rounded-xl shadow-xl shadow-slate-200/40 py-1.5 z-[1000] animate-in fade-in zoom-in-95 duration-150"
+              style={{
+                ...(dropdownPos.flipUp
+                  ? { bottom: `${window.innerHeight - dropdownPos.top + 4}px` }
+                  : { top: `${dropdownPos.top}px` }),
+                right: `${dropdownPos.right}px`
+              }}
+            >
+              <button
+                onClick={() => { setActiveDropdown(null); navigate(`/customers?search=${reg.serialNumber}`); }}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors group"
+              >
+                <Eye size={14} className="text-slate-400 group-hover:text-blue-600" />
+                View Details
+              </button>
+              <button
+                onClick={() => { setActiveDropdown(null); navigate(`/services?q=${reg.serialNumber}`); }}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-blue-600 hover:bg-blue-50 transition-colors group border-t border-slate-50"
+              >
+                <ClipboardList size={14} className="text-blue-400 group-hover:text-blue-600" />
+                Track Service
+              </button>
+            </div>
+          </>
+        );
+      })()}
     </div>
   );
 };

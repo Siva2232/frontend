@@ -63,6 +63,7 @@ const Customers = () => {
   const [editForm, setEditForm] = useState({});
   const [isUpdating, setIsUpdating] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0, flipUp: false });
 
   const [confirmModal, setConfirmModal] = useState({
     isOpen: false,
@@ -856,42 +857,27 @@ const Customers = () => {
                           })}
                         </td>
 
-                        <td className="px-5 py-4 text-right relative">
+                        <td className="px-5 py-4 text-right">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              setActiveDropdown(activeDropdown === c._id ? null : c._id);
+                              if (activeDropdown === c._id) {
+                                setActiveDropdown(null);
+                              } else {
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                const flipUp = rect.bottom + 160 > window.innerHeight;
+                                setDropdownPos({
+                                  top: flipUp ? rect.top : rect.bottom + 4,
+                                  right: window.innerWidth - rect.right,
+                                  flipUp
+                                });
+                                setActiveDropdown(c._id);
+                              }
                             }}
                             className="p-2 rounded-lg hover:bg-neutral-100 text-neutral-500 hover:text-neutral-900 transition-colors"
                           >
                             <MoreVertical size={18} />
                           </button>
-
-                            {activeDropdown === c._id && (
-                            <div className="absolute right-2 top-full mt-1 w-44 bg-white border border-neutral-200 rounded-xl shadow-xl shadow-neutral-200/30 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
-                              <button
-                                onClick={() => handleEditClick(c)}
-                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors"
-                              >
-                                <Edit size={16} />
-                                Edit Details
-                              </button>
-                              <button
-                                onClick={() => navigate(`/services?q=${c.serialNumber}`)}
-                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-blue-600 font-semibold hover:bg-blue-50 transition-colors"
-                              >
-                                <ExternalLink size={16} />
-                                View Track
-                              </button>
-                              <button
-                                onClick={() => openDeleteModal([c._id], `Delete customer ${c.customerName || 'this record'}?`)}
-                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 font-semibold hover:bg-red-50 transition-colors"
-                              >
-                                <X size={16} />
-                                Delete
-                              </button>
-                            </div>
-                          )}
                         </td>
                       </tr>
                     );
@@ -1130,6 +1116,48 @@ const Customers = () => {
           />
         </div>
       </ConfirmationModal>
+
+      {/* Fixed-position dropdown portal */}
+      {activeDropdown && (() => {
+        const c = filteredCustomers.find(cust => cust._id === activeDropdown);
+        if (!c) return null;
+        return (
+          <>
+            <div className="fixed inset-0 z-[999]" onClick={() => setActiveDropdown(null)} />
+            <div
+              className="fixed w-44 bg-white border border-neutral-200 rounded-xl shadow-xl shadow-neutral-200/30 py-1.5 z-[1000] animate-in fade-in zoom-in-95 duration-150"
+              style={{
+                ...(dropdownPos.flipUp
+                  ? { bottom: `${window.innerHeight - dropdownPos.top + 4}px` }
+                  : { top: `${dropdownPos.top}px` }),
+                right: `${dropdownPos.right}px`
+              }}
+            >
+              <button
+                onClick={() => { setActiveDropdown(null); handleEditClick(c); }}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors"
+              >
+                <Edit size={16} />
+                Edit Details
+              </button>
+              <button
+                onClick={() => { setActiveDropdown(null); navigate(`/services?q=${c.serialNumber}`); }}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-blue-600 font-semibold hover:bg-blue-50 transition-colors"
+              >
+                <ExternalLink size={16} />
+                View Track
+              </button>
+              <button
+                onClick={() => { setActiveDropdown(null); openDeleteModal([c._id], `Delete customer ${c.customerName || 'this record'}?`); }}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 font-semibold hover:bg-red-50 transition-colors"
+              >
+                <X size={16} />
+                Delete
+              </button>
+            </div>
+          </>
+        );
+      })()}
     </div>
   );
 };
