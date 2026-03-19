@@ -990,19 +990,7 @@ const ServiceTracker = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div>
-                  <label className="text-xs font-semibold text-slate-600 uppercase mb-1.5 block">Priority</label>
-                  <select
-                    className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm"
-                    value={newEntry.priority}
-                    onChange={e => setNewEntry({ ...newEntry, priority: e.target.value })}
-                  >
-                    <option value="High">High</option>
-                    <option value="Medium">Medium</option>
-                    <option value="Low">Low</option>
-                  </select>
-                </div>
+              <div className="grid grid-cols-1 gap-5">
                 <div>
                   <label className="text-xs font-semibold text-slate-600 uppercase mb-1.5 block">Est. Cost (₹)</label>
                   <input

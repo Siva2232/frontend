@@ -38,7 +38,7 @@ import { useToast } from "../components/Toast";
 const Customers = () => {
   const navigate = useNavigate();
   const { show, showSuccess, showError } = useToast();
-  const { customers, customersMeta, customerStats, loading: dataLoading, fetchCustomers } = useData();
+  const { customers: allCustomers, customersMeta, customerStats, loading: dataLoading, fetchCustomers } = useData();
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isManualServiceModalOpen, setIsManualServiceModalOpen] = useState(false);
@@ -53,6 +53,8 @@ const Customers = () => {
   const [dateFilter, setDateFilter] = useState("all"); // all, today, yesterday, week, month, year, custom
   const [customStartDate, setCustomStartDate] = useState("");
   const [customEndDate, setCustomEndDate] = useState("");
+
+  const [filteredCustomers, setFilteredCustomers] = useState([]);
 
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -69,13 +71,85 @@ const Customers = () => {
     confirmText: "Proceed"
   });
 
-  const hasMounted = useRef(false);
   const hasSearchMounted = useRef(false);
 
   useEffect(() => {
-    // load the first page of customers once
-    refreshCustomers({ page: 1 });
+    // Initial fetch - get more data for client-side filtering if possible, 
+    // or just fetch with proper limits. Using 100 as a reasonable "all" set for speed.
+    fetchCustomers({ page: 1, limit: 100 });
   }, []);
+
+  // Re-filter whenever source data or filter states change
+  useEffect(() => {
+    let result = [...allCustomers];
+    const now = new Date();
+
+    // 1. Filter by Type/Status
+    if (filterType === "active") {
+      result = result.filter(c => new Date(c.expiryDate) >= now);
+    } else if (filterType === "expired") {
+      result = result.filter(c => new Date(c.expiryDate) < now);
+    } else if (filterType === "manual") {
+      result = result.filter(c => c.isManual);
+    }
+
+    // 2. Filter by Date
+    if (dateFilter !== "all") {
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+
+      const isToday = (d) => d >= startOfToday;
+      const isYesterday = (d) => {
+        const y = new Date(startOfToday);
+        y.setDate(y.getDate() - 1);
+        return d >= y && d < startOfToday;
+      };
+
+      result = result.filter(c => {
+        const createdAt = new Date(c.createdAt);
+        if (dateFilter === "today") return isToday(createdAt);
+        if (dateFilter === "yesterday") return isYesterday(createdAt);
+        if (dateFilter === "week") {
+          const w = new Date(startOfToday);
+          w.setDate(w.getDate() - 7);
+          return createdAt >= w;
+        }
+        if (dateFilter === "month") {
+          const m = new Date(startOfToday);
+          m.setMonth(m.getMonth() - 1);
+          return createdAt >= m;
+        }
+        if (dateFilter === "year") {
+          const y = new Date(startOfToday);
+          y.setFullYear(y.getFullYear() - 1);
+          return createdAt >= y;
+        }
+        if (dateFilter === "custom" && customStartDate && customEndDate) {
+          const s = new Date(customStartDate);
+          const e = new Date(customEndDate);
+          e.setHours(23, 59, 59, 999);
+          return createdAt >= s && createdAt <= e;
+        }
+        return true;
+      });
+    }
+
+    // 3. Search filter
+    if (searchTerm) {
+      const q = searchTerm.toLowerCase();
+      result = result.filter(c => 
+        c.customerName?.toLowerCase().includes(q) ||
+        c.serialNumber?.toLowerCase().includes(q) ||
+        c.modelNumber?.toLowerCase().includes(q) ||
+        c.purchaseShopName?.toLowerCase().includes(q) ||
+        c.phone?.includes(q) ||
+        c.carModelName?.toLowerCase().includes(q)
+      );
+    }
+
+    setFilteredCustomers(result);
+    setCurrentPage(1);
+  }, [allCustomers, filterType, dateFilter, customStartDate, customEndDate, searchTerm]);
 
   useEffect(() => {
     if (!hasSearchMounted.current) {
@@ -83,41 +157,19 @@ const Customers = () => {
       return;
     }
 
-    // debounced search + pagination
+    // debounced search - still fetch from server to ensure fresh data
     if (searchDebounce) clearTimeout(searchDebounce);
 
     const timer = setTimeout(() => {
-      refreshCustomers({ page: 1, q: searchTerm });
-    }, 250);
+      fetchCustomers({ page: 1, limit: 100, q: searchTerm });
+    }, 400);
 
     setSearchDebounce(timer);
     return () => clearTimeout(timer);
   }, [searchTerm, itemsPerPage, fetchCustomers]);
 
-  const buildCustomerQuery = ({ page = 1, q = "" } = {}) => {
-    const params = { page, limit: itemsPerPage };
-
-    if (q) params.q = q;
-    if (filterType === "active") params.status = "active";
-    if (filterType === "expired") params.status = "expired";
-    if (filterType === "manual") params.isManual = true;
-
-    if (dateFilter && dateFilter !== "all") {
-      params.dateFilter = dateFilter;
-      if (dateFilter === "custom") {
-        if (customStartDate) params.startDate = customStartDate;
-        if (customEndDate) params.endDate = customEndDate;
-      }
-    }
-
-    return params;
-  };
-
   const refreshCustomers = (opts = {}) => {
-    const page = opts.page || 1;
-    setCurrentPage(page);
-    const q = opts.q !== undefined ? opts.q : searchTerm;
-    fetchCustomers(buildCustomerQuery({ page, q }));
+    fetchCustomers({ page: 1, limit: 100, ...opts });
   };
 
   useEffect(() => {
@@ -127,15 +179,6 @@ const Customers = () => {
     }
   }, [searchParams]);
 
-  useEffect(() => {
-    if (!hasMounted.current) {
-      hasMounted.current = true;
-      return;
-    }
-
-    setCurrentPage(1);
-    refreshCustomers({ page: 1 });
-  }, [filterType, dateFilter, customStartDate, customEndDate]);
 
   const stats = {
     total: customerStats.totalAll,
@@ -145,17 +188,13 @@ const Customers = () => {
     manualServices: customerStats.manual || 0,
   };
 
-  const currentItems = customers;
-  const totalPages = Math.max(1, Math.ceil((customersMeta.total || 0) / itemsPerPage));
+  const currentItems = filteredCustomers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(filteredCustomers.length / itemsPerPage));
 
   const paginate = (pageNumber) => {
     if (pageNumber < 1 || pageNumber > totalPages) return;
-    refreshCustomers({ page: pageNumber });
+    setCurrentPage(pageNumber);
   };
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm]);
 
   const handleEditClick = (customer) => {
     setEditingCustomer(customer);
@@ -224,7 +263,6 @@ const Customers = () => {
               bg: 'bg-neutral-50',
               onClick: () => {
                 setSearchTerm('');
-                setCurrentPage(1);
                 setFilterType('all');
                 setDateFilter('all');
               },
@@ -238,7 +276,6 @@ const Customers = () => {
               bg: 'bg-emerald-50',
               onClick: () => {
                 setSearchTerm('');
-                setCurrentPage(1);
                 setFilterType('active');
                 setDateFilter('all');
               },
@@ -252,7 +289,6 @@ const Customers = () => {
               bg: 'bg-red-50',
               onClick: () => {
                 setSearchTerm('');
-                setCurrentPage(1);
                 setFilterType('expired');
                 setDateFilter('all');
               },
@@ -266,7 +302,6 @@ const Customers = () => {
               bg: 'bg-indigo-50',
               onClick: () => {
                 setSearchTerm('');
-                setCurrentPage(1);
                 setFilterType('manual');
                 setDateFilter('all');
               },
@@ -280,7 +315,6 @@ const Customers = () => {
               bg: 'bg-amber-50',
               onClick: () => {
                 setSearchTerm('');
-                setCurrentPage(1);
                 setDateFilter('today');
                 setFilterType('all');            // clear status when picking timeline
               },
@@ -535,7 +569,7 @@ const Customers = () => {
             >
               Apply Filters
               <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs">
-                {customersMeta.total || 0}
+                {filteredCustomers.length || 0}
               </span>
             </button>
 
@@ -560,7 +594,7 @@ const Customers = () => {
         )}
 
         {/* Table Card */}
-        <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden relative">
           <div className="overflow-x-auto">
             <table className="w-full min-w-max">
               <thead>
@@ -591,7 +625,7 @@ const Customers = () => {
               </thead>
 
               <tbody className="divide-y divide-neutral-100">
-                {dataLoading.customers && customers.length === 0 ? (
+                {dataLoading.customers && allCustomers.length === 0 ? (
                   <tr>
                     <td colSpan={10} className="px-5 py-24 text-center">
                       <div className="inline-flex flex-col items-center gap-4">
@@ -752,7 +786,7 @@ const Customers = () => {
             <div className="px-6 py-4 border-t border-neutral-100 bg-neutral-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-sm">
               <div className="text-neutral-600">
                 Showing <strong>{(currentPage - 1) * itemsPerPage + 1}</strong>–<strong>{(currentPage - 1) * itemsPerPage + currentItems.length}</strong> of{" "}
-                <strong>{customersMeta.total || 0}</strong>
+                <strong>{filteredCustomers.length || 0}</strong>
               </div>
 
               <div className="flex items-center gap-2">
@@ -810,13 +844,13 @@ const Customers = () => {
       <ManualWarrantyModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        onSuccess={() => refreshCustomers({ page: 1 })}
+        onSuccess={() => fetchCustomers({ page: 1, limit: 100 })}
       />
 
       <ManualServiceModal
         isOpen={isManualServiceModalOpen}
         onClose={() => setIsManualServiceModalOpen(false)}
-        onSuccess={() => refreshCustomers({ page: 1 })}
+        onSuccess={() => fetchCustomers({ page: 1, limit: 100 })}
       />
 
       {/* Edit Modal – cleaner & more modern */}
