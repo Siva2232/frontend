@@ -369,14 +369,15 @@ const Products = () => {
 
     /* SERIAL NUMBER FONT */
     .left .serial {
-      font-family:'ProggyCleanTTSZBP', monospace !important;
-      font-size:15px; /* unchanged */
-      letter-spacing:0.5px;
-      -webkit-font-smoothing:none;
-      text-rendering:optimizeSpeed;
-      white-space:nowrap;
-      margin-bottom:1px;
-    }
+  font-family:'ProggyCleanTTSZBP', monospace !important;
+  font-size:18px;
+  font-weight:bold;
+  letter-spacing:0.5px;
+  -webkit-font-smoothing:none;
+  text-rendering:optimizeSpeed;
+  white-space:nowrap;
+  margin-bottom:1px;
+}
 
     .left .model-line {
       font-size:13px;
