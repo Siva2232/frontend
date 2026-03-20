@@ -4,7 +4,7 @@ import { useData } from "../Context/DataContext";
 import { AuthContext } from "../Context/AuthContext";
 import API from "../api/axios";
 import Navbar from "../components/Navbar";
-import Footer from "../layouts/Footer";
+import AdminFooter from "../layouts/AdminFooter";
 import ManualWarrantyModal from "../components/ManualWarrantyModal";
 import ManualServiceModal from "../components/ManualServiceModal";
 import ConfirmationModal from "../components/ConfirmationModal";
@@ -1090,7 +1090,7 @@ const Customers = () => {
         </div>
       )}
 
-      <Footer />
+      <AdminFooter />
 
       <ConfirmationModal 
         isOpen={confirmModal.isOpen}

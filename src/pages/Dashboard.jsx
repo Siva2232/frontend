@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useData } from "../Context/DataContext";
 import Navbar from "../components/Navbar";
-import Footer from "../layouts/Footer";
+import AdminFooter from "../layouts/AdminFooter";
 import { Package, Users, ShieldCheck, Loader2, RefreshCw, Calendar, TrendingUp, Search, MoreVertical, Eye, ClipboardList } from "lucide-react";
 
 const Dashboard = () => {
@@ -323,7 +323,7 @@ const Dashboard = () => {
           </div>
         </div>
       </main>
-      <Footer />
+      <AdminFooter />
 
       {/* Fixed-position dropdown portal */}
       {activeDropdown && stats.recentRegistrations.find(r => r._id === activeDropdown) && (() => {

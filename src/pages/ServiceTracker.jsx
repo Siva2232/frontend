@@ -4,7 +4,7 @@ import { useData } from '../Context/DataContext';
 import { useAuth } from '../Context/AuthContext';
 import API from '../api/axios';
 import Navbar from "../components/Navbar";
-import Footer from "../layouts/Footer";
+import AdminFooter from "../layouts/AdminFooter";
 import ConfirmationModal from "../components/ConfirmationModal";
 import { Search, PenTool, CheckCircle,CheckCircle2, Clock, Calendar, PlusCircle, List, Loader2, MoreVertical, Trash2, X, Eye } from 'lucide-react';
 import { useToast } from '../components/Toast';
@@ -932,7 +932,7 @@ const ServiceTracker = () => {
         )}
       </main>
 
-      <Footer />
+      <AdminFooter />
 
       {/* Compact modal */}
       {showNewEntry && (

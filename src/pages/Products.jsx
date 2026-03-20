@@ -4,7 +4,7 @@ import { AuthContext } from "../Context/AuthContext";
 import API from "../api/axios";
 import Navbar from "../components/Navbar";
 import LabelCard from "../components/LabelCard";
-import Footer from "../layouts/Footer";
+import AdminFooter from "../layouts/AdminFooter";
 import ConfirmationModal from "../components/ConfirmationModal";
 import { useToast } from "../components/Toast";
 import { 
@@ -1447,7 +1447,7 @@ const Products = () => {
       )}
 
       <div className="print:hidden">
-        <Footer />
+        <AdminFooter />
       </div>
 
       <ConfirmationModal 
