@@ -1269,7 +1269,7 @@ const Products = () => {
                   </button>
                 </div> */}
 
-                {/* <div className="mt-4 pt-4 border-t border-slate-50 print:hidden">
+                <div className="mt-4 pt-4 border-t border-slate-50 print:hidden">
                   <a 
                     href={`/customer-home?model=${encodeURIComponent(selectedQR.modelNumber)}&s=${btoa(selectedQR.serialNumber)}`}
                     target="_blank"
@@ -1278,7 +1278,7 @@ const Products = () => {
                   >
                     Simulate UI <ExternalLink className="w-2.5 h-2.5" />
                   </a>
-                </div> */}
+                </div>
               </div>
 
             </div>

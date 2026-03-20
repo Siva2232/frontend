@@ -82,7 +82,7 @@ const CustomerNavbar = () => {
 
             {/* Primary CTA */}
             <a
-              href="https://wa.me/919876543210?text=Hello%2C%20I%20need%20help%20with%20my%20product"
+              href="https://wa.me/+919567269840?text=Hello%2C%20I%20need%20help%20with%20my%20product"
               target="_blank"
               rel="noopener noreferrer"
               className={`
@@ -148,7 +148,7 @@ const CustomerNavbar = () => {
           ))}
 
           <a
-            href="https://wa.me/919876543210?text=Hello%2C%20I%20need%20help%20with%20my%20product"
+            href="https://wa.me/+919567269840?text=Hello%2C%20I%20need%20help%20with%20my%20product"
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => setIsOpen(false)}
