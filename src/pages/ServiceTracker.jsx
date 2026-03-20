@@ -323,10 +323,12 @@ const ServiceTracker = () => {
     }
 
     const payload = { status };
-    if (statusModal.priority) payload.priority = statusModal.priority;
+    if (status === 'In Progress' && statusModal.priority) payload.priority = statusModal.priority;
     if (status === 'In Progress') payload.technicianName = technicianName.trim();
     if (status === 'Returned') {
       payload.serviceCost = Number(serviceCost);
+      // ensure no priority is accidentally sent for returned status
+      delete payload.priority;
     }
 
     setStatusModal(prev => ({ ...prev, error: "", isSubmitting: true }));
@@ -432,24 +434,35 @@ const ServiceTracker = () => {
               <div className="bg-white rounded-2xl shadow-lg border border-slate-200/50 p-5">
                 <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-4">Warranty Status</h3>
 
-                <div className={`text-center p-6 rounded-xl border-2 font-bold text-2xl uppercase tracking-tight ${
-                  data.stats.warrantyStatus === 'Active' ? 'bg-gradient-to-br from-green-50 to-green-100 border-green-200 text-green-800' :
-                  data.stats.warrantyStatus === 'Expired' ? 'bg-gradient-to-br from-red-50 to-red-100 border-red-200 text-red-800' :
-                  'bg-gradient-to-br from-slate-50 to-slate-100 border-slate-200 text-slate-600'
-                }`}>
-                  {data.stats.warrantyStatus}
-                  {(data.stats.expiryDate || data.registration?.expiryDate) && (
+                {(() => {
+                  const status = data.stats.warrantyStatus || 'Not Registered';
+                  return (
+                    <div className={`text-center p-6 rounded-xl border-2 font-bold text-2xl uppercase tracking-tight ${
+                      status === 'Active' ? 'bg-gradient-to-br from-green-50 to-green-100 border-green-200 text-green-800' :
+                      status === 'Expired' ? 'bg-gradient-to-br from-red-50 to-red-100 border-red-200 text-red-800' :
+                      'bg-gradient-to-br from-slate-50 to-slate-100 border-slate-200 text-slate-600'
+                    }`}>
+                      {status}
+                  {(status !== 'Not Registered' && (data.stats.expiryDate || data.registration?.expiryDate)) && (
                     <div className="mt-2 text-sm font-semibold opacity-90">
                       Expires: {new Date(data.registration?.expiryDate || data.stats.expiryDate).toLocaleDateString('en-IN')}
                     </div>
                   )}
                 </div>
+              );
+            })()}
 
                 <div className="mt-5 space-y-3">
                   <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl text-sm">
-                    <span className="text-slate-600">Claims</span>
+                    <span className="text-slate-600">Claims (registered only)</span>
                     <span className="bg-white px-4 py-1.5 rounded-lg shadow font-bold text-slate-800">
                       {data.stats.totalClaims}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl text-sm">
+                    <span className="text-slate-600">Service Count (all entries)</span>
+                    <span className="bg-white px-4 py-1.5 rounded-lg shadow font-bold text-slate-800">
+                      {data.stats.serviceCount}
                     </span>
                   </div>
                   {!data.registration && data.serviceHistory.length > 0 && (
@@ -1110,19 +1123,21 @@ const ServiceTracker = () => {
           <div className="text-sm text-red-600 mb-3">{statusModal.error}</div>
         )}
 
-        <div className="space-y-2">
-          <label className="text-xs font-semibold text-slate-600 uppercase">Priority</label>
-          <select
-            value={statusModal.priority}
-            onChange={(e) => setStatusModal(prev => ({ ...prev, priority: e.target.value }))}
-            className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm"
-          >
-            <option value="">Select priority</option>
-            <option value="High">High</option>
-            <option value="Medium">Medium</option>
-            <option value="Low">Low</option>
-          </select>
-        </div>
+        {statusModal.status === 'In Progress' && (
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-slate-600 uppercase">Priority</label>
+            <select
+              value={statusModal.priority}
+              onChange={(e) => setStatusModal(prev => ({ ...prev, priority: e.target.value }))}
+              className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm"
+            >
+              <option value="">Select priority</option>
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+              <option value="Low">Low</option>
+            </select>
+          </div>
+        )}
 
         {statusModal.status === 'In Progress' && (
           <div className="space-y-2">

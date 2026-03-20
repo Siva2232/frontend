@@ -748,7 +748,8 @@ const Customers = () => {
                   </tr>
                 ) : (
                   currentItems.map((c) => {
-                    const isExpired = new Date(c.expiryDate) < new Date();
+                    const isManual = Boolean(c.isManual);
+                    const isExpired = !isManual && c.expiryDate && new Date(c.expiryDate) < new Date();
                     return (
                       <tr
                         key={c._id}
@@ -835,19 +836,26 @@ const Customers = () => {
                         </td>
 
                         <td className="px-5 py-4">
-                          <div
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium ${
-                              isExpired
-                                ? "bg-red-50 text-red-700 border border-red-100"
-                                : "bg-emerald-50 text-emerald-700 border border-emerald-100"
-                            }`}
-                          >
-                            <ShieldCheck size={14} />
-                            {new Date(c.expiryDate).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                            })}
-                          </div>
+                          {isManual ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-slate-50 text-slate-700 border border-slate-200">
+                              <ShieldCheck size={14} />
+                              Not Registered
+                            </span>
+                          ) : (
+                            <div
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium ${
+                                isExpired
+                                  ? "bg-red-50 text-red-700 border border-red-100"
+                                  : "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                              }`}
+                            >
+                              <ShieldCheck size={14} />
+                              {new Date(c.expiryDate).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                              })}
+                            </div>
+                          )}
                         </td>
 
                         <td className="px-5 py-4 text-sm text-neutral-500">
