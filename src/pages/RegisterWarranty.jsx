@@ -48,15 +48,15 @@ const RegisterWarranty = () => {
     purchaseDate: "",
   });
   const [modelLocked, setModelLocked] = useState(false);
+  const [initialModelFromUrl, setInitialModelFromUrl] = useState("");
   const [productFetchError, setProductFetchError] = useState("");
 
   useEffect(() => {
-    // Prefer explicit serial param if present for backwards compatibility.
-    let serialFromUrl = searchParams.get("serial");
-
-    // Support encoded serial via "s" (base64) for privacy.
+    // Prefer encoded serial param for privacy.
     const encoded = searchParams.get("s");
-    if (!serialFromUrl && encoded) {
+    let serialFromUrl = null;
+
+    if (encoded) {
       try {
         serialFromUrl = atob(encoded);
       } catch {
@@ -64,11 +64,18 @@ const RegisterWarranty = () => {
       }
     }
 
+    // If explicit serial is still present (backwards compatibility), use it.
+    if (!serialFromUrl) {
+      serialFromUrl = searchParams.get("serial");
+    }
+
     // Optionally set model from URL (for better UX in case it is passed)
-    const modelFromUrl = searchParams.get("model");
+    const modelFromUrl = searchParams.get("model") || "";
+    setInitialModelFromUrl(modelFromUrl);
+
     if (modelFromUrl) {
       setForm((prev) => ({ ...prev, modelNumber: modelFromUrl }));
-      setModelLocked(Boolean(modelFromUrl));
+      setModelLocked(true);
     }
 
     if (serialFromUrl) {
@@ -81,11 +88,18 @@ const RegisterWarranty = () => {
 
   useEffect(() => {
     if (!serialNumber) {
-      setModelLocked(false);
       setSerialLocked(false);
       setSerialVerified(false);
       setProductFetchError("");
-      setForm((prev) => ({ ...prev, modelNumber: "" }));
+
+      if (initialModelFromUrl) {
+        setForm((prev) => ({ ...prev, modelNumber: initialModelFromUrl }));
+        setModelLocked(true);
+      } else {
+        setModelLocked(false);
+        setForm((prev) => ({ ...prev, modelNumber: "" }));
+      }
+
       return;
     }
 
@@ -93,19 +107,19 @@ const RegisterWarranty = () => {
       try {
         setProductFetchError("");
         const { data } = await API.get(`/products/${encodeURIComponent(serialNumber)}`);
-        setForm((prev) => ({ ...prev, modelNumber: data.modelNumber || "" }));
+        setForm((prev) => ({ ...prev, modelNumber: data.modelNumber || initialModelFromUrl || "" }));
         setModelLocked(true);
       } catch (err) {
         setProductFetchError(
           err.response?.data?.message || "Failed to fetch product details."
         );
-        setModelLocked(false);
-        setForm((prev) => ({ ...prev, modelNumber: "" }));
+        setModelLocked(Boolean(initialModelFromUrl));
+        setForm((prev) => ({ ...prev, modelNumber: initialModelFromUrl || "" }));
       }
     };
 
     fetchProduct();
-  }, [serialNumber]);
+  }, [serialNumber, initialModelFromUrl]);
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
