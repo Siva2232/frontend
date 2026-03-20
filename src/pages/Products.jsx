@@ -487,7 +487,7 @@ const Products = () => {
   width:12.5mm; 
   height:12.5mm; 
   display:block;
-  transform: translateY(1.5mm); /* move QR slightly down */
+  transform: translateY(0mm); /* move QR slightly down */
   image-rendering:pixelated;
   image-rendering:-webkit-optimize-contrast;
 }
@@ -1282,7 +1282,7 @@ const Products = () => {
                 </div>
 
                 {/* Mandatory Warning Section */}
-                <div className="bg-blue-50/50 border border-blue-100 rounded-2xl p-4 mb-6 print:bg-transparent print:border-slate-300 print:rounded-xl">
+                {/* <div className="bg-blue-50/50 border border-blue-100 rounded-2xl p-4 mb-6 print:bg-transparent print:border-slate-300 print:rounded-xl">
                   <div className="flex items-center justify-center gap-1.5 text-blue-600 mb-1.5">
                     <ShieldCheck className="w-3.5 h-3.5" />
                     <span className="text-[9px] font-black uppercase tracking-widest">Warranty Protection</span>
@@ -1295,10 +1295,10 @@ const Products = () => {
                       Mandatory scan within 7 days
                     </span>
                   </p>
-                </div>
+                </div> */}
                 
                 {/* Actions - Hide on print */}
-                <div className="grid grid-cols-2 gap-2 print:hidden">
+                {/* <div className="grid grid-cols-2 gap-2 print:hidden">
                   <button 
                     onClick={() => handleSinglePrint(selectedQR)}
                     className="py-2.5 bg-slate-900 text-white font-bold rounded-xl hover:bg-black transition-all shadow-md flex items-center justify-center gap-2 text-xs"
@@ -1312,9 +1312,9 @@ const Products = () => {
                   >
                     Dismiss
                   </button>
-                </div>
+                </div> */}
 
-                <div className="mt-4 pt-4 border-t border-slate-50 print:hidden">
+                {/* <div className="mt-4 pt-4 border-t border-slate-50 print:hidden">
                   <a 
                     href={`/customer-home?model=${encodeURIComponent(selectedQR.modelNumber)}&s=${btoa(selectedQR.serialNumber)}`}
                     target="_blank"
@@ -1323,7 +1323,7 @@ const Products = () => {
                   >
                     Simulate UI <ExternalLink className="w-2.5 h-2.5" />
                   </a>
-                </div>
+                </div> */}
               </div>
 
             </div>

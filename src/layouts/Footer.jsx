@@ -81,7 +81,7 @@ const Footer = () => {
             <div className="flex gap-4 pt-2">
               {[
                 { Icon: Facebook, href: "https://www.facebook.com/share/1KUfxtJBqx/" },
-                { Icon: Instagram, href: "https://www.instagram.com/lancaster_audios_tdpa?igsh=MWQydzZwcXVvdmFxeg==" },
+                { Icon: Instagram, href: "https://www.instagram.com/lancaster_audios_tdpa" },
               ].map(({ Icon, href }, i) => (
                 <motion.a
                   key={i}
