@@ -152,7 +152,7 @@ const AdminLogin = () => {
                   ${
                     loading
                       ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-black hover:bg-white text-white  hover:text-black  shadow-amber-200/40 hover:shadow-amber-300/50"
+                      : "bg-black hover:bg-white text-white  hover:text-black  shadow-black/40 hover:shadow-black/60"
                   }
                 `}
               >

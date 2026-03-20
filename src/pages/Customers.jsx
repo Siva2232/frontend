@@ -5,6 +5,8 @@ import { AuthContext } from "../Context/AuthContext";
 import API from "../api/axios";
 import Navbar from "../components/Navbar";
 import AdminFooter from "../layouts/AdminFooter";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import ManualWarrantyModal from "../components/ManualWarrantyModal";
 import ManualServiceModal from "../components/ManualServiceModal";
 import ConfirmationModal from "../components/ConfirmationModal";
@@ -57,6 +59,77 @@ const Customers = () => {
   const [customEndDate, setCustomEndDate] = useState("");
 
   const [filteredCustomers, setFilteredCustomers] = useState([]);
+
+  const downloadCsv = (rows, filename = 'customers.csv') => {
+    if (!rows || !rows.length) return;
+    const header = ['Customer Name', 'Serial Number', 'Phone', 'Email', 'Model', 'Shop', 'Warranty Status', 'Expiry Date', 'Registration Date'];
+    const csvRows = [header.join(',')];
+
+    rows.forEach((c) => {
+      const values = [
+        c.customerName || '',
+        c.serialNumber || '',
+        c.phone || '',
+        c.email || '',
+        c.modelNumber || '',
+        c.purchaseShopName || '',
+        c.warrantyStatus || '',
+        c.expiryDate ? new Date(c.expiryDate).toLocaleDateString() : '',
+        c.registrationDate ? new Date(c.registrationDate).toLocaleDateString() : ''
+      ];
+      const line = values.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',');
+      csvRows.push(line);
+    });
+
+    const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadPdf = (rows, title = 'Customers') => {
+    if (!rows || !rows.length) return;
+
+    const doc = new jsPDF('p', 'mm', 'a4');
+    doc.setFontSize(14);
+    doc.text(`${title} Export`, 14, 20);
+    doc.setFontSize(10);
+
+    let y = 28;
+    const lineHeight = 7;
+
+    const headerLine = 'Name | Serial | Phone | Model | Warranty | Expiry';
+    doc.text(headerLine, 14, y);
+    y += lineHeight;
+
+    rows.slice(0, 60).forEach((c, index) => {
+      if (y > 280) {
+        doc.addPage();
+        y = 20;
+      }
+      const row = [
+        c.customerName || '',
+        c.serialNumber || '',
+        c.phone || '',
+        c.modelNumber || '',
+        c.warrantyStatus || '',
+        c.expiryDate ? new Date(c.expiryDate).toLocaleDateString() : ''
+      ].join(' | ');
+      doc.text(row, 14, y);
+      y += lineHeight;
+    });
+
+    doc.save(`${title.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0,10)}.pdf`);
+  };
+
+  const exportCustomersCSV = () => downloadCsv(filteredCustomers);
+  const exportCustomersPDF = () => downloadPdf(filteredCustomers);
 
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -284,6 +357,35 @@ const Customers = () => {
     setCurrentPage(pageNumber);
   };
 
+  const handleUpdate = async (e) => {
+    e.preventDefault();
+    if (!editingCustomer) {
+      showError("No customer selected for update.");
+      return;
+    }
+
+    const updatedData = {
+      customerName: editForm.customerName || "",
+      phone: editForm.phone || "",
+      email: editForm.email || "",
+      purchaseShopName: editForm.purchaseShopName || "",
+      carModelName: editForm.carModelName || "",
+      modelNumber: editForm.modelNumber || "",
+      purchaseDate: editForm.purchaseDate || "",
+    };
+
+    try {
+      setIsEditModalOpen(false);
+      await API.put(`/register/${editingCustomer._id}`, updatedData);
+      showSuccess("Customer updated successfully.");
+      setEditingCustomer(null);
+      fetchCustomers({ page: currentPage, limit: itemsPerPage, q: searchTerm });
+    } catch (error) {
+      showError(error.response?.data?.message || "Update failed.");
+      setIsEditModalOpen(true);
+    }
+  };
+
   const handleEditClick = (customer) => {
     setEditingCustomer(customer);
     setEditForm({
@@ -291,6 +393,7 @@ const Customers = () => {
       phone: customer.phone || "",
       email: customer.email || "",
       purchaseShopName: customer.purchaseShopName || customer.computedShopName || "",
+      carModelName: customer.carModelName || "",
       modelNumber: customer.modelNumber || customer.productId?.modelNumber || "",
       serialNumber: customer.serialNumber || "",
       purchaseDate: customer.purchaseDate
@@ -344,9 +447,20 @@ const Customers = () => {
               </button>
             )}
 
-            <button className="flex items-center gap-2 px-5 py-2.5 bg-white border border-neutral-200 rounded-xl text-sm font-medium text-neutral-700 hover:bg-neutral-50 active:scale-[0.98] transition-all shadow-sm">
+            <button
+              onClick={exportCustomersCSV}
+              className="flex items-center gap-2 px-3 py-2.5 bg-white border border-neutral-200 rounded-xl text-sm font-medium text-neutral-700 hover:bg-neutral-50 active:scale-[0.98] transition-all shadow-sm"
+            >
               <Download size={16} />
-              Export
+              CSV
+            </button>
+
+            <button
+              onClick={exportCustomersPDF}
+              className="flex items-center gap-2 px-3 py-2.5 bg-white border border-neutral-200 rounded-xl text-sm font-medium text-neutral-700 hover:bg-neutral-50 active:scale-[0.98] transition-all shadow-sm"
+            >
+              <Download size={16} />
+              PDF
             </button>
           </div>
         </div>

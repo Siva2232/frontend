@@ -5,10 +5,11 @@ import { useAuth } from '../Context/AuthContext';
 import API from '../api/axios';
 import Navbar from "../components/Navbar";
 import AdminFooter from "../layouts/AdminFooter";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import ConfirmationModal from "../components/ConfirmationModal";
-import { Search, PenTool, CheckCircle,CheckCircle2, Clock, Calendar, PlusCircle, List, Loader2, MoreVertical, Trash2, X, Eye } from 'lucide-react';
+import { Search, PenTool, CheckCircle, CheckCircle2, Clock, Calendar, PlusCircle, List, Loader2, MoreVertical, Trash2, X, Eye, Download } from 'lucide-react';
 import { useToast } from '../components/Toast';
-
 const ServiceTracker = () => {
   const [searchParams] = useSearchParams();
   const { show, showSuccess, showError } = useToast();
@@ -21,6 +22,67 @@ const ServiceTracker = () => {
   const [filterPeriod, setFilterPeriod] = useState('all');
   const [customDates, setCustomDates] = useState({ start: '', end: '' });
   const [activeMenu, setActiveMenu] = useState(null);
+
+  const downloadCsv = (rows, filename = 'service-tracker.csv') => {
+    if (!rows || !rows.length) return;
+    const header = ['Customer Name', 'Serial Number', 'Issue', 'Status', 'Received Date', 'Shop', 'Cost'];
+    const csvRows = [header.join(',')];
+    rows.forEach((r) => {
+      const values = [
+        r.customerName || '',
+        r.serialNumber || '',
+        r.issueDescription || '',
+        r.status || '',
+        r.receivedDate ? new Date(r.receivedDate).toLocaleDateString() : '',
+        r.shopName || '',
+        r.serviceCost != null ? r.serviceCost : ''
+      ];
+      const line = values.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',');
+      csvRows.push(line);
+    });
+    const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadPdf = (rows, title = 'Service Tracker Export') => {
+    if (!rows || !rows.length) return;
+    const doc = new jsPDF('p', 'mm', 'a4');
+    doc.setFontSize(14);
+    doc.text(title, 14, 20);
+    doc.setFontSize(10);
+    let y = 28;
+    const lineHeight = 7;
+    const head = 'Name | Serial | Issue | Status | Received';
+    doc.text(head, 14, y);
+    y += lineHeight;
+    rows.slice(0, 70).forEach((r) => {
+      if (y > 280) {
+        doc.addPage();
+        y = 20;
+      }
+      const row = [
+        r.customerName || '',
+        r.serialNumber || '',
+        r.issueDescription || '',
+        r.status || '',
+        r.receivedDate ? new Date(r.receivedDate).toLocaleDateString() : ''
+      ].join(' | ');
+      doc.text(row, 14, y);
+      y += lineHeight;
+    });
+    doc.save(`${title.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0,10)}.pdf`);
+  };
+
+  const exportServiceCSV = () => downloadCsv(filteredRecent);
+  const exportServicePDF = () => downloadPdf(filteredRecent);
   const [menuPos, setMenuPos] = useState({ top: 0, right: 0, flipUp: false });
 
   const [deleteModal, setDeleteModal] = useState({
@@ -738,6 +800,20 @@ const ServiceTracker = () => {
           />
         </div>
       )}
+
+      <button
+        onClick={exportServiceCSV}
+        className="flex items-center gap-2 px-3 py-2.5 bg-white border border-neutral-200 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition-all shadow-sm"
+      >
+        <Download size={16} /> CSV
+      </button>
+
+      <button
+        onClick={exportServicePDF}
+        className="flex items-center gap-2 px-3 py-2.5 bg-white border border-neutral-200 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition-all shadow-sm"
+      >
+        <Download size={16} /> PDF
+      </button>
 
       <button
         onClick={() => {
