@@ -10,6 +10,7 @@ import jsPDF from "jspdf";
 import ManualWarrantyModal from "../components/ManualWarrantyModal";
 import ManualServiceModal from "../components/ManualServiceModal";
 import ConfirmationModal from "../components/ConfirmationModal";
+import DeleteConfirmationModal from "../components/DeleteConfirmationModal";
 import {
   Users,
   Search,
@@ -1217,27 +1218,17 @@ const Customers = () => {
         isLoading={isUpdating}
       />
 
-      <ConfirmationModal
+      <DeleteConfirmationModal
         isOpen={deleteModal.isOpen}
         onClose={closeDeleteModal}
         onConfirm={handleConfirmDelete}
         title="Confirm Delete"
         message={deleteModal.message}
-        type="danger"
         confirmText="Delete"
         isLoading={deleteModal.isLoading}
-      >
-        <div className="mt-4">
-          <label className="text-xs font-semibold text-slate-600 uppercase">Admin Password</label>
-          <input
-            type="password"
-            value={deleteModal.password}
-            onChange={(e) => setDeleteModal(prev => ({ ...prev, password: e.target.value }))}
-            className="w-full mt-2 p-3 bg-slate-50 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm"
-            placeholder="Enter admin password"
-          />
-        </div>
-      </ConfirmationModal>
+        password={deleteModal.password}
+        onPasswordChange={(value) => setDeleteModal((prev) => ({ ...prev, password: value }))}
+      />
 
       {/* Fixed-position dropdown portal */}
       {activeDropdown && (() => {
@@ -1270,7 +1261,7 @@ const Customers = () => {
                 View Track
               </button>
               <button
-                onClick={() => { setActiveDropdown(null); openDeleteModal([c._id], `Delete customer ${c.customerName || 'this record'}?`); }}
+                onClick={() => { setActiveDropdown(null); openDeleteModal([c._id], `Are you sure you want to delete customer ${c.customerName || 'this record'}?`); }}
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 font-semibold hover:bg-red-50 transition-colors"
               >
                 <X size={16} />

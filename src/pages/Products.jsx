@@ -6,6 +6,7 @@ import Navbar from "../components/Navbar";
 import LabelCard from "../components/LabelCard";
 import AdminFooter from "../layouts/AdminFooter";
 import ConfirmationModal from "../components/ConfirmationModal";
+import DeleteConfirmationModal from "../components/DeleteConfirmationModal";
 import { useToast } from "../components/Toast";
 import { 
   Package, 
@@ -1182,7 +1183,7 @@ const Products = () => {
                 <button
                   onClick={() => {
                     setActiveDropdown(null);
-                    openDeleteModal([p._id], `Permanently delete product \"${p.productName}\"?`);
+                    openDeleteModal([p._id], `Are you sure you want to permanently delete product \"${p.productName}\"?`);
                   }}
                   className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors border-t border-slate-100"
                 >
@@ -1415,27 +1416,17 @@ const Products = () => {
         isLoading={loading}
       />
 
-      <ConfirmationModal
+      <DeleteConfirmationModal
         isOpen={deleteModal.isOpen}
         onClose={closeDeleteModal}
         onConfirm={handleConfirmDelete}
         title="Confirm Delete"
         message={deleteModal.message}
-        type="danger"
         confirmText="Delete"
         isLoading={deleteModal.isLoading}
-      >
-        <div className="mt-4">
-          <label className="text-xs font-semibold text-slate-600 uppercase">Admin Password</label>
-          <input
-            type="password"
-            value={deleteModal.password}
-            onChange={(e) => setDeleteModal(prev => ({ ...prev, password: e.target.value }))}
-            className="w-full mt-2 p-3 bg-slate-50 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm"
-            placeholder="Enter admin password"
-          />
-        </div>
-      </ConfirmationModal>
+        password={deleteModal.password}
+        onPasswordChange={(value) => setDeleteModal(prev => ({ ...prev, password: value }))}
+      />
     </div>
   );
 };

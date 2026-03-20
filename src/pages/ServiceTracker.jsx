@@ -8,6 +8,7 @@ import AdminFooter from "../layouts/AdminFooter";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import ConfirmationModal from "../components/ConfirmationModal";
+import DeleteConfirmationModal from "../components/DeleteConfirmationModal";
 import { Search, PenTool, CheckCircle, CheckCircle2, Clock, Calendar, PlusCircle, List, Loader2, MoreVertical, Trash2, X, Eye, Download } from 'lucide-react';
 import { useToast } from '../components/Toast';
 const ServiceTracker = () => {
@@ -1113,65 +1114,17 @@ const ServiceTracker = () => {
         isLoading={confirmModal.isSubmitting}
       />
 
-      {/* Delete Confirmation Modal with Password */}
-      <div className={`fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 transition-all duration-300 ${deleteModal.isOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
-          <div className={`bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden transition-all duration-300 transform ${deleteModal.isOpen ? 'scale-100' : 'scale-95'}`}>
-              <div className="p-8">
-                  <div className="flex justify-between items-center mb-6">
-                      <div className="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center text-red-600">
-                          <Trash2 size={24} />
-                      </div>
-                      <button 
-                          onClick={() => setDeleteModal(prev => ({ ...prev, isOpen: false }))}
-                          className="p-2 hover:bg-slate-100 rounded-full transition-colors"
-                      >
-                          <X size={20} className="text-slate-400" />
-                      </button>
-                  </div>
-
-                  <h3 className="text-2xl font-bold text-slate-900 mb-2">Confirm Delete</h3>
-                  <p className="text-slate-500 mb-8">
-                      This action cannot be undone. Please enter your administrator password to confirm the deletion of this service record.
-                  </p>
-
-                  <div className="space-y-4">
-                      <div>
-                          <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 block">Admin Password</label>
-                          <input 
-                              type="password"
-                              value={deleteModal.password}
-                              onChange={(e) => setDeleteModal(prev => ({ ...prev, password: e.target.value }))}
-                              placeholder="Enter password..."
-                              className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-red-100 focus:border-red-400 outline-none transition-all font-medium"
-                              onKeyPress={(e) => e.key === 'Enter' && handleDeleteRecord()}
-                              autoFocus
-                          />
-                      </div>
-
-                      <div className="flex gap-3 pt-4">
-                          <button 
-                              onClick={() => setDeleteModal(prev => ({ ...prev, isOpen: false }))}
-                              className="flex-1 px-6 py-4 rounded-2xl text-slate-600 font-bold hover:bg-slate-50 transition-all border border-transparent hover:border-slate-200"
-                          >
-                              Cancel
-                          </button>
-                          <button 
-                              onClick={handleDeleteRecord}
-                              disabled={deleteModal.isSubmitting || !deleteModal.password}
-                              className="flex-[1.5] px-6 py-4 bg-red-600 text-white rounded-2xl font-bold hover:bg-red-700 shadow-lg shadow-red-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                          >
-                              {deleteModal.isSubmitting ? (
-                                  <>
-                                      <Loader2 className="w-5 h-5 animate-spin" />
-                                      Deleting...
-                                  </>
-                              ) : "Confirm Delete"}
-                          </button>
-                      </div>
-                  </div>
-              </div>
-          </div>
-      </div>
+      <DeleteConfirmationModal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={handleDeleteRecord}
+        title="Confirm Delete"
+        message="This action cannot be undone. Please enter your administrator password to confirm the deletion of this service record."
+        confirmText="Delete"
+        isLoading={deleteModal.isSubmitting}
+        password={deleteModal.password}
+        onPasswordChange={(value) => setDeleteModal(prev => ({ ...prev, password: value }))}
+      />
 
       <ConfirmationModal
         isOpen={statusModal.isOpen}
