@@ -97,9 +97,9 @@ const Customers = () => {
 
     // 1. Filter by Type/Status
     if (filterType === "active") {
-      result = result.filter(c => new Date(c.expiryDate) >= now);
+      result = result.filter(c => !c.isManual && c.expiryDate && new Date(c.expiryDate) >= now);
     } else if (filterType === "expired") {
-      result = result.filter(c => new Date(c.expiryDate) < now);
+      result = result.filter(c => !c.isManual && c.expiryDate && new Date(c.expiryDate) < now);
     } else if (filterType === "manual") {
       result = result.filter(c => c.isManual);
     }

@@ -274,95 +274,49 @@ const Products = () => {
       ? new Date(product.manufactureDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
       : 'N/A';
 
+    const labelsHTML = `
+      <div class="label">
+        <div class="left">
+          <div class="serial">SR/No: ${product.serialNumber || ''}</div>
+          <div class="model-line">${product.modelNumber ? product.modelNumber.split(' ').slice(0, 2).join(' ') : ''}</div>
+          ${product.modelNumber && product.modelNumber.split(' ').length > 2 ? `<div class="model-line">${product.modelNumber.split(' ').slice(2).join(' ')}</div>` : ''}
+          <div class="mfg">MFG: ${mfgDate}</div>
+          <div class="warranty-section">
+            <div class="registry">Warranty Protection</div>
+            <div class="scan-text">Register your ${product.warrantyPeriodMonths || 12}-month term.</div>
+            <div class="warning">Mandatory scan within 7 days</div>
+          </div>
+        </div>
+        <div class="right">
+          <img src="${product.qrCodeUrl}" alt="QR" />
+        </div>
+      </div>
+    `;
+
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
       <head>
-        <title>QR Label - ${product.serialNumber || ''}</title>
+        <title>Bulk QR Batch</title>
+        <link href="https://fonts.cdnfonts.com/css/proggy-clean" rel="stylesheet">
         <style>
-          /* set exact label dimensions (50mm x 15mm) */
+          @import url('https://fonts.cdnfonts.com/css/proggy-clean');
           @page { size: 50mm 15mm; margin: 0; }
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body {
-            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
-            background: white;
-            width: 50mm;
-            height: 15mm;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0;
-          }
-          .label {
-            width: 50mm;
-            height: 15mm;
-            background: #fff;
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            padding: 0 1mm;
-            box-sizing: border-box;
-          }
-          .left {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            overflow: hidden;
-            padding-right: 1mm;
-          }
-          .left div {
-            font-family: Tahoma, Geneva, sans-serif;
-            font-weight: normal;
-            font-size: 13px;
-            line-height: 1.2;
-            white-space: nowrap;
-            color: #000;
-            text-align: left;
-            margin: 0;
-            padding: 0;
-          }
-          .left .serial {
-            font-size: 13px;
-            font-weight: normal;
-          }
-          .left .model-line {
-            font-size: 13px;
-            font-weight: normal;
-          }
-          .right {
-            flex: 0 0 14mm;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          }
-          .right img {
-            width: 14mm;
-            height: 14mm;
-            display: block;
-            image-rendering: pixelated;
-            image-rendering: -webkit-optimize-contrast;
-          }
-          @media print {
-            body { margin: 0; }
-          }
+          * { margin:0; padding:0; box-sizing:border-box; }
+          html, body { margin: 0; padding: 0; width: 50mm; height: 15mm; }
+          .label { display:flex; width:50mm; height:15mm; background:#fff; align-items:center; padding:0 1mm; page-break-after:always; box-sizing:border-box; }
+          .left { flex:1; display:flex; flex-direction:column; justify-content:center; overflow:hidden; padding-right:1mm; }
+          .left div { font-family:Tahoma, Geneva, sans-serif; font-weight:normal; font-size:13px; line-height:1.1; white-space:normal; word-break:break-all; color:#000; text-align:left; margin:0; max-width:35mm; }
+          .left .serial { font-family:'ProggyCleanTTSZBP', monospace !important; font-size:18px; font-weight:bold; letter-spacing:0.5px; text-rendering:optimizeSpeed; white-space:nowrap; }
+          .left .model-line { font-size:13px; font-weight:normal; }
+          .right { flex:0 0 13mm; height:100%; display:flex; align-items:center; justify-content:center; padding-right:1mm; }
+          .right img { width:12.5mm; height:12.5mm; display:block; transform: translateY(1.5mm); image-rendering:pixelated; image-rendering:-webkit-optimize-contrast; }
         </style>
       </head>
-        <div class="label">
-          <div class="left">
-            <div class="serial">SR/No:${product.serialNumber}</div>
-            <div class="model-line">${product.modelNumber ? product.modelNumber.split(' ').slice(0, 2).join(' ') : ''}</div>
-            ${product.modelNumber && product.modelNumber.split(' ').length > 2 ? `<div class="model-line">${product.modelNumber.split(' ').slice(2).join(' ')}</div>` : ''}
-          </div>
-          <div class="right">
-            <img src="${product.qrCodeUrl}" alt="QR" />
-          </div>
-        </div>
+      <body>
+        ${labelsHTML}
         <script>
-          window.onload = function() {
-            window.print();
-            window.close();
-          };
+          window.onload=function(){setTimeout(()=>{window.print();window.close();},300);};
         </script>
       </body>
       </html>
@@ -1423,7 +1377,7 @@ const Products = () => {
                   {[1, 2, 3].map((copy) => (
                     <div key={copy} className="preview-label">
                       <div className="preview-left">
-                        <div className="preview-serial">SR/No:${p.serialNumber}</div>
+                        <div className="preview-serial">SR/No: {p.serialNumber}</div>
                         {p.modelNumber?.split(' ').map((word, i, arr) => {
                           if (i === 0) {
                             return <div key={i} className="model-line">{word} {arr[1] || ''}</div>;
