@@ -45,7 +45,15 @@ const Navbar = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const serviceUser = admin?.role === "service" || (admin?.email || "").toLowerCase().includes("service");
+
   const latestUnread = useRef(unreadCount);
+
+  const displayedNotifications = serviceUser
+    ? notifications.filter((n) => ["SERVICE_UPDATE", "SERVICE_IN_PROGRESS", "SERVICE_RETURNED"].includes(n.type))
+    : notifications;
+
+  const displayedUnreadCount = displayedNotifications.filter((n) => !n.isRead).length;
 
   useEffect(() => {
     latestUnread.current = unreadCount;
@@ -64,9 +72,47 @@ const Navbar = () => {
     };
 
     checkUnread();
-    const interval = setInterval(checkUnread, 10000);
+    const interval = setInterval(checkUnread, 3000); // refresh every 3 seconds for near-real-time updates
     return () => clearInterval(interval);
   }, [admin, show, fetchUnreadCount]);
+
+  // Real-time updates via Server-Sent Events
+  useEffect(() => {
+    if (!admin) return;
+
+    const token = localStorage.getItem("token");
+    if (!window.EventSource) return;
+
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+    const streamUrl = `${baseUrl}/api/notifications/stream?token=${encodeURIComponent(token || "")}`;
+    const eventSource = new EventSource(streamUrl);
+
+    eventSource.addEventListener("notification", (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        setNotifications((prev) => [data, ...prev]);
+        if (!data.isRead) {
+          setUnreadCount((prev) => prev + 1);
+          show("New Notification!", "info", 3000, data.message);
+        }
+      } catch (error) {
+        console.error("Invalid notification event data", error);
+      }
+    });
+
+    eventSource.addEventListener("ping", () => {
+      // keep alive
+    });
+
+    eventSource.onerror = (err) => {
+      console.error("Notification stream error", err);
+      eventSource.close();
+    };
+
+    return () => {
+      eventSource.close();
+    };
+  }, [admin, show]);
 
   useEffect(() => {
     if (notificationOpen && admin && notifications.length === 0) {
@@ -112,10 +158,10 @@ const Navbar = () => {
 
     setNotificationOpen(false);
 
-    if (n.type === "SERVICE_UPDATE") {
-      navigate("/services");
+    if (n.type === "SERVICE_UPDATE" || n.type === "SERVICE_IN_PROGRESS" || n.type === "SERVICE_RETURNED") {
+      navigate("/service-dashboard");
     } else {
-      navigate("/customers");
+      navigate("/dashboard");
     }
   };
 
@@ -123,7 +169,6 @@ const Navbar = () => {
   const isActive = useCallback((path) => location.pathname === path, [location.pathname]);
 
   const navLinks = useMemo(() => {
-    const serviceUser = admin?.role === "service" || (admin?.email || "").toLowerCase().includes("service");
     if (serviceUser) {
       return [
         { name: "Service Tracker", path: "/service-dashboard", icon: Wrench },
@@ -136,7 +181,7 @@ const Navbar = () => {
       { name: "Customers", path: "/customers", icon: Users },
       { name: "Services", path: "/services", icon: Wrench },
     ];
-  }, [admin]);
+  }, [serviceUser]);
 
   return (
     <nav className="sticky top-0 z-50 bg-neutral-950/95 border-b border-neutral-800/70 backdrop-blur-xl">
@@ -232,11 +277,11 @@ const Navbar = () => {
                   `}
                 >
                   <Bell className="size-4.5 text-neutral-400" />
-                  {unreadCount > 0 && (
+                  {displayedUnreadCount > 0 && (
                     <span className="absolute -top-1 -right-1 flex size-4">
                       <span className="absolute inline-flex size-full animate-ping rounded-full bg-sky-400 opacity-70" />
                       <span className="relative inline-flex size-4 items-center justify-center rounded-full bg-sky-500 text-[9px] font-bold text-white border-2 border-neutral-950">
-                        {unreadCount > 9 ? "9+" : unreadCount}
+                        {displayedUnreadCount > 9 ? "9+" : displayedUnreadCount}
                       </span>
                     </span>
                   )}
@@ -249,7 +294,7 @@ const Navbar = () => {
                       <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-400">
                         Notifications
                       </h3>
-                      {unreadCount > 0 && (
+                      {displayedUnreadCount > 0 && (
                         <button
                           onClick={markAllRead}
                           className="text-xs font-medium text-sky-400 hover:text-sky-300 transition-colors"
@@ -265,13 +310,13 @@ const Navbar = () => {
                           <Loader2 className="animate-spin size-8 mb-3" />
                           <p className="text-sm">Loading notifications…</p>
                         </div>
-                      ) : notifications.length === 0 ? (
+                      ) : displayedNotifications.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-16 text-neutral-500">
                           <Bell className="size-8 mb-3 opacity-40" />
                           <p className="text-sm">No notifications yet</p>
                         </div>
                       ) : (
-                        notifications.map((n) => (
+                        displayedNotifications.map((n) => (
                           <div
                             key={n._id}
                             onClick={() => handleNotificationClick(n)}
@@ -289,11 +334,17 @@ const Navbar = () => {
                                     ? "bg-emerald-950/40 text-emerald-400 border border-emerald-900/30"
                                     : n.type === "SERVICE_UPDATE"
                                     ? "bg-amber-950/40 text-amber-400 border border-amber-900/30"
+                                    : n.type === "SERVICE_IN_PROGRESS"
+                                    ? "bg-blue-950/40 text-blue-400 border border-blue-900/30"
+                                    : n.type === "SERVICE_RETURNED"
+                                    ? "bg-green-950/40 text-green-400 border border-green-900/30"
                                     : "bg-neutral-800/60 text-neutral-300 border border-neutral-700/40"}
                                 `}
                               >
                                 {n.type === "REGISTRATION" && <ShieldCheck className="size-3" />}
                                 {n.type === "SERVICE_UPDATE" && <Wrench className="size-3" />}
+                                {n.type === "SERVICE_IN_PROGRESS" && <Loader2 className="size-3" />}
+                                {n.type === "SERVICE_RETURNED" && <CheckCircle2 className="size-3" />}
                                 {n.type?.replace("_", " ")}
                               </span>
 
