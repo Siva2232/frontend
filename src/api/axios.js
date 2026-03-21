@@ -1,7 +1,13 @@
 import axios from "axios";
 
+const safeApiUrl = import.meta.env.VITE_API_URL || "https://webbackend-15d2.onrender.com/api";
+if (typeof window !== "undefined" && window.location.protocol === "http:" && !window.location.hostname.includes("localhost")) {
+  console.warn("In production, use HTTPS to prevent token leakage over plaintext.");
+}
+
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "https://webbackend-15d2.onrender.com/api"
+  baseURL: safeApiUrl,
+  withCredentials: true,
 });
 
 // Automatically attach token if available

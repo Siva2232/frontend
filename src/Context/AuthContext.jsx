@@ -21,10 +21,15 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem("token");
     const email = localStorage.getItem("adminEmail");
 
-    if (token) {
+    if (token && email) {
       const role = isServiceTeamEmail(email) ? "service" : "admin";
       setAdmin({ token, email, role });
       axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    } else {
+      localStorage.removeItem("token");
+      localStorage.removeItem("adminEmail");
+      delete axios.defaults.headers.common["Authorization"];
+      setAdmin(null);
     }
 
     setLoading(false);
