@@ -1,102 +1,56 @@
-# Lancaster Warranty System Documentation
+# Lancaster Warranty System - Frontend Documentation
 
-## Overview
-
-A complete A-to-Z documentation for both frontend and backend. This project is a full-stack system for warranty registration, product management, and service tracking.
-
-- Frontend: React (Vite), Tailwind CSS, lucide-react icons, API calls with axios, mobile-friendly UI.
-- Backend: Node.js + Express + MongoDB (Mongoose), JWT auth, product/registration/service management, QR generation.
+## 🎨 Overview
+The frontend is a React application built with Vite and Tailwind CSS. It is designed to provide a seamless mobile-first experience for customers and a high-performance administrative panel for staff.
 
 ---
 
-## Table of Contents
+## 🛠 Features
 
-1. [Project Setup](#project-setup)
-2. [Frontend Architecture](#frontend-architecture)
-3. [Backend Architecture](#backend-architecture)
-4. [Core Flows](#core-flows)
-5. [API Endpoints](#api-endpoints)
-6. [Security](#security)
-7. [Deployment](#deployment)
-8. [Troubleshooting](#troubleshooting)
+### 1. **Customer Portal**
+- **Scan-to-Register**: Scan a QR code on a Lancaster product to register for warranty.
+- **Secure QR Flow**: The `s` parameter in URLs is base64-encoded to prevent manual serial-guessing.
+- **Service Lookup**: Customers can track the repair status of their products via serial number.
 
----
+### 2. **Admin Panel**
+- **Analytics Dashboard**: Real-time stats on registered warranties and service statuses.
+- **Product Management**: Create products, generate QR codes, and export lists.
+- **Bulk QR Printing**: Tools for generating printable labels for factory apply.
+- **Service Management**: Move repair tickets through the "Accept", "Service", and "Delivery" stages.
 
-## Project Setup
-
-### Prerequisites
-- Node.js 18+
-- npm or yarn
-- MongoDB running locally or connection string for cloud
-
-### Setup frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-### Setup backend
-
-```bash
-cd webbackend
-npm install
-npm run dev
-```
-
-- `webbackend/.env` should include `MONGO_URI`, `JWT_SECRET`, `FRONTEND_URL` etc.
+### 3. **Infrastructure & Security**
+- **Context API Architecture**: Centralized `AuthContext` for login state and `DataContext` for caching large product/customer lists.
+- **Protected Routing**: Role-based access control (RBAC) ensuring only authorized admins can access management pages.
+- **CSP Compliance**: Configured in `vercel.json` to block XSS (Cross-Site Scripting) and prevent clickjacking.
+- **Rate Limit Feedback**: User-friendly UI messages for locked accounts or throttled IP addresses.
 
 ---
 
-## Frontend Architecture
+## 📂 Folder Structure
 
-### Folder structure
+### `src/Context/`
+- `AuthContext.jsx`: Handles login logic and JWT storage. Includes role-based logic for "Service Team" vs. "Full Admins".
+- `DataContext.jsx`: Optimized data caching for customers, products, and registrations to minimize redundant API calls.
 
-- `src/main.jsx` – app entry point.
-- `src/App.jsx` – route container.
-- `src/api/axios.js` – axios instance with baseURL and interceptors.
-- `src/Context/AuthContext.jsx` – auth methods and user state.
-- `src/Context/DataContext.jsx` – data fetch caching for customers/products.
-- `src/pages`:
-  - `CustomerHome.jsx` - customer portal.
-  - `RegisterWarranty.jsx` - registration flow + QR scanning.
-  - `Products.jsx` - admin product management + QR label generation.
-  - `Customers.jsx` - admin customer management.
-  - `ServiceTracker.jsx` etc.
-- `src/components` – modal and UI components.
-- `src/layouts` – page layouts, navbars, footer.
+### `src/pages/`
+- `CustomerHome.jsx`: Landing page after QR scan.
+- `RegisterWarranty.jsx`: Multi-step form for customer details and product verification.
+- `Dashboard.jsx`: Main admin overview with charts and recent activity.
+- `Products.jsx`: Inventory list and QR code generator tool.
+- `ServiceDashboard.jsx`: Real-time tracking of active repairs.
 
-### Key features
-
-- QR generator in backend, displayed in frontend as image.
-- `RegisterWarranty` uses `model` + base64 `s` token instead of plain `serial` in URL.
-- Product/customer list has filter, search, pagination, selection, delete.
-- Bulk product generation and print helpers.
-
-### QR security flow
-
-- `Products.jsx` uses:
-  - `href="/customer-home?model=${encodeURIComponent(model)}&s=${btoa(serial)}"`
-- `CustomerHome.jsx` decodes `s` with `atob` and fetches model from backend.
-- `RegisterWarranty.jsx` uses `s` decoded to serial for validation and lock.
+### `src/api/`
+- `axios.js`: Central axios configuration with automatic Authorization headers.
 
 ---
 
-## Backend Architecture
+## 🚀 Deployment (Vercel/Netlify)
+- **Framework**: Vite
+- **Node Version**: 18.x
+- **Build Command**: `npm run build`
+- **Output Directory**: `dist`
+- **Rewrite Rules**: Configured in `vercel.json` to ensure React Router paths (e.g., `/dashboard`) work correctly after page refresh.
 
-### Folder structure
-
-- `index.js` - app main with routes and middleware.
-- `config/db.js` - mongoose connect.
-- `controllers` - logic by domain.
-   - `productController.js`: create/get/delete + bulk and QR generation.
-   - `registrationController.js`: register/update/delete warranties.
-   - `serviceController.js`, `statsController.js`, `notificationController.js`, `authController.js`.
-- `models`: `Product.js`, `Registration.js`, `ServiceRecord.js`, `Admin.js`, etc.
-- `routes`: Express routes using controllers.
-- `middleware/authMiddleware.js`: JWT route protection.
-- `utils/qrGenerator.js`: builds QR url with `model` + base64 `s`.
 
 ### QR logic
 
