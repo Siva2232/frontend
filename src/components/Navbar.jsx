@@ -18,6 +18,7 @@ import {
   Bell,
   Wrench,
   Loader2,
+  CheckCircle2 
 } from "lucide-react";
 
 const Navbar = () => {
