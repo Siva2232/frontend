@@ -59,66 +59,27 @@ const Navbar = () => {
     latestUnread.current = unreadCount;
   }, [unreadCount]);
 
-  // Poll unread count and show toast when a new notification arrives
+  // Poll unread count and fetch notifications when a new one arrives
   useEffect(() => {
     if (!admin) return;
 
-    const checkUnread = async () => {
+    const checkUpdates = async () => {
       const newCount = await fetchUnreadCount();
+      // If count increased, fetch actual notifications to show in the list
       if (!firstFetch.current && newCount != null && newCount > latestUnread.current) {
         show("New Notification!", "info");
+        fetchNotifications(true); // Force fetch new notifications
       }
       firstFetch.current = false;
     };
 
-    checkUnread();
-    const interval = setInterval(checkUnread, 3000); // refresh every 3 seconds for near-real-time updates
+    // Initial fetch on mount for both count and list
+    checkUpdates();
+    fetchNotifications();
+
+    const interval = setInterval(checkUpdates, 10000);
     return () => clearInterval(interval);
-  }, [admin, show, fetchUnreadCount]);
-
-  // Real-time updates via Server-Sent Events
-  useEffect(() => {
-    if (!admin) return;
-
-    const token = localStorage.getItem("token");
-    if (!window.EventSource) return;
-
-    const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
-    const streamUrl = `${baseUrl}/api/notifications/stream?token=${encodeURIComponent(token || "")}`;
-    const eventSource = new EventSource(streamUrl);
-
-    eventSource.addEventListener("notification", (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        setNotifications((prev) => [data, ...prev]);
-        if (!data.isRead) {
-          setUnreadCount((prev) => prev + 1);
-          show("New Notification!", "info", 3000, data.message);
-        }
-      } catch (error) {
-        console.error("Invalid notification event data", error);
-      }
-    });
-
-    eventSource.addEventListener("ping", () => {
-      // keep alive
-    });
-
-    eventSource.onerror = (err) => {
-      console.error("Notification stream error", err);
-      eventSource.close();
-    };
-
-    return () => {
-      eventSource.close();
-    };
-  }, [admin, show]);
-
-  useEffect(() => {
-    if (notificationOpen && admin && notifications.length === 0) {
-      fetchNotifications();
-    }
-  }, [notificationOpen, admin, notifications.length, fetchNotifications]);
+  }, [admin, show, fetchUnreadCount, fetchNotifications]);
 
   const markAllRead = async () => {
     try {

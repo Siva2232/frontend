@@ -134,15 +134,18 @@ export const DataProvider = ({ children }) => {
         }
     }, []);
 
-    const fetchNotifications = useCallback(async () => {
-        // only fetch once unless explicitly refreshed
-        if (notifications.length > 0) return;
+    const fetchNotifications = useCallback(async (force = false) => {
+        // only fetch once unless explicitly refreshed or forced
+        if (!force && notifications.length > 0) return;
         setLoading(prev => ({ ...prev, notifications: true }));
         try {
             const { data } = await API.get("/notifications?limit=20");
-            setNotifications(data.notifications || []);
+            const newNotifs = data.notifications || [];
+            setNotifications(newNotifs);
+            return newNotifs;
         } catch (error) {
             console.error("Error fetching notifications:", error);
+            return [];
         } finally {
             setLoading(prev => ({ ...prev, notifications: false }));
         }

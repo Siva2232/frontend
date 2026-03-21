@@ -24,11 +24,6 @@ const ServiceTracker = () => {
   const [customDates, setCustomDates] = useState({ start: '', end: '' });
   const [activeMenu, setActiveMenu] = useState(null);
 
-  const totalEstimatedReturnCost = ((data?.serviceHistory || recentServices || []).reduce((sum, item) => {
-    const cost = Number(item?.serviceCost || 0);
-    return sum + (Number.isFinite(cost) ? cost : 0);
-  }, 0) || 0);
-
   const downloadCsv = (rows, filename = 'service-tracker.csv') => {
     if (!rows || !rows.length) return;
     const header = ['Customer Name', 'Serial Number', 'Issue', 'Status', 'Received Date', 'Shop', 'Cost'];
@@ -433,23 +428,13 @@ const ServiceTracker = () => {
           </h1>
 
             {/* status tiles moved here */}
-          <div className="mt-6 mb-8 grid grid-cols-1 xl:grid-cols-5 gap-4">
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-              <div>
-                <div className="text-xs font-bold uppercase tracking-widest text-slate-500">Return Estimate</div>
-                <div className="mt-3 text-3xl font-bold text-emerald-600">
-                  ₹{totalEstimatedReturnCost.toLocaleString('en-IN')}
-                </div>
-              </div>
-              <div className="mt-2 text-xs text-slate-500">Estimated cost to complete return services</div>
-            </div>
-            <div className="xl:col-span-4 flex flex-wrap gap-4">
-              {[
-                { label: 'All Services', status: 'all', icon: List, color: 'text-slate-700', bg: 'bg-slate-50' },
-                { label: 'Processing', status: 'In Progress', icon: Clock, color: 'text-blue-700', bg: 'bg-blue-50' },
-                { label: 'Returned to Customer', status: 'Returned', icon: CheckCircle, color: 'text-green-700', bg: 'bg-green-50' },
-                { label: 'Pending', status: 'Received', icon: Clock, color: 'text-yellow-700', bg: 'bg-yellow-50' },
-              ].map(tile => {
+          <div className="mt-6 mb-8 flex flex-wrap gap-4">
+            {[
+              { label: 'All Services', status: 'all', icon: List, color: 'text-slate-700', bg: 'bg-slate-50' },
+              { label: 'Processing', status: 'In Progress', icon: Clock, color: 'text-blue-700', bg: 'bg-blue-50' },
+              { label: 'Returned to Customer', status: 'Returned', icon: CheckCircle, color: 'text-green-700', bg: 'bg-green-50' },
+              { label: 'Pending', status: 'Received', icon: Clock, color: 'text-yellow-700', bg: 'bg-yellow-50' },
+            ].map(tile => {
               const count = tile.status === 'all'
                 ? recentServices.length
                 : recentServices.filter(r => r.status === tile.status).length;
@@ -477,7 +462,6 @@ const ServiceTracker = () => {
               );
             })}
           </div>
-        </div>
 
           <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
