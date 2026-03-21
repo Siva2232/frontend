@@ -6,7 +6,7 @@ import API from "../api/axios";
 // import Navbar from "../layouts/CustomerNavbar";
 import logo2 from "../assets/logo2.png";
 import { useToast } from "../components/Toast";
-import { Eye, EyeOff, Lock, Mail, X, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, X, Loader2, ShieldCheck } from "lucide-react";
 
 const AdminLogin = () => {
   const { login } = useContext(AuthContext);
@@ -35,7 +35,7 @@ const AdminLogin = () => {
     setModalLoading(true);
     setModalStatus(null);
     try {
-      await API.post("/auth/change-password", modalForm);
+      await API.post("/auth/forgot-password", modalForm);
       setModalStatus("success");
       showSuccess("Password updated successfully");
       // Keep modal open for a brief moment to show success state, then close
@@ -183,51 +183,95 @@ const AdminLogin = () => {
                 </button>
               </div>
 
-              {/* Forgot Password Modal */}
-              {isModalOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all duration-300">
-                  <div
-                    className="w-full max-w-md bg-white rounded-3xl overflow-hidden shadow-2xl relative animate-in zoom-in-95"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <button
-                      onClick={() => setIsModalOpen(false)}
-                      className="absolute right-5 top-5 p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all"
+              {/* Submit */}
+              <button
+                type="submit"
+                disabled={loading}
+                className={`
+                  w-full py-4 px-6 rounded-xl font-bold text-lg tracking-wide shadow-lg
+                  transition-all active:scale-[0.98]
+                  ${
+                    loading
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-black hover:bg-white text-white  hover:text-black  shadow-black/40 hover:shadow-black/60"
+                  }
+                `}
+              >
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg
+                      className="animate-spin h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
                     >
-                      <X size={20} />
-                    </button>
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                      />
+                    </svg>
+                    Authenticating...
+                  </span>
+                ) : (
+                  "Sign In "
+                )}
+              </button>
+            </form>
 
-                    <div className="bg-slate-900 border-b border-slate-800 px-8 py-6">
-                      <h2 className="text-xl font-bold text-white tracking-tight">Change Password</h2>
-                      <p className="text-slate-400 text-xs mt-1 font-medium tracking-wide uppercase">Enter your credentials to update</p>
-                    </div>
+            {/* Forgot Password Modal – rendered OUTSIDE the login form */}
+            {isModalOpen && (
+              <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all duration-300">
+                <div
+                  className="w-full max-w-md bg-white rounded-3xl overflow-hidden shadow-2xl relative animate-in zoom-in-95"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button
+                    onClick={() => { setIsModalOpen(false); setModalStatus(null); }}
+                    className="absolute right-5 top-5 z-10 p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all"
+                  >
+                    <X size={20} />
+                  </button>
 
-                    {modalStatus === "success" ? (
-                      <div className="p-12 flex flex-col items-center justify-center text-center animate-in fade-in zoom-in duration-500">
-                        <div className="size-20 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mb-6 ring-8 ring-emerald-500/5">
-                          <ShieldCheck size={40} className="animate-bounce-slow" />
-                        </div>
-                        <h3 className="text-2xl font-bold text-slate-900 mb-2">Updated Successfully</h3>
-                        <p className="text-slate-500 text-sm max-w-[240px]">
-                          Your password has been changed. Use your new credentials to sign in.
-                        </p>
-                        <div className="mt-8 flex items-center gap-2 text-emerald-600 font-bold text-xs uppercase tracking-widest">
-                          <div className="size-2 bg-emerald-500 rounded-full animate-pulse" />
-                          Redirecting...
-                        </div>
+                  <div className="bg-slate-900 border-b border-slate-800 px-8 py-6">
+                    <h2 className="text-xl font-bold text-white tracking-tight">Change Password</h2>
+                    <p className="text-slate-400 text-xs mt-1 font-medium tracking-wide uppercase">Enter your credentials to update</p>
+                  </div>
+
+                  {modalStatus === "success" ? (
+                    <div className="p-12 flex flex-col items-center justify-center text-center">
+                      <div className="size-20 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mb-6 ring-8 ring-emerald-500/5">
+                        <ShieldCheck size={40} />
                       </div>
-                    ) : (
-                      <form onSubmit={handleForgotPassword} className="p-8 space-y-5">
-                        {modalStatus === "error" && (
-                          <div className="p-4 bg-red-50 border border-red-100 rounded-xl flex items-center gap-3 text-red-600 text-sm animate-in slide-in-from-top-2">
-                             <div className="size-6 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-                               <X size={14} className="text-red-600" />
-                             </div>
-                             <p className="font-medium">Password update failed. Please check your credentials.</p>
+                      <h3 className="text-2xl font-bold text-slate-900 mb-2">Updated Successfully</h3>
+                      <p className="text-slate-500 text-sm max-w-[240px]">
+                        Your password has been changed. Use your new credentials to sign in.
+                      </p>
+                      <div className="mt-8 flex items-center gap-2 text-emerald-600 font-bold text-xs uppercase tracking-widest">
+                        <div className="size-2 bg-emerald-500 rounded-full animate-pulse" />
+                        Closing...
+                      </div>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleForgotPassword} className="p-8 space-y-5">
+                      {modalStatus === "error" && (
+                        <div className="p-4 bg-red-50 border border-red-100 rounded-xl flex items-center gap-3 text-red-600 text-sm">
+                          <div className="size-6 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <X size={14} className="text-red-600" />
                           </div>
-                        )}
-                        <div>
-                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">Account Email</label>
+                          <p className="font-medium">Password update failed. Please check your credentials.</p>
+                        </div>
+                      )}
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">Account Email</label>
                         <div className="relative">
                           <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                           <input
@@ -272,65 +316,21 @@ const AdminLogin = () => {
                       </div>
 
                       <div className="pt-2">
-                          <button
-                            type="submit"
-                            disabled={modalLoading}
-                            className={`w-full py-3.5 rounded-xl font-bold transition-all shadow-lg active:scale-[0.98] ${
-                              modalLoading ? "bg-slate-300 text-slate-500 cursor-not-allowed" : "bg-black text-white hover:bg-black/90 shadow-black/20"
-                            }`}
-                          >
-                            {modalLoading ? <span className="flex items-center justify-center gap-2"><Loader2 className="animate-spin" size={18} /> Updating...</span> : "Update Password"}
-                          </button>
-                        </div>
-                      </form>
-                    )}
-                  </div>
+                        <button
+                          type="submit"
+                          disabled={modalLoading}
+                          className={`w-full py-3.5 rounded-xl font-bold transition-all shadow-lg active:scale-[0.98] ${
+                            modalLoading ? "bg-slate-300 text-slate-500 cursor-not-allowed" : "bg-black text-white hover:bg-black/90 shadow-black/20"
+                          }`}
+                        >
+                          {modalLoading ? <span className="flex items-center justify-center gap-2"><Loader2 className="animate-spin" size={18} /> Updating...</span> : "Update Password"}
+                        </button>
+                      </div>
+                    </form>
+                  )}
                 </div>
-              )}
-
-              {/* Submit */}
-              <button
-                type="submit"
-                disabled={loading}
-                className={`
-                  w-full py-4 px-6 rounded-xl font-bold text-lg tracking-wide shadow-lg
-                  transition-all active:scale-[0.98]
-                  ${
-                    loading
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-black hover:bg-white text-white  hover:text-black  shadow-black/40 hover:shadow-black/60"
-                  }
-                `}
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <svg
-                      className="animate-spin h-5 w-5 text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                      />
-                    </svg>
-                    Authenticating...
-                  </span>
-                ) : (
-                  "Sign In "
-                )}
-              </button>
-            </form>
+              </div>
+            )}
 
             {/* Footer note */}
             {/* <div className="px-8 pb-8 text-center text-sm text-gray-500 border-t border-gray-100 pt-6">
