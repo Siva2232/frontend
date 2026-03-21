@@ -124,13 +124,30 @@ const Products = () => {
 
   const clearSelection = () => setSelectedIds(new Set());
 
+  const isWithin24Hours = (dateStr) => {
+    if (!dateStr) return false;
+    const created = new Date(dateStr).getTime();
+    if (Number.isNaN(created)) return false;
+    return (Date.now() - created) <= 24 * 60 * 60 * 1000;
+  };
+
   const openDeleteModal = (ids, message) => {
+    const nonDeletable = ids.filter((id) => {
+      const product = products.find((p) => p._id === id);
+      return product ? !isWithin24Hours(product.createdAt) : true;
+    });
+
+    if (nonDeletable.length > 0) {
+      showError("Only products created within the last 24 hours can be deleted. Locked items show as 'Locked (24h expired)'.");
+      return;
+    }
+
     setDeleteModal({
       isOpen: true,
       isLoading: false,
       password: "",
       ids,
-      message: message || `This will delete ${ids.length} product${ids.length === 1 ? '' : 's'}.`,
+      message: message || `This will delete ${ids.length} product${ids.length === 1 ? '' : 's'}. Only items in 'Deletable' state can be removed (created under 24h ago).`,
     });
   };
 
@@ -411,7 +428,7 @@ const Products = () => {
       max-width:35mm;
     }
 
-    /* SERIAL NUMBER FONT */
+  /* SERIAL NUMBER FONT */
  .left .serial {
   font-family:'ProggyCleanTTSZBP', monospace !important;
   font-size:18px;
@@ -967,7 +984,7 @@ const Products = () => {
                 )}
 
                 <div className="bg-white border border-slate-200 text-slate-600 px-5 py-2.5 rounded-2xl font-bold text-xs shadow-sm whitespace-nowrap">
-                  Current Stock: <span className="text-blue-600 ml-1">{products.length} Units</span>
+                  Current Stock: <span className="text-blue-600 ml-1">{productsMeta.total || products.length} Units</span>
                 </div>
               </div>
             </div>
@@ -990,6 +1007,7 @@ const Products = () => {
                     <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Identification</th>
                     <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Coverage</th>
                     <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">QR Status</th>
+                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Delete Status</th>
                     <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Visual ID</th>
                     <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Utility</th>
                   </tr>
@@ -1057,6 +1075,17 @@ const Products = () => {
                                   {daysRemaining} DAYS LEFT
                                 </div>
                               </div>
+                            )}
+                          </td>
+                          <td className="px-8 py-5">
+                            {isWithin24Hours(p.createdAt) ? (
+                              <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100">
+                                Deletable
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold text-red-700 bg-red-50 border border-red-100">
+                                Locked (24h expired)
+                              </span>
                             )}
                           </td>
                           <td className="px-8 py-5">
@@ -1182,10 +1211,17 @@ const Products = () => {
                 </button>
                 <button
                   onClick={() => {
+                    if (!isWithin24Hours(p.createdAt)) return;
                     setActiveDropdown(null);
                     openDeleteModal([p._id], `Are you sure you want to permanently delete product \"${p.productName}\"?`);
                   }}
-                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors border-t border-slate-100"
+                  disabled={!isWithin24Hours(p.createdAt)}
+                  className={`w-full flex items-center gap-2 px-4 py-2.5 text-sm transition-colors border-t border-slate-100 ${
+                    isWithin24Hours(p.createdAt)
+                      ? 'text-red-600 hover:bg-red-50 cursor-pointer'
+                      : 'text-slate-400 bg-slate-100 cursor-not-allowed'
+                  }`}
+                  title={isWithin24Hours(p.createdAt) ? 'Delete QR product (within 24h)' : 'Delete disabled after 24 hours'}
                 >
                   <X size={16} />
                   Delete

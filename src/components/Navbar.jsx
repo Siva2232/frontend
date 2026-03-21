@@ -122,15 +122,21 @@ const Navbar = () => {
   // memoized to avoid re-creating function on every render
   const isActive = useCallback((path) => location.pathname === path, [location.pathname]);
 
-  const navLinks = useMemo(
-    () => [
+  const navLinks = useMemo(() => {
+    const serviceUser = admin?.role === "service" || (admin?.email || "").toLowerCase().includes("service");
+    if (serviceUser) {
+      return [
+        { name: "Service Tracker", path: "/service-dashboard", icon: Wrench },
+      ];
+    }
+
+    return [
       { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
       { name: "Products", path: "/products", icon: Box },
       { name: "Customers", path: "/customers", icon: Users },
       { name: "Services", path: "/services", icon: Wrench },
-    ],
-    []
-  );
+    ];
+  }, [admin]);
 
   return (
     <nav className="sticky top-0 z-50 bg-neutral-950/95 border-b border-neutral-800/70 backdrop-blur-xl">
@@ -350,7 +356,9 @@ const Navbar = () => {
                     <UserCircle className="size-5 text-neutral-900" />
                   </div>
                   <div className="hidden lg:block text-left">
-                    <p className="text-xs font-semibold text-white leading-none">Admin</p>
+                    <p className="text-xs font-semibold text-white leading-none">
+                      {admin?.role === "service" ? "Service Team" : "Admin"}
+                    </p>
                     <p className="text-[10px] text-neutral-500 mt-0.5">Active</p>
                   </div>
                   <ChevronDown
@@ -367,7 +375,7 @@ const Navbar = () => {
                           Signed in as
                         </p>
                         <p className="text-sm font-semibold text-white truncate">
-                          admin@lancaster.com
+                          {admin?.email || "Unknown user"}
                         </p>
                       </div>
                       <div className="p-2">

@@ -880,7 +880,10 @@ const Customers = () => {
                         </td>
                         <td
                           className="px-5 py-4 cursor-pointer"
-                          onClick={() => navigate(`/services?q=${encodeURIComponent(c.serialNumber)}`)}
+                          onClick={() => {
+                            const query = c.serialNumber || c.modelNumber || c.phone || c.customerName || "";
+                            navigate(`/services?q=${encodeURIComponent(query)}`);
+                          }}
                           title="View service history"
                         >
                           <div className="flex items-center gap-3">
@@ -927,7 +930,10 @@ const Customers = () => {
 
                         <td
                           className="px-5 py-4 cursor-pointer"
-                          onClick={() => navigate(`/services?q=${encodeURIComponent(c.serialNumber)}`)}
+                          onClick={() => {
+                            const query = c.serialNumber || c.modelNumber || c.phone || c.customerName || "";
+                            navigate(`/services?q=${encodeURIComponent(query)}`);
+                          }}
                           title="View service history"
                         >
                           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-neutral-100 text-neutral-700 text-xs font-mono font-medium rounded-md border border-neutral-200">
@@ -1254,7 +1260,11 @@ const Customers = () => {
                 Edit Details
               </button>
               <button
-                onClick={() => { setActiveDropdown(null); navigate(`/services?q=${c.serialNumber}`); }}
+                onClick={() => {
+                  setActiveDropdown(null);
+                  const query = c.serialNumber || c.modelNumber || c.phone || c.customerName || "";
+                  navigate(`/services?q=${encodeURIComponent(query)}`);
+                }}
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-blue-600 font-semibold hover:bg-blue-50 transition-colors"
               >
                 <ExternalLink size={16} />

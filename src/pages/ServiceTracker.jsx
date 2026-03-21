@@ -172,16 +172,17 @@ const ServiceTracker = () => {
 
   useEffect(() => {
     // Auto search if query parameter exists
-    const q = searchParams.get('q');
-    if (q) {
-      setSearchQuery(q);
+    const rawQ = searchParams.get('q');
+    const trimmedQ = rawQ ? String(rawQ).trim() : "";
+    if (trimmedQ && trimmedQ.toLowerCase() !== "undefined") {
+      setSearchQuery(trimmedQ);
       // Small delay to ensure any internal state is ready if needed, 
       // or just call it directly if handleSearch is pure enough
       setTimeout(() => {
-        handleSearch(null, q);
+        handleSearch(null, trimmedQ);
       }, 100);
     }
-    
+
     // Initial fetch of recent services if not already loaded
     if (recentServices.length === 0) {
       fetchRecentServices();
@@ -1009,7 +1010,7 @@ const ServiceTracker = () => {
         )}
       </main>
 
-      <AdminFooter />
+      <AdminFooter onlyService={true} />
 
       {/* Compact modal */}
       {showNewEntry && (

@@ -10,13 +10,20 @@ export const AuthProvider = ({ children }) => {
   const [admin, setAdmin] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const isServiceTeamEmail = (email) => {
+    if (!email) return false;
+    const normalized = email.trim().toLowerCase();
+    return normalized === "service@lancaster.com" || normalized === "service-team@lancaster.com" || normalized.includes("service");
+  };
+
   // Check token on page load
   useEffect(() => {
     const token = localStorage.getItem("token");
     const email = localStorage.getItem("adminEmail");
 
     if (token) {
-      setAdmin({ token, email });
+      const role = isServiceTeamEmail(email) ? "service" : "admin";
+      setAdmin({ token, email, role });
       axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
     }
 
@@ -61,7 +68,8 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem("token", data.token);
       localStorage.setItem("adminEmail", email);
       axios.defaults.headers.common["Authorization"] = `Bearer ${data.token}`;
-      setAdmin({ token: data.token, email });
+      const role = isServiceTeamEmail(email) ? "service" : "admin";
+      setAdmin({ token: data.token, email, role });
       return { success: true };
     } catch (error) {
       console.error("Login error:", error);

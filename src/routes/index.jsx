@@ -10,6 +10,7 @@ const Dashboard = lazy(() => import("../pages/Dashboard"));
 const Products = lazy(() => import("../pages/Products"));
 const Customers = lazy(() => import("../pages/Customers"));
 const ServiceTracker = lazy(() => import("../pages/ServiceTracker"));
+const ServiceDashboard = lazy(() => import("../pages/ServiceDashboard"));
 const PrivacyPolicy = lazy(() => import("../pages/PrivacyPolicy"));
 const Terms = lazy(() => import("../pages/Terms"));
 
@@ -68,6 +69,15 @@ export default function AppRoutes() {
           element={
             <ProtectedRoute>
               <ServiceTracker />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/service-dashboard"
+          element={
+            <ProtectedRoute>
+              <ServiceDashboard />
             </ProtectedRoute>
           }
         />

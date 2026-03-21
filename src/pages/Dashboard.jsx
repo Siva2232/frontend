@@ -257,7 +257,10 @@ const Dashboard = () => {
                     <tr key={reg._id} className="group hover:bg-slate-50/80 transition-all">
                       <td
                         className="px-8 py-5 cursor-pointer"
-                        onClick={() => navigate(`/services?q=${encodeURIComponent(reg.serialNumber)}`)}
+                        onClick={() => {
+                          const query = reg.serialNumber || reg.productId?.modelNumber || reg.modelNumber || reg.email || reg.customerName || "";
+                          navigate(`/services?q=${encodeURIComponent(query)}`);
+                        }}
                         title="View service tracking"
                       >
                         <div className="flex items-center gap-3">
@@ -277,7 +280,10 @@ const Dashboard = () => {
                       </td>
                       <td
                         className="px-8 py-5 cursor-pointer"
-                        onClick={() => navigate(`/services?q=${encodeURIComponent(reg.serialNumber)}`)}
+                        onClick={() => {
+                          const query = reg.serialNumber || reg.productId?.modelNumber || reg.modelNumber || reg.email || reg.customerName || "";
+                          navigate(`/services?q=${encodeURIComponent(query)}`);
+                        }}
                         title="View service tracking"
                       >
                         <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-[11px] font-mono font-bold border border-slate-200">
@@ -341,14 +347,22 @@ const Dashboard = () => {
               }}
             >
               <button
-                onClick={() => { setActiveDropdown(null); navigate(`/customers?search=${reg.serialNumber}`); }}
+                onClick={() => {
+                  setActiveDropdown(null);
+                  const query = reg.serialNumber || reg.productId?.modelNumber || reg.modelNumber || reg.email || reg.customerName || "";
+                  navigate(`/services?q=${encodeURIComponent(query)}`);
+                }}
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors group"
               >
                 <Eye size={14} className="text-slate-400 group-hover:text-blue-600" />
                 View Details
               </button>
               <button
-                onClick={() => { setActiveDropdown(null); navigate(`/services?q=${reg.serialNumber}`); }}
+                onClick={() => {
+                  setActiveDropdown(null);
+                  const query = reg.serialNumber || reg.productId?.modelNumber || reg.modelNumber || reg.email || reg.customerName || "";
+                  navigate(`/services?q=${encodeURIComponent(query)}`);
+                }}
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-blue-600 hover:bg-blue-50 transition-colors group border-t border-slate-50"
               >
                 <ClipboardList size={14} className="text-blue-400 group-hover:text-blue-600" />

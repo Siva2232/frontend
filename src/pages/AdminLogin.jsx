@@ -17,6 +17,8 @@ const AdminLogin = () => {
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
+  const serviceTeamWhitelist = ["service@lancaster.com", "service-team@lancaster.com"];
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -25,8 +27,13 @@ const AdminLogin = () => {
     setLoading(false);
 
     if (res.success) {
-      showSuccess("Welcome back, Administrator");
-      navigate("/dashboard");
+      const isServiceTeam = serviceTeamWhitelist.includes(form.email.trim().toLowerCase()) || form.email.trim().toLowerCase().includes("service");
+      showSuccess(isServiceTeam ? "Welcome, Service Team" : "Welcome back, Administrator");
+      if (isServiceTeam) {
+        navigate("/service-dashboard");
+      } else {
+        navigate("/dashboard");
+      }
     } else {
       showError(res.message || "Invalid credentials. Please try again.");
     }

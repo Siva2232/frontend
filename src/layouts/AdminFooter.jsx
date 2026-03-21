@@ -1,16 +1,18 @@
 import { Link } from "react-router-dom";
 import logo2 from "../assets/logo2.png";
 
-const AdminFooter = () => {
+const AdminFooter = ({ onlyService = false }) => {
   const currentYear = new Date().getFullYear();
 
-  const navLinks = [
-    { label: "Dashboard", to: "/dashboard" },
-    { label: "Customers", to: "/customers" },
-    { label: "Products", to: "/products" },
-    { label: "Service & Warranty", to: "/services" },
-    // { label: "Reports", to: "/reports" },
-  ];
+  const navLinks = onlyService
+    ? [{ label: "Service & Warranty", to: "/services" }]
+    : [
+        { label: "Dashboard", to: "/dashboard" },
+        { label: "Customers", to: "/customers" },
+        { label: "Products", to: "/products" },
+        { label: "Service & Warranty", to: "/services" },
+        // { label: "Reports", to: "/reports" },
+      ];
 
   const legalLinks = [
     { label: "Privacy Policy", to: "/privacy-policy" },
@@ -111,7 +113,7 @@ const AdminFooter = () => {
             <span className="uppercase">Internal Systems</span>
           </div>
           <div className="px-3 py-1 bg-slate-900 rounded-full border border-slate-800 text-slate-500">
-            Secure Session Active: <span className="text-slate-300">ADMIN_PORTAL</span>
+            Secure Session Active: <span className="text-slate-300">{onlyService ? "SERVICE_PORTAL" : "ADMIN_PORTAL"}</span>
           </div>
         </div>
       </div>
