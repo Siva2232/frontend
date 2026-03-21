@@ -421,7 +421,7 @@ const Products = () => {
   text-rendering:optimizeSpeed;
   white-space:nowrap;
   margin-bottom:1px;
-  transform: translateY(1.5mm); /* tiny downward shift */
+  transform: translateY(0.5mm); /* tiny downward shift */
 }
 
     .left .model-line {
@@ -442,7 +442,7 @@ const Products = () => {
   width:12.5mm; 
   height:12.5mm; 
   display:block;
-  transform: translateY(0mm); /* move QR slightly down */
+  transform: translateY(1.5mm); /* move QR slightly down */
   image-rendering:pixelated;
   image-rendering:-webkit-optimize-contrast;
 }
