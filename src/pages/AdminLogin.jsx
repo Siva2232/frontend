@@ -1,11 +1,12 @@
 import { useState, useContext } from "react";
 import { AuthContext } from "../Context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import API from "../api/axios";
 // import Footer from "../layouts/Footer";
 // import Navbar from "../layouts/CustomerNavbar";
 import logo2 from "../assets/logo2.png";
 import { useToast } from "../components/Toast";
-import { Eye, EyeOff, Lock, Mail } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, X, Loader2 } from "lucide-react";
 
 const AdminLogin = () => {
   const { login } = useContext(AuthContext);
@@ -17,7 +18,39 @@ const AdminLogin = () => {
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
+  // Forgot Password Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalForm, setModalForm] = useState({ email: "", oldPassword: "", newPassword: "" });
+  const [modalLoading, setModalLoading] = useState(false);
+  const [modalStatus, setModalStatus] = useState(null); // 'success' | 'error' | null
+
   const serviceTeamWhitelist = ["service@lancaster.com", "service-team@lancaster.com"];
+
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    if (!modalForm.email || !modalForm.oldPassword || !modalForm.newPassword) {
+      showError("Please fill all fields");
+      return;
+    }
+    setModalLoading(true);
+    setModalStatus(null);
+    try {
+      await API.post("/auth/change-password", modalForm);
+      setModalStatus("success");
+      showSuccess("Password updated successfully");
+      // Keep modal open for a brief moment to show success state, then close
+      setTimeout(() => {
+        setIsModalOpen(false);
+        setModalForm({ email: "", oldPassword: "", newPassword: "" });
+        setModalStatus(null);
+      }, 2500);
+    } catch (err) {
+      setModalStatus("error");
+      showError(err.response?.data?.message || "Failed to update password");
+    } finally {
+      setModalLoading(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -141,13 +174,119 @@ const AdminLogin = () => {
                   <span className="text-gray-600 font-medium">Remember me</span>
                 </label>
 
-                {/* <a
-                  href="#"
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(true)}
                   className="text-amber-700 hover:text-amber-800 font-medium hover:underline"
                 >
                   Forgot password?
-                </a> */}
+                </button>
               </div>
+
+              {/* Forgot Password Modal */}
+              {isModalOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all duration-300">
+                  <div
+                    className="w-full max-w-md bg-white rounded-3xl overflow-hidden shadow-2xl relative animate-in zoom-in-95"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <button
+                      onClick={() => setIsModalOpen(false)}
+                      className="absolute right-5 top-5 p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all"
+                    >
+                      <X size={20} />
+                    </button>
+
+                    <div className="bg-slate-900 border-b border-slate-800 px-8 py-6">
+                      <h2 className="text-xl font-bold text-white tracking-tight">Change Password</h2>
+                      <p className="text-slate-400 text-xs mt-1 font-medium tracking-wide uppercase">Enter your credentials to update</p>
+                    </div>
+
+                    {modalStatus === "success" ? (
+                      <div className="p-12 flex flex-col items-center justify-center text-center animate-in fade-in zoom-in duration-500">
+                        <div className="size-20 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mb-6 ring-8 ring-emerald-500/5">
+                          <ShieldCheck size={40} className="animate-bounce-slow" />
+                        </div>
+                        <h3 className="text-2xl font-bold text-slate-900 mb-2">Updated Successfully</h3>
+                        <p className="text-slate-500 text-sm max-w-[240px]">
+                          Your password has been changed. Use your new credentials to sign in.
+                        </p>
+                        <div className="mt-8 flex items-center gap-2 text-emerald-600 font-bold text-xs uppercase tracking-widest">
+                          <div className="size-2 bg-emerald-500 rounded-full animate-pulse" />
+                          Redirecting...
+                        </div>
+                      </div>
+                    ) : (
+                      <form onSubmit={handleForgotPassword} className="p-8 space-y-5">
+                        {modalStatus === "error" && (
+                          <div className="p-4 bg-red-50 border border-red-100 rounded-xl flex items-center gap-3 text-red-600 text-sm animate-in slide-in-from-top-2">
+                             <div className="size-6 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                               <X size={14} className="text-red-600" />
+                             </div>
+                             <p className="font-medium">Password update failed. Please check your credentials.</p>
+                          </div>
+                        )}
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">Account Email</label>
+                        <div className="relative">
+                          <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                          <input
+                            type="email"
+                            required
+                            placeholder="your-email@example.com"
+                            value={modalForm.email}
+                            onChange={(e) => setModalForm({ ...modalForm, email: e.target.value })}
+                            className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20 outline-none text-sm transition-all text-slate-900 placeholder-slate-400"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">Current Password</label>
+                        <div className="relative">
+                          <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                          <input
+                            type="password"
+                            required
+                            placeholder="Your current password"
+                            value={modalForm.oldPassword}
+                            onChange={(e) => setModalForm({ ...modalForm, oldPassword: e.target.value })}
+                            className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20 outline-none text-sm transition-all text-slate-900 placeholder-slate-400"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">New Password</label>
+                        <div className="relative">
+                          <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                          <input
+                            type="password"
+                            required
+                            placeholder="Enter new password"
+                            value={modalForm.newPassword}
+                            onChange={(e) => setModalForm({ ...modalForm, newPassword: e.target.value })}
+                            className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20 outline-none text-sm transition-all text-slate-900 placeholder-slate-400"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="pt-2">
+                          <button
+                            type="submit"
+                            disabled={modalLoading}
+                            className={`w-full py-3.5 rounded-xl font-bold transition-all shadow-lg active:scale-[0.98] ${
+                              modalLoading ? "bg-slate-300 text-slate-500 cursor-not-allowed" : "bg-black text-white hover:bg-black/90 shadow-black/20"
+                            }`}
+                          >
+                            {modalLoading ? <span className="flex items-center justify-center gap-2"><Loader2 className="animate-spin" size={18} /> Updating...</span> : "Update Password"}
+                          </button>
+                        </div>
+                      </form>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Submit */}
               <button
