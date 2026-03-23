@@ -624,8 +624,8 @@ const ServiceTracker = () => {
                           </div>
                           <div className="text-right flex items-start gap-4">
                             <div>
+                                <div className="text-xs font-semibold text-slate-500 uppercase tracking-widest">Service Amount</div>
                                 <div className="text-xl font-bold text-slate-900">₹{record.serviceCost.toLocaleString('en-IN')}</div>
-                                <div className="text-xs text-slate-500">{record.paymentStatus}</div>
                             </div>
                             
                             {/* Action Menu (3 Dots) */}
