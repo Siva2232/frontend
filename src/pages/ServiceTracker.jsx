@@ -501,7 +501,7 @@ const ServiceTracker = () => {
           </div>
         ) : data ? (
           <>
-            <div className="flex justify-end mb-4">
+<div className="flex justify-start mb-4">
               <button
                 onClick={() => {
                   setData(null);
@@ -509,7 +509,7 @@ const ServiceTracker = () => {
                   setFilterPeriod('all');
                   setPriorityFilter('all');
                 }}
-                className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md font-medium"
+                className="px-3 py-2 bg-white-100 hover:bg-slate-200 text-slate-700 rounded-md font-medium"
               >
                 Back to Service List
               </button>
