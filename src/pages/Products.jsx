@@ -328,13 +328,27 @@ const Products = () => {
           .left .serial { font-family:'ProggyCleanTTSZBP', monospace !important; font-size:18px; font-weight:bold; letter-spacing:0.5px; text-rendering:optimizeSpeed; white-space:nowrap; }
           .left .model-line { font-size:13px; font-weight:normal; }
           .right { flex:0 0 13mm; height:100%; display:flex; align-items:center; justify-content:center; padding-right:1mm; }
-          .right img { width:12.5mm; height:12.5mm; display:block; transform: translateY(1.5mm); image-rendering:pixelated; image-rendering:-webkit-optimize-contrast; }
+          .right img { width:14mm; height:14mm; display:block; transform: translateY(0.8mm); image-rendering:auto; -webkit-image-rendering:auto; image-rendering:crisp-edges; }
         </style>
       </head>
       <body>
         ${labelsHTML}
         <script>
-          window.onload=function(){setTimeout(()=>{window.print();window.close();},300);};
+          window.onload = () => {
+            const images = Array.from(document.images || []);
+            const loaders = images.map((img) => {
+              if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+              return new Promise((resolve) => {
+                img.onload = img.onerror = () => resolve();
+              });
+            });
+            Promise.all(loaders).then(() => {
+              setTimeout(() => {
+                window.print();
+                window.close();
+              }, 700);
+            });
+          };
         </script>
       </body>
       </html>
@@ -456,12 +470,13 @@ const Products = () => {
 }
 
 .right img { 
-  width:12.5mm; 
-  height:12.5mm; 
+  width:14mm; 
+  height:14mm; 
   display:block;
-  transform: translateY(0.15mm); /* move QR slightly down */
-  image-rendering:pixelated;
-  image-rendering:-webkit-optimize-contrast;
+  transform: translateY(0.8mm); /* move QR slightly down */
+  image-rendering:auto;
+  -webkit-image-rendering:auto;
+  image-rendering:crisp-edges;
 }
   </style>
 </head>
@@ -470,11 +485,20 @@ const Products = () => {
   ${labelsHTML}
 
   <script>
-    window.onload=function(){
-      setTimeout(() => {
-        window.print();
-        window.close();
-      }, 300);
+    window.onload = () => {
+      const images = Array.from(document.images || []);
+      const loaders = images.map((img) => {
+        if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+        return new Promise((resolve) => {
+          img.onload = img.onerror = () => resolve();
+        });
+      });
+      Promise.all(loaders).then(() => {
+        setTimeout(() => {
+          window.print();
+          window.close();
+        }, 700);
+      });
     };
   </script>
 </body>
