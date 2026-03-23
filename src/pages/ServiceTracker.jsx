@@ -5,11 +5,12 @@ import { useAuth } from '../Context/AuthContext';
 import API from '../api/axios';
 import Navbar from "../components/Navbar";
 import AdminFooter from "../layouts/AdminFooter";
+import ManualServiceModal from "../components/ManualServiceModal";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import ConfirmationModal from "../components/ConfirmationModal";
 import DeleteConfirmationModal from "../components/DeleteConfirmationModal";
-import { Search, PenTool, CheckCircle, CheckCircle2, Clock, Calendar, PlusCircle, List, Loader2, MoreVertical, Trash2, X, Eye, Download } from 'lucide-react';
+import { Search, PenTool, CheckCircle, CheckCircle2, Clock, Calendar, PlusCircle, List, Loader2, MoreVertical, Trash2, X, Eye, Download, RefreshCw } from 'lucide-react';
 import { useToast } from '../components/Toast';
 const ServiceTracker = () => {
   const [searchParams] = useSearchParams();
@@ -21,6 +22,7 @@ const ServiceTracker = () => {
   const [data, setData] = useState(null);
   const [filteredRecent, setFilteredRecent] = useState([]);
   const [filterPeriod, setFilterPeriod] = useState('all');
+  const [isManualServiceModalOpen, setIsManualServiceModalOpen] = useState(false);
   const [customDates, setCustomDates] = useState({ start: '', end: '' });
   const [activeMenu, setActiveMenu] = useState(null);
 
@@ -268,7 +270,7 @@ const ServiceTracker = () => {
     shopName: '',
     issueDescription: '',
     priority: '',
-    serviceCost: 0,
+    serviceCost: '',
     technicianNotes: ''
   });
 
@@ -360,7 +362,7 @@ const ServiceTracker = () => {
       priority: record.priority || '',
       technicianName: record.technicianName || "",
       shopName: record.shopName || "",
-      serviceCost: record.serviceCost != null ? String(record.serviceCost) : "",
+      serviceCost: record.status === 'Returned' && record.serviceCost > 0 ? String(record.serviceCost) : "",
       error: "",
       isSubmitting: false
     });
@@ -474,6 +476,7 @@ const ServiceTracker = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
+           
             <button
               type="submit"
               disabled={loading}
@@ -481,9 +484,14 @@ const ServiceTracker = () => {
             >
               {loading ? "Searching..." : "Track"}
             </button>
-
+             <button
+              type="button"
+              onClick={() => setIsManualServiceModalOpen(true)}
+              className="px-5 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold shadow-md transition-all disabled:opacity-60 whitespace-nowrap text-base"
+            >
+              Manual Service
+            </button>
           </form>
-        
         </div>
 
         {loading ? (
@@ -575,7 +583,7 @@ const ServiceTracker = () => {
                     modelNumber: reg?.modelNumber || lastRecord?.modelNumber || '',
                     priority: '',
                     issueDescription: '',
-                    serviceCost: 0,
+                    serviceCost: '',
                     technicianNotes: ''
                   }));
                   setShowNewEntry(true);
@@ -880,7 +888,11 @@ const ServiceTracker = () => {
                   ) : (
                     <Clock size={14} />
                   )}
-                  {service.status === 'Returned' ? 'Returned to Customer' : service.status}
+                  {service.status === 'Returned'
+                    ? 'Returned to Customer'
+                    : service.status === 'Received'
+                    ? `Received from ${service.shopName || service.customerName || 'Shop/Customer'}`
+                    : service.status}
                 </span>
               </td>
 
@@ -1075,12 +1087,14 @@ const ServiceTracker = () => {
               <div className="grid grid-cols-1 gap-5">
                 <div>
                   <label className="text-xs font-semibold text-slate-600 uppercase mb-1.5 block">Est. Cost (₹)</label>
-                  <input
-                    type="number"
-                    className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm"
-                    value={newEntry.serviceCost}
-                    onChange={e => setNewEntry({ ...newEntry, serviceCost: Number(e.target.value) || 0 })}
-                  />
+                 <input
+  type="number"
+  min={0}
+  placeholder="Enter cost"
+  value={newEntry.serviceCost}
+  onChange={e => setNewEntry({ ...newEntry, serviceCost: e.target.value })}
+  className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200"
+/>
                 </div>
               </div>
 
@@ -1245,6 +1259,15 @@ const ServiceTracker = () => {
           </>
         );
       })()}
+
+      <ManualServiceModal
+        isOpen={isManualServiceModalOpen}
+        onClose={() => setIsManualServiceModalOpen(false)}
+        onSuccess={() => {
+          fetchRecentServices();
+          setIsManualServiceModalOpen(false);
+        }}
+      />
     </div>
   );
 };
