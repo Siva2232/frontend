@@ -459,7 +459,7 @@ const Products = () => {
   width:12.5mm; 
   height:12.5mm; 
   display:block;
-  transform: translateY(1.5mm); /* move QR slightly down */
+  transform: translateY(0.05mm); /* move QR slightly down */
   image-rendering:pixelated;
   image-rendering:-webkit-optimize-contrast;
 }
