@@ -500,7 +500,22 @@ const ServiceTracker = () => {
             <p className="text-slate-500 font-medium animate-pulse">Retrieving tracking records...</p>
           </div>
         ) : data ? (
-          <div className="grid lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <>
+            <div className="flex justify-end mb-4">
+              <button
+                onClick={() => {
+                  setData(null);
+                  setSearchQuery('');
+                  setFilterPeriod('all');
+                  setPriorityFilter('all');
+                }}
+                className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md font-medium"
+              >
+                Back to Service List
+              </button>
+            </div>
+
+            <div className="grid lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Left column - more compact */}
             <div className="space-y-6">
               <div className="bg-white rounded-2xl shadow-lg border border-slate-200/50 p-5">
@@ -747,6 +762,7 @@ const ServiceTracker = () => {
               </div>
             </div>
           </div>
+          </>
         ) : (
           // Recent services table - also compacted
 
@@ -1084,19 +1100,6 @@ const ServiceTracker = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-1 gap-5">
-                <div>
-                  <label className="text-xs font-semibold text-slate-600 uppercase mb-1.5 block">Est. Cost (₹)</label>
-                 <input
-  type="number"
-  min={0}
-  placeholder="Enter cost"
-  value={newEntry.serviceCost}
-  onChange={e => setNewEntry({ ...newEntry, serviceCost: e.target.value })}
-  className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200"
-/>
-                </div>
-              </div>
 
               <div className="pt-4 flex gap-3">
                 <button
