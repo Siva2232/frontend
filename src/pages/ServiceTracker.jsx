@@ -872,18 +872,17 @@ const ServiceTracker = () => {
     <table className="w-full min-w-max">
       <thead>
         <tr className="bg-neutral-50/80 border-b border-neutral-100">
-          <th className="px-6 py-5 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Status</th>
-          <th className="px-6 py-5 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Priority</th>
-          <th className="px-6 py-5 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Serial</th>
-          <th className="px-6 py-5 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Model</th>
-          <th className="px-6 py-5 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Customer</th>
-          <th className="px-6 py-5 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Technician</th>
-          <th className="px-6 py-5 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Issue</th>
-          <th className="px-6 py-5 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Received</th>
-          <th className="px-6 py-5 text-right text-xs font-semibold text-neutral-500 uppercase tracking-wider">Action</th>
+          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Status</th>
+          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Priority</th>
+          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Serial</th>
+          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Model</th>
+          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Customer</th>
+          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Technician</th>
+          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Issue</th>
+          <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Received</th>
+          <th className="px-4 py-3 text-right text-xs font-semibold text-neutral-500 uppercase tracking-wider">Action</th>
         </tr>
       </thead>
-
       <tbody className="divide-y divide-neutral-100 text-sm text-neutral-700">
         {filteredRecent.length === 0 ? (
           <tr>
@@ -939,7 +938,7 @@ const ServiceTracker = () => {
               </td>
 
               <td
-                className="px-6 py-5 font-mono font-medium text-neutral-800 cursor-pointer"
+                className="px-4 py-3 font-mono font-medium text-neutral-800 cursor-pointer"
                 onClick={() => fetchServiceHistory(service.serialNumber)}
                 title="View details"
               >
@@ -947,7 +946,7 @@ const ServiceTracker = () => {
               </td>
 
               <td
-                className="px-6 py-5 font-medium text-neutral-800 cursor-pointer"
+                className="px-4 py-3 font-medium text-neutral-800 cursor-pointer"
                 onClick={() => fetchServiceHistory(service.serialNumber)}
                 title="View details"
               >
