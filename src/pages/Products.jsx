@@ -43,6 +43,7 @@ const Products = () => {
     warrantyPeriodMonths: 12,
     prefix: "", // This will now act as the full "Starting Serial Number"
     count: 10,
+    printCopies: "",
   });
 
   // Persist last generated serial across refreshes so admins can continue
@@ -234,6 +235,11 @@ const Products = () => {
       showError("Count must be greater than zero.");
       return;
     }
+    const copiesValue = Number(bulkForm.printCopies);
+    if (!bulkForm.printCopies || Number.isNaN(copiesValue) || copiesValue <= 0) {
+      showError("Print copies must be a positive number.");
+      return;
+    }
     
     setConfirmModal({
       isOpen: true,
@@ -264,6 +270,7 @@ const Products = () => {
             warrantyPeriodMonths: bulkForm.warrantyPeriodMonths,
             prefix: nextStart || bulkForm.prefix,
             count: bulkForm.count,
+            printCopies: bulkForm.printCopies || "",
           });
 
           // Fetch only the first page with a small limit to avoid loading all products at once
@@ -361,10 +368,12 @@ const Products = () => {
     if (!bulkResults || bulkResults.length === 0) return;
     setIsBulkPrintOpen(false);
 
-    // assemble combined HTML for every product x 3 copies
+    const copies = Math.max(1, Number(bulkForm.printCopies || 1));
+
+    // assemble combined HTML for every product x configured copies
     let labelsHTML = '';
     bulkResults.forEach((p) => {
-      for (let copy = 0; copy < 3; copy++) {
+      for (let copy = 0; copy < copies; copy++) {
         labelsHTML += `
           <div class="label">
             <div class="left">
@@ -762,6 +771,22 @@ const Products = () => {
                 </div>
 
                 <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Print Copies (per label)</label>
+                  <div className="relative group">
+                    <Printer className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors w-5 h-5" />
+                    <input
+                      type="number"
+                      min="1"
+                      max="20"
+                      required
+                      className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-blue-500 outline-none transition-all font-bold"
+                      onChange={(e) => setBulkForm({ ...bulkForm, printCopies: e.target.value })}
+                      value={bulkForm.printCopies}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Mfg Date</label>
                   <div className="relative group">
                     <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors w-5 h-5" />
@@ -799,7 +824,8 @@ const Products = () => {
               <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl">
                 <p className="text-[11px] text-amber-700 font-bold leading-relaxed">
                   System will generate <span className="underline">{bulkForm.count}</span> {parseInt(bulkForm.count) === 1 ? 'ID' : 'IDs'} starting from the provided base number.
-                  <br/>Example: If Input=26051000 & Count=10, generated IDs will be 26051001 to 26051010.
+                  <br/>Each label will be printed <span className="underline">{Math.max(1, Number(bulkForm.printCopies || 1))}</span> time(s), for a total of <span className="underline">{Math.max(1, Number(bulkForm.count || 0)) * Math.max(1, Number(bulkForm.printCopies || 1))}</span> printed labels.
+                  <br/>Example: If Input=26051000 & Count=10 & Print Copies=2, total printed labels will be 20.
                 </p>
                 {bulkResults && bulkResults.length > 0 && (
                   (() => {
@@ -1354,7 +1380,7 @@ const Products = () => {
             <div>
               <h2 className="text-xl font-black text-slate-900 uppercase tracking-widest">Bulk Label Preview</h2>
               <p className="text-xs text-slate-400 font-bold uppercase mt-1">
-                {bulkResults.length} unique labels (3 copies each) • 50mm x 15mm layout
+                {bulkResults.length} unique labels ({Math.max(1, Number(bulkForm.printCopies || 1))} copies each) • 50mm x 15mm layout
               </p>
             </div>
             <div className="flex gap-4">
@@ -1432,10 +1458,10 @@ const Products = () => {
             {bulkResults.map((p, idx) => (
               <div key={p._id} className="flex flex-col gap-2 p-4 bg-white rounded-2xl border border-slate-200 shadow-sm w-fit">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center border-b border-slate-50 pb-2 mb-2">
-                  Label Batch #{idx + 1} (3 Copies)
+                  Label Batch #{idx + 1} ({Math.max(1, Number(bulkForm.printCopies || 1))} copies)
                 </span>
                 <div className="flex gap-4">
-                  {[1, 2, 3].map((copy) => (
+                  {Array.from({ length: Math.max(1, Number(bulkForm.printCopies || 1)) }).map((_, copy) => (
                     <div key={copy} className="preview-label">
                       <div className="preview-left">
                         <div className="preview-serial">SR/No: {p.serialNumber}</div>
