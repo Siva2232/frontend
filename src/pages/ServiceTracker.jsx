@@ -28,12 +28,13 @@ const ServiceTracker = () => {
 
   const downloadCsv = (rows, filename = 'service-tracker.csv') => {
     if (!rows || !rows.length) return;
-    const header = ['Customer Name', 'Serial Number', 'Issue', 'Status', 'Received Date', 'Shop', 'Cost'];
+    const header = ['Customer Name', 'Serial Number', 'Model Number', 'Issue', 'Status', 'Received Date', 'Shop', 'Cost'];
     const csvRows = [header.join(',')];
     rows.forEach((r) => {
       const values = [
         r.customerName || '',
         r.serialNumber || '',
+        r.modelNumber || '',
         r.issueDescription || '',
         r.status || '',
         r.receivedDate ? new Date(r.receivedDate).toLocaleDateString() : '',
@@ -63,7 +64,7 @@ const ServiceTracker = () => {
     doc.setFontSize(10);
     let y = 28;
     const lineHeight = 7;
-    const head = 'Name | Serial | Issue | Status | Received';
+    const head = 'Name | Serial | Model | Issue | Status | Received';
     doc.text(head, 14, y);
     y += lineHeight;
     rows.slice(0, 70).forEach((r) => {
@@ -74,6 +75,7 @@ const ServiceTracker = () => {
       const row = [
         r.customerName || '',
         r.serialNumber || '',
+        r.modelNumber || '',
         r.issueDescription || '',
         r.status || '',
         r.receivedDate ? new Date(r.receivedDate).toLocaleDateString() : ''
@@ -677,6 +679,17 @@ const ServiceTracker = () => {
                           </div>
                         </div>
 
+                        <div className="mb-4 text-sm grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <div className="text-xs text-slate-500 uppercase mb-1">Serial Number</div>
+                            <div className="font-semibold text-slate-800">{record.serialNumber || '—'}</div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-slate-500 uppercase mb-1">Model Number</div>
+                            <div className="font-semibold text-slate-800">{record.modelNumber || '—'}</div>
+                          </div>
+                        </div>
+
                         <div className="mb-4 text-sm">
                           <div className="text-xs text-slate-500 uppercase mb-1">Issue Description</div>
                           <p className="text-slate-800 font-medium">{record.issueDescription}</p>
@@ -862,6 +875,7 @@ const ServiceTracker = () => {
           <th className="px-6 py-5 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Status</th>
           <th className="px-6 py-5 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Priority</th>
           <th className="px-6 py-5 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Serial</th>
+          <th className="px-6 py-5 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Model</th>
           <th className="px-6 py-5 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Customer</th>
           <th className="px-6 py-5 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Technician</th>
           <th className="px-6 py-5 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Issue</th>
@@ -930,6 +944,14 @@ const ServiceTracker = () => {
                 title="View details"
               >
                 {service.serialNumber}
+              </td>
+
+              <td
+                className="px-6 py-5 font-medium text-neutral-800 cursor-pointer"
+                onClick={() => fetchServiceHistory(service.serialNumber)}
+                title="View details"
+              >
+                {service.modelNumber || '—'}
               </td>
 
               <td
