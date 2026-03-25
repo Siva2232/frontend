@@ -32,6 +32,58 @@ const WarrantyCertificate = ({ registration }) => {
     });
   };
 
+  // Helper: Remove extra white space from top & bottom
+  const trimCanvas = (canvas) => {
+    const ctx = canvas.getContext("2d");
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imgData.data;
+
+    let top = 0;
+    let bottom = canvas.height - 1;
+
+    // Find first non-white row from top
+    while (top < bottom) {
+      let isWhite = true;
+      for (let x = 0; x < canvas.width; x++) {
+        const idx = (top * canvas.width + x) * 4 + 3; // alpha
+        const r = data[idx - 3];
+        const g = data[idx - 2];
+        const b = data[idx - 1];
+        if (r !== 255 || g !== 255 || b !== 255) {
+          isWhite = false;
+          break;
+        }
+      }
+      if (!isWhite) break;
+      top++;
+    }
+
+    // Find first non-white row from bottom
+    while (bottom > top) {
+      let isWhite = true;
+      for (let x = 0; x < canvas.width; x++) {
+        const idx = (bottom * canvas.width + x) * 4 + 3;
+        const r = data[idx - 3];
+        const g = data[idx - 2];
+        const b = data[idx - 1];
+        if (r !== 255 || g !== 255 || b !== 255) {
+          isWhite = false;
+          break;
+        }
+      }
+      if (!isWhite) break;
+      bottom--;
+    }
+
+    const newHeight = bottom - top + 1;
+    const newCanvas = document.createElement("canvas");
+    newCanvas.width = canvas.width;
+    newCanvas.height = newHeight;
+    const newCtx = newCanvas.getContext("2d");
+    newCtx.drawImage(canvas, 0, top, canvas.width, newHeight, 0, 0, canvas.width, newHeight);
+    return newCanvas;
+  };
+
   const handleDownload = async () => {
     const element = certificateRef.current;
     if (!element) {
@@ -40,24 +92,22 @@ const WarrantyCertificate = ({ registration }) => {
     }
 
     try {
-      // Small delay helps on mobile
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       const canvas = await html2canvas(element, {
-        scale: 3,                    // Higher quality (3x is good balance for mobile/desktop)
+        scale: 3,
         useCORS: true,
         allowTaint: true,
         logging: false,
         backgroundColor: "#ffffff",
-        width: 980,                  // Force original design width
-        windowWidth: 980,            // Critical for consistent rendering on mobile
+        width: 980,
+        windowWidth: 980,
         windowHeight: element.scrollHeight,
         onclone: (clonedDoc, clonedElement) => {
-          // Strong fixed styling on clone
           Object.assign(clonedElement.style, {
             width: "980px",
             maxWidth: "980px",
-            padding: "55px 65px",
+            padding: "40px 50px",        // ← reduced padding
             boxSizing: "border-box",
             backgroundColor: "#ffffff",
             color: "#1e293b",
@@ -67,7 +117,7 @@ const WarrantyCertificate = ({ registration }) => {
             borderRadius: "0",
           });
 
-          // Color sanitization (oklch / modern colors → safe rgb)
+          // Color sanitization (same as before)
           const ctx = document.createElement("canvas").getContext("2d", { willReadFrequently: true });
           const safeColor = (str) => {
             if (!str || typeof str !== "string") return str;
@@ -98,28 +148,25 @@ const WarrantyCertificate = ({ registration }) => {
         },
       });
 
-      const imgData = canvas.toDataURL("image/png", 1.0);
+      // Trim extra white space
+      const trimmedCanvas = trimCanvas(canvas);
+      const imgData = trimmedCanvas.toDataURL("image/png", 1.0);
 
       const pdf = new jsPDF({
         orientation: "portrait",
         unit: "mm",
-        format: "a4",          // A4 is more compatible than A3 on mobile
+        format: "a4",
       });
 
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = trimmedCanvas.width;
+      const imgHeight = trimmedCanvas.height;
 
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+      const ratio = pdfWidth / imgWidth;
+      const scaledHeight = imgHeight * ratio;
 
-      const finalWidth = imgWidth * ratio;
-      const finalHeight = imgHeight * ratio;
-
-      const x = (pdfWidth - finalWidth) / 2;   // Center horizontally
-      const y = (pdfHeight - finalHeight) / 2; // Center vertically if needed
-
-      pdf.addImage(imgData, "PNG", x, y, finalWidth, finalHeight);
+      // Full width + only 5mm top margin → no extra gaps
+      pdf.addImage(imgData, "PNG", 0, 5, pdfWidth, scaledHeight);
       pdf.save(`Warranty_Certificate_${serialNumber}.pdf`);
 
     } catch (error) {
@@ -130,7 +177,6 @@ const WarrantyCertificate = ({ registration }) => {
 
   return (
     <div className="max-w-4xl mx-auto my-8 px-4 sm:px-6">
-      {/* Download Button - Always visible and easy to tap on mobile */}
       <div className="flex justify-end mb-6 print:hidden">
         <button
           onClick={handleDownload}
@@ -157,16 +203,11 @@ const WarrantyCertificate = ({ registration }) => {
         <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-100 rounded-full opacity-30 pointer-events-none" style={{ transform: "translate(25%, -35%)" }} />
         <div className="absolute bottom-0 left-0 w-60 h-60 bg-slate-100 rounded-full opacity-50 pointer-events-none" style={{ transform: "translate(-30%, 40%)" }} />
 
-        <div className="relative p-14">
+        <div className="relative p-10">   {/* ← reduced padding */}
           {/* Header */}
           <div className="flex justify-between items-start pb-12 border-b border-slate-200">
             <div>
-              <img
-                src={Logo11}
-                alt="Lancaster"
-                className="h-16 object-contain"
-                crossOrigin="anonymous"
-              />
+              <img src={Logo11} alt="Lancaster" className="h-16 object-contain" crossOrigin="anonymous" />
               <div className="flex items-center gap-3 mt-8">
                 <ShieldCheck size={32} className="text-indigo-600" />
                 <span className="uppercase tracking-[3px] text-sm font-bold text-slate-500">
@@ -181,7 +222,7 @@ const WarrantyCertificate = ({ registration }) => {
             </div>
           </div>
 
-          {/* Dear Customer */}
+          {/* Rest of the content (same as before) */}
           <div className="mt-12 mb-10 text-lg leading-relaxed text-slate-700">
             <p className="font-bold mb-6">Dear {customerName},</p>
             <p>
@@ -190,14 +231,11 @@ const WarrantyCertificate = ({ registration }) => {
             </p>
           </div>
 
-          {/* Details Grid */}
           <div className="bg-slate-50 border border-slate-200 rounded-2xl p-10 mb-12">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-9 text-sm">
               <div>
                 <div className="uppercase text-xs tracking-widest text-slate-400 font-bold mb-1.5">MODEL NUMBER</div>
-                <div className="font-semibold whitespace-pre-line leading-tight text-slate-800">
-                  {modelNumber}
-                </div>
+                <div className="font-semibold whitespace-pre-line leading-tight text-slate-800">{modelNumber}</div>
               </div>
               <div>
                 <div className="uppercase text-xs tracking-widest text-slate-400 font-bold mb-1.5">SERIAL NUMBER</div>
@@ -214,14 +252,12 @@ const WarrantyCertificate = ({ registration }) => {
             </div>
           </div>
 
-          {/* Note */}
           <p className="text-slate-700 leading-relaxed mb-16">
             Kindly note that the details mentioned in this Certificate is based on the information filled by you
             and the same shall be subject verification in case of Warranty claim. Please refer warranty card
             supplied along with the product for warranty terms and conditions.
           </p>
 
-          {/* Thank You + Badges */}
           <div className="flex justify-between items-end">
             <div className="flex gap-10">
               <div className="flex flex-col items-center">
@@ -230,7 +266,6 @@ const WarrantyCertificate = ({ registration }) => {
                 </div>
                 <span className="uppercase text-xs font-bold tracking-widest text-slate-400">VERIFIED</span>
               </div>
-
               <div className="flex flex-col items-center">
                 <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-3">
                   <Award size={34} className="text-blue-600" />
