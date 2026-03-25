@@ -9,7 +9,13 @@ const WarrantyCertificate = ({ registration }) => {
 
   if (!registration) return null;
 
-  const { customerName, serialNumber, purchaseDate, modelNumber, productId } = registration;
+  const { 
+    customerName, 
+    serialNumber, 
+    purchaseDate, 
+    modelNumber, 
+    productId 
+  } = registration;
   
   let expiryDate = registration.expiryDate;
   if (!expiryDate && purchaseDate) {
@@ -114,7 +120,7 @@ const WarrantyCertificate = ({ registration }) => {
       
       document.body.appendChild(clone);
 
-      // Color sanitization (unchanged)
+      // Color sanitization
       const ctx = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
       ctx.canvas.width = 1;
       ctx.canvas.height = 1;
@@ -184,14 +190,6 @@ const WarrantyCertificate = ({ registration }) => {
     }
   };
 
-  // ────────────────────────────────────────────────
-  //    Font is applied ONLY inside this component
-  //    Recommended: Add this <link> inside the page
-  //    where <WarrantyCertificate /> is rendered
-  //    or keep it here as comment reminder
-  // ────────────────────────────────────────────────
-  // <link href="https://fonts.cdnfonts.com/css/proggy-clean" rel="stylesheet" />
-
   return (
     <div
       className="max-w-4xl mx-auto my-6 md:my-12 px-4"
@@ -253,12 +251,14 @@ const WarrantyCertificate = ({ registration }) => {
             </div>
           </div>
 
-          {/* Recipient */}
+          {/* Recipient - Now uses customerName */}
           <div data-section="recipient" className="text-center my-8 md:my-12">
             <p className="font-bold uppercase tracking-widest mb-4 text-[10px]" style={{ color: "#94a3b8" }}>
               This document confirms that
             </p>
-            <h2 className="text-3xl md:text-5xl font-bold my-2" style={{ color: "#0f172a" }}>{customerName}</h2>
+            <h2 className="text-3xl md:text-5xl font-bold my-2" style={{ color: "#0f172a" }}>
+              {customerName || "Valued Customer"}
+            </h2>
             <p className="text-sm leading-relaxed max-w-lg mx-auto" style={{ color: "#64748b" }}>
               is the registered owner of the <span style={{ color: "#0f172a", fontWeight: "600" }}>{productName}</span> and is entitled to full manufacturer support and protection services.
             </p>
@@ -327,7 +327,6 @@ const WarrantyCertificate = ({ registration }) => {
       {/* Footnote */}
       <p className="mt-8 text-center text-slate-400 text-[10px] leading-loose" style={{ fontFamily: "'ProggyCleanTT', monospace" }}>
         This certificate is digitally generated and valid without a physical signature.<br />
-        {/* For verification, visit <strong>warranty.yourbrand.com/verify</strong> and enter your Serial Number. */}
       </p>
     </div>
   );
