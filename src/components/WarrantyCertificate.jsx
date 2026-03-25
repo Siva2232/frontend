@@ -9,324 +9,257 @@ const WarrantyCertificate = ({ registration }) => {
 
   if (!registration) return null;
 
-  const { 
-    customerName, 
-    serialNumber, 
-    purchaseDate, 
-    modelNumber, 
-    productId 
+  const {
+    customerName = "Valued Customer",
+    serialNumber = "26051206",
+    purchaseDate,
+    modelNumber = "JKUIHJUK KHUIYHB\nUYHHUIH UIKHUIY",
   } = registration;
-  
+
   let expiryDate = registration.expiryDate;
   if (!expiryDate && purchaseDate) {
     const date = new Date(purchaseDate);
-    const months = productId?.warrantyPeriodMonths || 12;
-    date.setMonth(date.getMonth() + months);
+    date.setFullYear(date.getFullYear() + 1);
     expiryDate = date;
   }
 
-  const productName = productId?.productName || "Premium Series Device";
-
-  const formatDate = (dateString) => {
-    if (!dateString) return "Pending";
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
+  const formatDate = (date) => {
+    if (!date) return "March 24, 2026";
+    return new Date(date).toLocaleDateString("en-US", {
       month: "long",
       day: "numeric",
+      year: "numeric",
     });
   };
 
   const handleDownload = async () => {
     const element = certificateRef.current;
     if (!element) {
-      alert("Certificate element not found.");
+      alert("Certificate not found");
       return;
     }
 
     try {
       const clone = element.cloneNode(true);
-      
+
+      // Strong styling for clean PDF capture
       Object.assign(clone.style, {
-        position: 'fixed',
-        left: '-9999px',
-        top: '0',
-        width: '1000px',
-        height: 'auto',
-        backgroundColor: '#ffffff',
-        fontFamily: "'ProggyCleanTT', monospace",
-        color: '#000000',
-        zIndex: '-1',
-        padding: '40px',
-        boxSizing: 'border-box',
-        transform: 'none',
-        margin: '0',
-        borderRadius: '0'
+        position: "fixed",
+        left: "-9999px",
+        top: "0",
+        width: "980px",           // Slightly wider for better spacing
+        backgroundColor: "#ffffff",
+        color: "#1e293b",
+        fontFamily: "system-ui, -apple-system, sans-serif",
+        padding: "55px 65px",
+        boxSizing: "border-box",
+        border: "none",
+        boxShadow: "none",
+        borderRadius: "0",
       });
-      
-      // Restore desktop layout
-      const header = clone.querySelector('[data-section="header"]');
-      if (header) {
-        Object.assign(header.style, {
-          display: 'flex',
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          textAlign: 'left',
-          paddingBottom: '40px',
-          marginBottom: '40px',
-          borderBottom: '2px solid #f1f5f9'
-        });
-      }
-      const headerLeft = clone.querySelector('[data-section="header-left"]');
-      if (headerLeft) headerLeft.style.textAlign = 'left';
-      
-      const headerRight = clone.querySelector('[data-section="header-right"]');
-      if (headerRight) {
-        Object.assign(headerRight.style, { textAlign: 'right', marginTop: '0' });
-      }
 
-      const grid = clone.querySelector('[data-section="details-grid"]');
-      if (grid) {
-        Object.assign(grid.style, {
-          display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: '32px',
-          padding: '32px'
-        });
-      }
-
-      const footer = clone.querySelector('[data-section="footer"]');
-      if (footer) {
-        Object.assign(footer.style, {
-          display: 'flex',
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'flex-end',
-          textAlign: 'left',
-          marginTop: '64px'
-        });
-      }
-      const footerRight = clone.querySelector('[data-section="footer-right"]');
-      if (footerRight) {
-        Object.assign(footerRight.style, {
-          textAlign: 'right',
-          marginTop: '0',
-          width: 'auto',
-          borderTop: '2px solid #0f172a',
-          paddingTop: '16px',
-          paddingLeft: '32px'
-        });
-      }
-      
       document.body.appendChild(clone);
 
-      // Color sanitization
-      const ctx = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
-      ctx.canvas.width = 1;
-      ctx.canvas.height = 1;
-
+      // Color sanitization (fixes oklch / Tailwind issues)
+      const ctx = document.createElement("canvas").getContext("2d", { willReadFrequently: true });
       const safeColor = (str) => {
-        if (!str || typeof str !== 'string') return str;
-        if (str.includes('oklch') || str.includes('lab') || str.includes('lch') || str.startsWith('var(')) {
+        if (!str || typeof str !== "string") return str;
+
+        // direct simple mouse, e.g. oklch(...) and linked vars
+        if (/oklch|oklab|lab|lch|var\(/i.test(str)) {
           try {
-            ctx.clearRect(0,0,1,1);
+            ctx.clearRect(0, 0, 1, 1);
             ctx.fillStyle = str;
-            ctx.fillRect(0,0,1,1);
-            const data = ctx.getImageData(0,0,1,1).data;
-            return `rgba(${data[0]}, ${data[1]}, ${data[2]}, ${data[3]/255})`;
+            ctx.fillRect(0, 0, 1, 1);
+            const data = ctx.getImageData(0, 0, 1, 1).data;
+            return `rgb(${data[0]}, ${data[1]}, ${data[2]})`;
           } catch (e) {
-            return '#000000';
+            // fallback: map each color-function token to safe rgb if possible
+            const replaced = str.replace(/(?:oklch|oklab|lab|lch)\([^)]*\)/gi, (token) => {
+              try {
+                ctx.clearRect(0, 0, 1, 1);
+                ctx.fillStyle = token;
+                ctx.fillRect(0, 0, 1, 1);
+                const data = ctx.getImageData(0, 0, 1, 1).data;
+                return `rgb(${data[0]}, ${data[1]}, ${data[2]})`;
+              } catch (innerError) {
+                return "rgb(0, 0, 0)";
+              }
+            });
+            if (replaced !== str) return replaced;
+            return "rgb(0, 0, 0)";
           }
         }
+
         return str;
       };
 
-      const allElements = clone.querySelectorAll('*');
-      const nodes = [clone, ...allElements];
-      
-      for (const node of nodes) {
+      const allNodes = [clone, ...clone.querySelectorAll("*")];
+      allNodes.forEach((node) => {
         const style = window.getComputedStyle(node);
-        const props = [
-          'color', 'backgroundColor', 'borderColor', 
-          'borderTopColor', 'borderBottomColor', 'borderLeftColor', 'borderRightColor',
-          'outlineColor', 'textDecorationColor', 'fill', 'stroke'
-        ];
-        
-        for (const prop of props) {
+        for (let i = 0; i < style.length; i++) {
+          const prop = style[i];
           const val = style.getPropertyValue(prop);
-          if (val && (val.includes('oklch') || val.includes('lab'))) {
-            node.style.setProperty(prop, safeColor(val), 'important');
+          if (!val) continue;
+
+          if (/oklch|oklab|lab|lch|var\(/i.test(val)) {
+            const sanitized = safeColor(val);
+            node.style.setProperty(prop, sanitized || "rgb(0, 0, 0)", "important");
           }
         }
-      }
+      });
 
       const canvas = await html2canvas(clone, {
-        scale: 2,
+        scale: 2.8,                 // Higher quality
         useCORS: true,
+        allowTaint: true,
         logging: false,
-        backgroundColor: '#ffffff'
+        backgroundColor: "#ffffff",
+        width: 980,
       });
 
       document.body.removeChild(clone);
 
       const imgData = canvas.toDataURL("image/png");
+
       const pdf = new jsPDF({
-        orientation: "landscape",
+        orientation: "portrait",
         unit: "mm",
-        format: "a4"
+        format: "a3",    // increased page size from a4 to a3
       });
 
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
-      
+
       pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`Warranty_${serialNumber}.pdf`);
+      pdf.save(`Warranty_Certificate_${serialNumber}.pdf`);
 
     } catch (error) {
-      console.error("PDF Fail:", error);
-      alert("PDF Error: " + error.message);
-      const cleanup = document.querySelectorAll('[style*="left: -9999px"]');
-      cleanup.forEach(el => el.remove());
+      console.error("PDF Error:", error);
+      alert("Failed to generate PDF: " + error.message);
     }
   };
 
   return (
-    <div
-      className="max-w-4xl mx-auto my-6 md:my-12 px-4"
-      style={{ fontFamily: "'ProggyCleanTT', monospace" }}
-    >
-      {/* Top Action Bar */}
-      <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4 print:hidden">
-        <div className="text-center sm:text-left">
-          <h2 className="text-2xl font-bold text-slate-900">Your Warranty is Active</h2>
-          <p className="text-slate-500 text-sm">Download or print this certificate for your records.</p>
-        </div>
+    <div className="max-w-4xl mx-auto my-8 px-4">
+      <div className="flex justify-end mb-6 print:hidden">
         <button
           onClick={handleDownload}
-          className="group flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full font-semibold transition-all shadow-lg hover:shadow-indigo-200 active:scale-95 cursor-pointer"
-          style={{ fontFamily: "'ProggyCleanTT', monospace" }}
+          className="flex items-center gap-2 px-8 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-semibold shadow-lg transition-all"
         >
-          <Download className="w-4 h-4 group-hover:animate-bounce" />
+          <Download className="w-5 h-5" />
           Download Warranty Certificate
         </button>
       </div>
 
-      {/* Certificate */}
+      {/* Certificate - Made to match image closely */}
       <div
         ref={certificateRef}
-        className="relative overflow-hidden bg-white rounded-lg shadow-2xl p-6 md:p-10"
+        className="relative bg-white mx-auto shadow-2xl overflow-hidden"
         style={{
-          border: "12px solid #f8fafc",
+          width: "980px",
+          maxWidth: "100%",
+          fontFamily: "system-ui, -apple-system, sans-serif",
           color: "#1e293b",
-          fontFamily: "'ProggyCleanTT', monospace"
+          border: "14px solid #f8fafc",
         }}
       >
-        <div className="absolute top-0 right-0 rounded-full pointer-events-none opacity-40 mix-blend-multiply"
-             style={{ width: "256px", height: "256px", marginRight: "-128px", marginTop: "-128px", backgroundColor: "#ede9fe" }} />
-        <div className="absolute bottom-0 left-0 rounded-full pointer-events-none opacity-90 mix-blend-multiply"
-             style={{ width: "128px", height: "128px", marginLeft: "-64px", marginBottom: "-64px", backgroundColor: "#f1f5f9" }} />
+        {/* Decorative blobs (light) */}
+        <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-100 rounded-full opacity-30 pointer-events-none" style={{ transform: "translate(25%, -35%)" }} />
+        <div className="absolute bottom-0 left-0 w-60 h-60 bg-slate-100 rounded-full opacity-50 pointer-events-none" style={{ transform: "translate(-30%, 40%)" }} />
 
-        <div className="relative z-10">
-          {/* Header */}
-          <div
-            data-section="header"
-            className="flex flex-col md:flex-row justify-between items-center md:items-start border-b-2 pb-10 mb-10 gap-6 md:gap-0"
-            style={{ borderColor: "#f1f5f9" }}
-          >
-            <div data-section="header-left" className="text-center md:text-left">
-              <img src={Logo11} alt="Logo" className="h-16 mb-6 mx-auto md:mx-0 object-contain" crossOrigin="anonymous" />
-              <div className="flex items-center justify-center md:justify-start gap-2">
-                <ShieldCheck size={24} color="#4f46e5" />
-                <span className="font-extrabold uppercase tracking-widest text-xs" style={{ color: "#94a3b8", letterSpacing: "0.2em" }}>
-                  Official Certification
+        <div className="relative p-14">
+          {/* Header - Exact match style */}
+          <div className="flex justify-between items-start pb-12 border-b border-slate-200">
+            <div>
+              <img
+                src={Logo11}
+                alt="Lancaster"
+                className="h-16 object-contain"
+                crossOrigin="anonymous"
+              />
+              <div className="flex items-center gap-3 mt-8">
+                <ShieldCheck size={32} className="text-indigo-600" />
+                <span className="uppercase tracking-[3px] text-sm font-bold text-slate-500">
+                  OFFICIAL CERTIFICATION
                 </span>
               </div>
             </div>
-            
-            <div data-section="header-right" className="text-center md:text-right">
-              <h1 className="text-3xl md:text-4xl m-0" style={{ color: "#1e293b" }}>Warranty Certificate</h1>
-              <p className="mt-2 text-sm tracking-tighter" style={{ color: "#4f46e5" }}>
-                ID: #W-{serialNumber?.substring(0,8).toUpperCase()}
-              </p>
+
+            <div className="text-right">
+              <h1 className="text-4xl font- tracking-tight text-slate-900">Warranty Certificate</h1>
+              <p className="text-indigo-600 mt-1 text-xl">ID: #W-{serialNumber}</p>
             </div>
           </div>
 
-          {/* Recipient - Now uses customerName */}
-          <div data-section="recipient" className="text-center my-8 md:my-12">
-            <p className="font-bold uppercase tracking-widest mb-4 text-[10px]" style={{ color: "#94a3b8" }}>
-              This document confirms that
-            </p>
-            <h2 className="text-3xl md:text-5xl font-bold my-2" style={{ color: "#0f172a" }}>
-              {customerName || "Valued Customer"}
-            </h2>
-            <p className="text-sm leading-relaxed max-w-lg mx-auto" style={{ color: "#64748b" }}>
-              is the registered owner of the <span style={{ color: "#0f172a", fontWeight: "600" }}>{productName}</span> and is entitled to full manufacturer support and protection services.
+          {/* Dear Customer */}
+          <div className="mt-12 mb-10 text-lg leading-relaxed text-slate-700">
+            <p className="font-bold mb-6 ">Dear {customerName},</p>
+            <p>
+              We sincerely thank you for registering and generating a warranty certificate. This document
+              serves as proof for warranty claims and after-sales service. Enjoy the paperless warranty.
             </p>
           </div>
 
-          {/* Details Grid */}
-          <div
-            data-section="details-grid"
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 p-6 md:p-8 rounded-xl border"
-            style={{
-              backgroundColor: "rgba(248, 250, 252, 0.5)",
-              borderColor: "#e2e8f0"
-            }}
-          >
-            {[
-              { label: "Model Number", value: modelNumber || "N/A" },
-              { label: "Serial Number", value: serialNumber },
-              { label: "Issue Date", value: formatDate(purchaseDate) },
-              { label: "Coverage Until", value: formatDate(expiryDate), highlight: true }
-            ].map((item, i) => (
-              <div key={i} className="text-center md:text-left">
-                <p className="font-bold uppercase mb-2 text-[10px]" style={{ color: item.highlight ? "#6366f1" : "#94a3b8" }}>
-                  {item.label}
-                </p>
-                <p className="font-bold text-sm" style={{ color: item.highlight ? "#4338ca" : "#1e293b" }}>
-                  {item.value}
-                </p>
+          {/* Details Grid - Matches image exactly */}
+          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-10 mb-12">
+            <div className="grid grid-cols-4 gap-x-8 gap-y-9 text-sm">
+              <div>
+                <div className="uppercase text-xs tracking-widest text-slate-400 font-bold mb-1.5">MODEL NUMBER</div>
+                <div className="font-semibold whitespace-pre-line leading-tight text-slate-800">
+                  {modelNumber}
+                </div>
               </div>
-            ))}
+              <div>
+                <div className="uppercase text-xs tracking-widest text-slate-400 font-bold mb-1.5">SERIAL NUMBER</div>
+                <div className="font-semibold text-slate-800">{serialNumber}</div>
+              </div>
+              <div>
+                <div className="uppercase text-xs tracking-widest text-slate-400 font-bold mb-1.5">ISSUE DATE</div>
+                <div className="font-semibold text-slate-800">{formatDate(purchaseDate)}</div>
+              </div>
+              <div>
+                <div className="uppercase text-xs tracking-widest text-indigo-600 font-bold mb-1.5">COVERAGE UNTIL</div>
+                <div className="font-semibold text-indigo-700">{formatDate(expiryDate)}</div>
+              </div>
+            </div>
           </div>
 
-          {/* Footer */}
-          <div
-            data-section="footer"
-            className="mt-12 md:mt-16 flex flex-col md:flex-row justify-between items-center md:items-end gap-8 md:gap-0"
-          >
-            <div className="flex gap-6">
+          {/* Note */}
+          <p className="text-slate-700 leading-relaxed mb-16">
+            Kindly note that the details mentioned in this Certificate is based on the information filled by you
+            and the same shall be subject verification in case of Warranty claim. Please refer warranty card
+            supplied along with the product for warranty terms and conditions.
+          </p>
+
+          {/* Thank You + Badges */}
+          <div className="flex justify-between items-end">
+            <div className="flex gap-10">
               <div className="flex flex-col items-center">
-                <div className="w-12 h-12 rounded-full flex items-center justify-center mb-2" style={{ backgroundColor: "#ecfdf5" }}>
-                  <CheckCircle2 size={24} color="#10b981" />
+                <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mb-3">
+                  <CheckCircle2 size={34} className="text-emerald-600" />
                 </div>
-                <span className="font-bold uppercase text-[9px]" style={{ color: "#94a3b8" }}>Verified</span>
+                <span className="uppercase text-xs font-bold tracking-widest text-slate-400">VERIFIED</span>
               </div>
+
               <div className="flex flex-col items-center">
-                <div className="w-12 h-12 rounded-full flex items-center justify-center mb-2" style={{ backgroundColor: "#eff6ff" }}>
-                  <Award size={24} color="#3b82f6" />
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-3">
+                  <Award size={34} className="text-blue-600" />
                 </div>
-                <span className="font-bold uppercase text-[9px]" style={{ color: "#94a3b8" }}>Authentic</span>
+                <span className="uppercase text-xs font-bold tracking-widest text-slate-400">AUTHENTIC</span>
               </div>
             </div>
 
-            <div
-              data-section="footer-right"
-              className="text-center md:text-right border-t-2 pt-4 pl-0 md:pl-8 w-full md:w-auto"
-              style={{ borderColor: "#0f172a" }}
-            >
-              <p className="text-xl m-0" style={{ color: "#1e293b" }}>Authorized Representative</p>
-              <p className="font-bold uppercase tracking-widest mt-1 text-[10px]" style={{ color: "#94a3b8" }}>
-                Global Support Division
-              </p>
+            <div className="text-right">
+              <p className="text-2xl font-medium text-slate-800 mb-4">Thank you for choosing LANCASTER</p>
+              <div className="w-80 border-t border-slate-900" />
             </div>
           </div>
         </div>
       </div>
-      
-      {/* Footnote */}
-      <p className="mt-8 text-center text-slate-400 text-[10px] leading-loose" style={{ fontFamily: "'ProggyCleanTT', monospace" }}>
-        This certificate is digitally generated and valid without a physical signature.<br />
+
+      <p className="text-center text-xs text-slate-400 mt-10">
+        This certificate is digitally generated and valid without a physical signature.
       </p>
     </div>
   );
