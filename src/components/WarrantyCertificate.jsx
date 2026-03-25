@@ -19,8 +19,6 @@ const WarrantyCertificate = ({ registration }) => {
     expiryDate = date;
   }
 
-  const productName = productId?.productName || "Premium Series Device";
-
   const formatDate = (dateString) => {
     if (!dateString) return "Pending";
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -40,7 +38,7 @@ const WarrantyCertificate = ({ registration }) => {
     try {
       const clone = element.cloneNode(true);
 
-      // Force clean desktop/print styles for PDF (UNTOUCHED)
+      // === PDF CLONE STYLES - EXACTLY MATCHES TARGET DESIGN ===
       Object.assign(clone.style, {
         position: 'fixed',
         left: '-9999px',
@@ -55,6 +53,7 @@ const WarrantyCertificate = ({ registration }) => {
         boxShadow: 'none'
       });
 
+      // Header - Force exact target layout (logo left + official below it, title right)
       const header = clone.querySelector('[data-section="header"]');
       if (header) {
         header.style.display = 'flex';
@@ -66,14 +65,34 @@ const WarrantyCertificate = ({ registration }) => {
         header.style.marginBottom = '40px';
       }
 
+      // Left side of header (logo on top, official certification below it)
+      const headerLeft = clone.querySelector('[data-section="header-left"]');
+      if (headerLeft) {
+        headerLeft.style.display = 'flex';
+        headerLeft.style.flexDirection = 'column';
+        headerLeft.style.alignItems = 'flex-start';
+        headerLeft.style.gap = '12px';
+      }
+
+      // Right side of header
+      const headerRight = clone.querySelector('[data-section="header-right"]');
+      if (headerRight) {
+        headerRight.style.textAlign = 'right';
+      }
+
+      // Details grid - 4 columns + rounded box
       const detailsGrid = clone.querySelector('[data-section="details-grid"]');
       if (detailsGrid) {
         detailsGrid.style.display = 'grid';
         detailsGrid.style.gridTemplateColumns = 'repeat(4, 1fr)';
-        detailsGrid.style.gap = '30px';
-        detailsGrid.style.padding = '32px';
+        detailsGrid.style.gap = '24px';
+        detailsGrid.style.padding = '28px';
+        detailsGrid.style.borderRadius = '16px';
+        detailsGrid.style.backgroundColor = '#f8fafc';
+        detailsGrid.style.border = '1px solid #e2e8f0';
       }
 
+      // Footer
       const footer = clone.querySelector('[data-section="footer"]');
       if (footer) {
         footer.style.display = 'flex';
@@ -85,12 +104,11 @@ const WarrantyCertificate = ({ registration }) => {
 
       document.body.appendChild(clone);
 
-      // Improved safe color handling to prevent oklch error
+      // Safe color fix (prevents oklch error)
       const ctx = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
       const safeColor = (str) => {
         if (!str || typeof str !== 'string') return str;
         if (!/oklch|oklab|lab|lch|var\(/i.test(str)) return str;
-
         try {
           ctx.clearRect(0, 0, 1, 1);
           ctx.fillStyle = str;
@@ -157,49 +175,45 @@ const WarrantyCertificate = ({ registration }) => {
           className="group flex items-center gap-3 px-6 sm:px-8 py-3.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-2xl font-semibold shadow-lg hover:shadow-xl transition-all active:scale-95 w-full sm:w-auto justify-center"
         >
           <Download className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform" />
-          Download Warranty Certificate
+          Download as PDF
         </button>
       </div>
 
-      {/* Certificate - Mobile Optimized (Desktop + PDF Unchanged) */}
+      {/* Certificate - Mobile responsive, Desktop + PDF now match target exactly */}
       <div
         ref={certificateRef}
         className="relative overflow-hidden bg-white rounded-3xl shadow-2xl border border-slate-200 mx-auto"
         style={{ color: "#1e293b", fontFamily: "'ProggyCleanTT', monospace", maxWidth: "1000px" }}
       >
-        {/* Decorative backgrounds - hidden on very small screens if needed */}
         <div className="absolute top-0 right-0 w-64 h-64 sm:w-80 sm:h-80 bg-indigo-100/40 rounded-full -translate-x-1/3 -translate-y-1/3 pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-48 h-48 sm:w-64 sm:h-64 bg-slate-100/60 rounded-full translate-x-1/4 translate-y-1/3 pointer-events-none" />
 
-        <div className="relative z-10 p-5 sm:p-8 md:p-14">   {/* Reduced padding on mobile */}
-
-          {/* Header - Fixed for Mobile */}
+        <div className="relative z-10 p-5 sm:p-8 md:p-14">
+          {/* HEADER - NOW MATCHES TARGET DESIGN EXACTLY */}
           <div
             data-section="header"
-            className="flex flex-col md:flex-row justify-between items-start gap-5 md:gap-0 border-b pb-8 md:pb-10 mb-10 md:mb-12"
+            className="flex flex-col md:flex-row justify-between items-start gap-6 md:gap-8 border-b pb-8 md:pb-10 mb-10 md:mb-12"
             style={{ borderColor: "#e2e8f0" }}
           >
-            <div className="flex items-center gap-3 sm:gap-4 w-full md:w-auto">
+            {/* Left side: Logo on top + Official Certification below it */}
+            <div data-section="header-left" className="flex flex-col items-start gap-3">
               <img 
                 src={Logo11} 
                 alt="Lancaster Logo" 
-                className="h-10 sm:h-12 md:h-14 object-contain flex-shrink-0" 
+                className="h-11 sm:h-12 md:h-14 object-contain" 
                 crossOrigin="anonymous" 
               />
-              <div className="flex items-center gap-2 text-indigo-600 min-w-0"> {/* Prevent text cutoff */}
-                <ShieldCheck size={24} className="flex-shrink-0" />
-                <span className="font-bold uppercase tracking-widest text-[10px] sm:text-xs md:text-sm leading-tight">
-                  OFFICIAL CERTIFICATION
-                </span>
+              <div className="flex items-center gap-2 text-indigo-600">
+                <ShieldCheck size={24} />
+                <span className="font-bold uppercase tracking-widest text-xs sm:text-sm">OFFICIAL CERTIFICATION</span>
               </div>
             </div>
 
-            <div className="text-left md:text-right mt-6 md:mt-0 w-full md:w-auto">
-              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-slate-900 leading-none">
-                Warranty Certificate
-              </h1>
-              <p className="text-indigo-600 font-medium mt-2 text-sm sm:text-base md:text-lg">
-                ID: #W-{serialNumber ? serialNumber.substring(0, 8).toUpperCase() : "26051206"}
+            {/* Right side: Title + ID */}
+            <div data-section="header-right" className="text-left md:text-right mt-2 md:mt-0">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-slate-900">Warranty Certificate</h1>
+              <p className="text-indigo-600 font-medium mt-2 text-base sm:text-lg">
+                ID: #W-{serialNumber ? serialNumber.substring(0, 8).toUpperCase() : "24011147"}
               </p>
             </div>
           </div>
@@ -216,10 +230,10 @@ const WarrantyCertificate = ({ registration }) => {
             </p>
           </div>
 
-          {/* Details Grid */}
+          {/* Details Grid - Matches target rounded box */}
           <div
             data-section="details-grid"
-            className="grid grid-cols-2 md:grid-cols-4 gap-5 sm:gap-8 p-5 sm:p-8 rounded-2xl border bg-slate-50"
+            className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 p-6 sm:p-8 rounded-2xl border bg-slate-50"
             style={{ borderColor: "#e2e8f0" }}
           >
             {[
@@ -229,12 +243,10 @@ const WarrantyCertificate = ({ registration }) => {
               { label: "COVERAGE UNTIL", value: formatDate(expiryDate), highlight: true }
             ].map((item, i) => (
               <div key={i} className="text-center">
-                <p className="text-[10px] sm:text-xs font-semibold tracking-widest text-slate-500 mb-1.5 uppercase">
+                <p className="text-[10px] sm:text-xs font-semibold tracking-widest text-slate-500 mb-1 uppercase">
                   {item.label}
                 </p>
-                <p 
-                  className={`font-bold text-sm sm:text-base md:text-lg break-words ${item.highlight ? 'text-violet-700' : 'text-slate-900'}`}
-                >
+                <p className={`font-bold text-sm sm:text-base md:text-lg ${item.highlight ? 'text-violet-700' : 'text-slate-900'}`}>
                   {item.value}
                 </p>
               </div>
@@ -248,7 +260,7 @@ const WarrantyCertificate = ({ registration }) => {
             supplied with the product for full terms and conditions.
           </div>
 
-          {/* Footer */}
+          {/* Footer - Matches target */}
           <div
             data-section="footer"
             className="mt-12 md:mt-16 flex flex-col sm:flex-row justify-between items-center sm:items-end gap-8 sm:gap-10"
@@ -258,19 +270,18 @@ const WarrantyCertificate = ({ registration }) => {
                 <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-2xl bg-emerald-100 flex items-center justify-center mb-3">
                   <CheckCircle2 size={24} className="text-emerald-600" />
                 </div>
-                <span className="uppercase text-[10px] font-semibold tracking-widest text-slate-500">Verified</span>
+                <span className="uppercase text-[10px] font-semibold tracking-widest text-slate-500">VERIFIED</span>
               </div>
               <div className="flex flex-col items-center">
                 <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-2xl bg-blue-100 flex items-center justify-center mb-3">
                   <Award size={24} className="text-blue-600" />
                 </div>
-                <span className="uppercase text-[10px] font-semibold tracking-widest text-slate-500">Authentic</span>
+                <span className="uppercase text-[10px] font-semibold tracking-widest text-slate-500">AUTHENTIC</span>
               </div>
             </div>
 
             <div className="text-center sm:text-right">
               <p className="text-lg sm:text-xl md:text-2xl font-semibold text-slate-900">Thank you for choosing LANCASTER</p>
-              <div className="h-px w-28 sm:w-40 bg-slate-900 mt-4 mx-auto sm:ml-auto" />
             </div>
           </div>
         </div>
