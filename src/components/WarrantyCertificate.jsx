@@ -40,98 +40,86 @@ const WarrantyCertificate = ({ registration }) => {
     }
 
     try {
-      const clone = element.cloneNode(true);
+      // Small delay helps on mobile
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
-      // Strong styling for clean PDF capture
-      Object.assign(clone.style, {
-        position: "fixed",
-        left: "-9999px",
-        top: "0",
-        width: "980px",           // Slightly wider for better spacing
-        backgroundColor: "#ffffff",
-        color: "#1e293b",
-        fontFamily: "system-ui, -apple-system, sans-serif",
-        padding: "55px 65px",
-        boxSizing: "border-box",
-        border: "none",
-        boxShadow: "none",
-        borderRadius: "0",
-      });
-
-      document.body.appendChild(clone);
-
-      // Color sanitization (fixes oklch / Tailwind issues)
-      const ctx = document.createElement("canvas").getContext("2d", { willReadFrequently: true });
-      const safeColor = (str) => {
-        if (!str || typeof str !== "string") return str;
-
-        // direct simple mouse, e.g. oklch(...) and linked vars
-        if (/oklch|oklab|lab|lch|var\(/i.test(str)) {
-          try {
-            ctx.clearRect(0, 0, 1, 1);
-            ctx.fillStyle = str;
-            ctx.fillRect(0, 0, 1, 1);
-            const data = ctx.getImageData(0, 0, 1, 1).data;
-            return `rgb(${data[0]}, ${data[1]}, ${data[2]})`;
-          } catch (e) {
-            // fallback: map each color-function token to safe rgb if possible
-            const replaced = str.replace(/(?:oklch|oklab|lab|lch)\([^)]*\)/gi, (token) => {
-              try {
-                ctx.clearRect(0, 0, 1, 1);
-                ctx.fillStyle = token;
-                ctx.fillRect(0, 0, 1, 1);
-                const data = ctx.getImageData(0, 0, 1, 1).data;
-                return `rgb(${data[0]}, ${data[1]}, ${data[2]})`;
-              } catch (innerError) {
-                return "rgb(0, 0, 0)";
-              }
-            });
-            if (replaced !== str) return replaced;
-            return "rgb(0, 0, 0)";
-          }
-        }
-
-        return str;
-      };
-
-      const allNodes = [clone, ...clone.querySelectorAll("*")];
-      allNodes.forEach((node) => {
-        const style = window.getComputedStyle(node);
-        for (let i = 0; i < style.length; i++) {
-          const prop = style[i];
-          const val = style.getPropertyValue(prop);
-          if (!val) continue;
-
-          if (/oklch|oklab|lab|lch|var\(/i.test(val)) {
-            const sanitized = safeColor(val);
-            node.style.setProperty(prop, sanitized || "rgb(0, 0, 0)", "important");
-          }
-        }
-      });
-
-      const canvas = await html2canvas(clone, {
-        scale: 2.8,                 // Higher quality
+      const canvas = await html2canvas(element, {
+        scale: 3,                    // Higher quality (3x is good balance for mobile/desktop)
         useCORS: true,
         allowTaint: true,
         logging: false,
         backgroundColor: "#ffffff",
-        width: 980,
+        width: 980,                  // Force original design width
+        windowWidth: 980,            // Critical for consistent rendering on mobile
+        windowHeight: element.scrollHeight,
+        onclone: (clonedDoc, clonedElement) => {
+          // Strong fixed styling on clone
+          Object.assign(clonedElement.style, {
+            width: "980px",
+            maxWidth: "980px",
+            padding: "55px 65px",
+            boxSizing: "border-box",
+            backgroundColor: "#ffffff",
+            color: "#1e293b",
+            fontFamily: "system-ui, -apple-system, sans-serif",
+            border: "none",
+            boxShadow: "none",
+            borderRadius: "0",
+          });
+
+          // Color sanitization (oklch / modern colors → safe rgb)
+          const ctx = document.createElement("canvas").getContext("2d", { willReadFrequently: true });
+          const safeColor = (str) => {
+            if (!str || typeof str !== "string") return str;
+            if (/oklch|oklab|lab|lch|var\(/i.test(str)) {
+              try {
+                ctx.fillStyle = str;
+                ctx.fillRect(0, 0, 1, 1);
+                const data = ctx.getImageData(0, 0, 1, 1).data;
+                return `rgb(${data[0]}, ${data[1]}, ${data[2]})`;
+              } catch {
+                return "#000000";
+              }
+            }
+            return str;
+          };
+
+          const allNodes = [clonedElement, ...clonedElement.querySelectorAll("*")];
+          allNodes.forEach((node) => {
+            const style = window.getComputedStyle(node);
+            for (let i = 0; i < style.length; i++) {
+              const prop = style[i];
+              const val = style.getPropertyValue(prop);
+              if (val && /oklch|oklab|lab|lch|var\(/i.test(val)) {
+                node.style.setProperty(prop, safeColor(val), "important");
+              }
+            }
+          });
+        },
       });
 
-      document.body.removeChild(clone);
-
-      const imgData = canvas.toDataURL("image/png");
+      const imgData = canvas.toDataURL("image/png", 1.0);
 
       const pdf = new jsPDF({
         orientation: "portrait",
         unit: "mm",
-        format: "a3",    // increased page size from a4 to a3
+        format: "a4",          // A4 is more compatible than A3 on mobile
       });
 
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
 
-      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+
+      const finalWidth = imgWidth * ratio;
+      const finalHeight = imgHeight * ratio;
+
+      const x = (pdfWidth - finalWidth) / 2;   // Center horizontally
+      const y = (pdfHeight - finalHeight) / 2; // Center vertically if needed
+
+      pdf.addImage(imgData, "PNG", x, y, finalWidth, finalHeight);
       pdf.save(`Warranty_Certificate_${serialNumber}.pdf`);
 
     } catch (error) {
@@ -141,18 +129,19 @@ const WarrantyCertificate = ({ registration }) => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto my-8 px-4">
+    <div className="max-w-4xl mx-auto my-8 px-4 sm:px-6">
+      {/* Download Button - Always visible and easy to tap on mobile */}
       <div className="flex justify-end mb-6 print:hidden">
         <button
           onClick={handleDownload}
-          className="flex items-center gap-2 px-8 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-semibold shadow-lg transition-all"
+          className="flex items-center gap-2 px-8 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-semibold shadow-lg transition-all active:scale-95"
         >
           <Download className="w-5 h-5" />
           Download Warranty Certificate
         </button>
       </div>
 
-      {/* Certificate - Made to match image closely */}
+      {/* Certificate Container */}
       <div
         ref={certificateRef}
         className="relative bg-white mx-auto shadow-2xl overflow-hidden"
@@ -164,12 +153,12 @@ const WarrantyCertificate = ({ registration }) => {
           border: "14px solid #f8fafc",
         }}
       >
-        {/* Decorative blobs (light) */}
+        {/* Decorative blobs */}
         <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-100 rounded-full opacity-30 pointer-events-none" style={{ transform: "translate(25%, -35%)" }} />
         <div className="absolute bottom-0 left-0 w-60 h-60 bg-slate-100 rounded-full opacity-50 pointer-events-none" style={{ transform: "translate(-30%, 40%)" }} />
 
         <div className="relative p-14">
-          {/* Header - Exact match style */}
+          {/* Header */}
           <div className="flex justify-between items-start pb-12 border-b border-slate-200">
             <div>
               <img
@@ -187,23 +176,23 @@ const WarrantyCertificate = ({ registration }) => {
             </div>
 
             <div className="text-right">
-              <h1 className="text-4xl font- tracking-tight text-slate-900">Warranty Certificate</h1>
+              <h1 className="text-4xl font-light tracking-tight text-slate-900">Warranty Certificate</h1>
               <p className="text-indigo-600 mt-1 text-xl">ID: #W-{serialNumber}</p>
             </div>
           </div>
 
           {/* Dear Customer */}
           <div className="mt-12 mb-10 text-lg leading-relaxed text-slate-700">
-            <p className="font-bold mb-6 ">Dear {customerName},</p>
+            <p className="font-bold mb-6">Dear {customerName},</p>
             <p>
               We sincerely thank you for registering and generating a warranty certificate. This document
               serves as proof for warranty claims and after-sales service. Enjoy the paperless warranty.
             </p>
           </div>
 
-          {/* Details Grid - Matches image exactly */}
+          {/* Details Grid */}
           <div className="bg-slate-50 border border-slate-200 rounded-2xl p-10 mb-12">
-            <div className="grid grid-cols-4 gap-x-8 gap-y-9 text-sm">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-9 text-sm">
               <div>
                 <div className="uppercase text-xs tracking-widest text-slate-400 font-bold mb-1.5">MODEL NUMBER</div>
                 <div className="font-semibold whitespace-pre-line leading-tight text-slate-800">
