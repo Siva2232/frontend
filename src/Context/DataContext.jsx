@@ -102,7 +102,8 @@ export const DataProvider = ({ children }) => {
             if (endDate) params.append("endDate", endDate);
             if (typeof isManual === "boolean") params.append("isManual", String(isManual));
 
-            const url = `/register${params.toString() ? `?${params.toString()}` : ""}`;
+            const endpoint = q ? "/register/search" : "/register";
+            const url = `${endpoint}${params.toString() ? `?${params.toString()}` : ""}`;
             const { data } = await API.get(url);
 
             if (data && data.data && Array.isArray(data.data)) {
