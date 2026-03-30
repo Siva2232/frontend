@@ -15,7 +15,7 @@ import { useToast } from '../components/Toast';
 const ServiceTracker = () => {
   const [searchParams] = useSearchParams();
   const { show, showSuccess, showError } = useToast();
-  const { recentServices, serviceStats, loading: dataLoading, fetchRecentServices } = useData();
+  const { recentServices, loading: dataLoading, fetchRecentServices } = useData();
   const { verifyPassword } = useAuth();
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [loading, setLoading] = useState(false);
@@ -25,6 +25,25 @@ const ServiceTracker = () => {
   const [isManualServiceModalOpen, setIsManualServiceModalOpen] = useState(false);
   const [customDates, setCustomDates] = useState({ start: '', end: '' });
   const [activeMenu, setActiveMenu] = useState(null);
+  const [trackerStats, setTrackerStats] = useState({
+    totalActive: 0,
+    pending: 0,
+    highPriority: 0,
+    returnedToday: 0
+  });
+
+  const fetchTrackerStats = async () => {
+    try {
+      const { data } = await API.get('/service/stats');
+      setTrackerStats(data);
+    } catch (err) {
+      console.error("Error fetching tracker stats:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchTrackerStats();
+  }, [recentServices]);
 
   const downloadCsv = (rows, filename = 'service-tracker.csv') => {
     if (!rows || !rows.length) return;
@@ -432,33 +451,35 @@ const ServiceTracker = () => {
           </h1>
 
             {/* status tiles moved here */}
-          <div className="mt-6 mb-8 flex flex-wrap gap-4">
+          <div className="mt-6 mb-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { label: 'All Services', status: 'all', icon: List, color: 'text-slate-700', bg: 'bg-slate-50', count: serviceStats.total },
-              { label: 'Processing', status: 'In Progress', icon: Clock, color: 'text-blue-700', bg: 'bg-blue-50', count: serviceStats.inProgress },
-              { label: 'Returned to Customer', status: 'Returned', icon: CheckCircle, color: 'text-green-700', bg: 'bg-green-50', count: serviceStats.returned },
-              { label: 'Pending', status: 'Received', icon: Clock, color: 'text-yellow-700', bg: 'bg-yellow-50', count: serviceStats.received },
+              { label: 'Active Services', status: 'all', count: trackerStats.totalActive, icon: List, color: 'text-slate-700', bg: 'bg-slate-50' },
+              { label: 'Processing', status: 'In Progress', count: trackerStats.highPriority, subLabel: 'High Priority', icon: Clock, color: 'text-rose-700', bg: 'bg-rose-50' },
+              { label: 'Returned Today', status: 'Returned', count: trackerStats.returnedToday, icon: CheckCircle, color: 'text-green-700', bg: 'bg-green-50' },
+              { label: 'Pending', status: 'Received', count: trackerStats.pending, icon: Clock, color: 'text-yellow-700', bg: 'bg-yellow-50' },
             ].map(tile => {
-              const count = tile.count || 0;
               const active = statusFilter === tile.status;
               return (
                 <button
                   key={tile.label}
                   onClick={() => setStatusFilter(active ? 'all' : tile.status)}
-                  className={`w-full bg-white p-5 rounded-2xl border transition-shadow flex items-center gap-4 flex-1 min-w-[120px] ${
-                    active ? 'border-neutral-900 shadow-lg' : 'border-neutral-200 shadow-sm'
+                  className={`bg-white p-5 rounded-2xl border transition-all flex items-center gap-4 ${
+                    active ? 'border-neutral-900 shadow-lg scale-[1.02]' : 'border-neutral-200 shadow-sm hover:border-neutral-300'
                   }`}
                 >
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
                     active ? 'bg-neutral-900 text-white' : `${tile.bg} ${tile.color}`
                   }`}>
                     <tile.icon size={24} />
                   </div>
-                  <div>
-                    <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">
+                  <div className="text-left overflow-hidden">
+                    <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest truncate">
                       {tile.label}
                     </p>
-                    <p className="text-2xl font-bold text-neutral-900">{count}</p>
+                    <div className="flex items-baseline gap-2">
+                      <p className="text-2xl font-black text-neutral-900">{tile.count || 0}</p>
+                      {tile.subLabel && <span className="text-[9px] font-bold text-rose-500 uppercase">{tile.subLabel}</span>}
+                    </div>
                   </div>
                 </button>
               );
