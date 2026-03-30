@@ -1322,42 +1322,89 @@ const Products = () => {
                   <button 
                     onClick={() => paginate(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className={`px-4 py-2 text-xs font-bold rounded-xl border transition-all ${
+                    className={`px-4 py-2 text-xs font-bold rounded-xl border transition-all flex items-center gap-2 ${
                       currentPage === 1 
                       ? 'bg-white text-slate-300 border-slate-100 cursor-not-allowed' 
                       : 'bg-white text-slate-600 border-slate-200 hover:border-blue-400 hover:text-blue-600 shadow-sm shadow-slate-100'
                     }`}
                   >
+                    <ChevronLeft size={14} />
                     Previous
                   </button>
                   
-                  <div className="flex items-center gap-1">
-                    {[...Array(totalPages)].map((_, idx) => (
-                      <button
-                        key={idx + 1}
-                        onClick={() => paginate(idx + 1)}
-                        className={`w-9 h-9 flex items-center justify-center rounded-xl text-xs font-bold transition-all ${
-                          currentPage === idx + 1
-                          ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
-                          : 'bg-white text-slate-500 border border-slate-200 hover:border-blue-400 hover:text-blue-600'
-                        }`}
-                      >
-                        {idx + 1}
-                      </button>
-                    ))}
+                  <div className="flex items-center gap-1.5 px-1.5">
+                    {(() => {
+                      const range = [];
+                      const delta = 1; // Number of pages around current page
+                      
+                      for (let i = 1; i <= totalPages; i++) {
+                        if (
+                          i === 1 || 
+                          i === totalPages || 
+                          (i >= currentPage - delta && i <= currentPage + delta)
+                        ) {
+                          if (range.length > 0 && i - range[range.length - 1] > 1) {
+                            range.push('...');
+                          }
+                          range.push(i);
+                        }
+                      }
+                      
+                      return range.map((p, idx) => (
+                        p === '...' ? (
+                          <span key={`dots-${idx}`} className="px-2 text-slate-400 font-bold">...</span>
+                        ) : (
+                          <button
+                            key={p}
+                            onClick={() => paginate(p)}
+                            className={`w-9 h-9 flex items-center justify-center rounded-xl text-xs font-bold transition-all ${
+                              currentPage === p
+                              ? 'bg-blue-600 text-white shadow-md shadow-blue-200 ring-2 ring-blue-500/20'
+                              : 'bg-white text-slate-500 border border-slate-200 hover:border-blue-400 hover:text-blue-600'
+                            }`}
+                          >
+                            {p}
+                          </button>
+                        )
+                      ));
+                    })()}
                   </div>
 
                   <button 
                     onClick={() => paginate(currentPage + 1)}
                     disabled={currentPage === totalPages || totalPages === 0}
-                    className={`px-4 py-2 text-xs font-bold rounded-xl border transition-all ${
+                    className={`px-4 py-2 text-xs font-bold rounded-xl border transition-all flex items-center gap-2 ${
                       (currentPage === totalPages || totalPages === 0)
                       ? 'bg-white text-slate-300 border-slate-100 cursor-not-allowed' 
                       : 'bg-white text-slate-600 border-slate-200 hover:border-blue-400 hover:text-blue-600 shadow-sm shadow-slate-100'
                     }`}
                   >
                     Next
+                    <ChevronRight size={14} />
                   </button>
+                </div>
+
+                {/* Jump to Page Search */}
+                <div className="flex items-center gap-2 ml-4 pl-4 border-l border-slate-200">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Go to:</span>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="1"
+                      max={totalPages}
+                      placeholder="Page..."
+                      className="w-16 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all shadow-sm"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          const val = parseInt(e.target.value);
+                          if (val >= 1 && val <= totalPages) {
+                            paginate(val);
+                            e.target.value = '';
+                          }
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
             )}
