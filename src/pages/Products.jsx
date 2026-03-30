@@ -42,6 +42,7 @@ const Products = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isAddingModel, setIsAddingModel] = useState(false);
   const [newModelName, setNewModelName] = useState("");
+  const [modelSearch, setModelSearch] = useState("");
 
   const [bulkForm, setBulkForm] = useState({
     productName: "",
@@ -94,9 +95,9 @@ const Products = () => {
   const [itemsPerPage] = useState(10);
   const [searchDebounce, setSearchDebounce] = useState(null);
 
-  const fetchModels = async () => {
+  const fetchModels = async (search = "") => {
     try {
-      const { data } = await API.get("/models");
+      const { data } = await API.get(`/models?q=${search}`);
       setModels(data);
     } catch (err) {
       console.error("Failed to fetch models:", err);
@@ -104,8 +105,8 @@ const Products = () => {
   };
 
   useEffect(() => {
-    fetchModels();
-  }, []);
+    fetchModels(modelSearch);
+  }, [modelSearch]);
 
   const handleAddModel = async () => {
     if (!newModelName.trim()) return;
@@ -780,6 +781,21 @@ const Products = () => {
 
                       {isDropdownOpen && (
                         <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                          {/* Search Input in Dropdown */}
+                          <div className="p-2 border-b border-slate-100 bg-slate-50/50">
+                            <div className="relative">
+                              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-3.5 h-3.5" />
+                              <input
+                                type="text"
+                                placeholder="Search models..."
+                                className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500 font-bold"
+                                value={modelSearch}
+                                onChange={(e) => setModelSearch(e.target.value)}
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            </div>
+                          </div>
+
                           <div className="max-h-60 overflow-y-auto p-2 space-y-1">
                             {models.length > 0 ? (
                               models.map((m) => (
