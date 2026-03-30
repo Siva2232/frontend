@@ -23,6 +23,7 @@ export const DataProvider = ({ children }) => {
     const [customersMeta, setCustomersMeta] = useState({ total: 0, page: 1, limit: 0 });
     const [customerStats, setCustomerStats] = useState({ totalAll: 0, active: 0, expired: 0, newToday: 0 });
     const [recentServices, setRecentServices] = useState([]);
+    const [serviceStats, setServiceStats] = useState({ total: 0, inProgress: 0, returned: 0, received: 0 });
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
 
@@ -124,9 +125,16 @@ export const DataProvider = ({ children }) => {
     const fetchRecentServices = useCallback(async () => {
         setLoading(prev => ({ ...prev, services: true }));
         try {
-            const { data } = await API.get("/service/history");
-            if (data.recentServices) {
-                setRecentServices(data.recentServices);
+            const [historyRes, statsRes] = await Promise.all([
+                API.get("/service/history"),
+                API.get("/service/stats")
+            ]);
+
+            if (historyRes.data.recentServices) {
+                setRecentServices(historyRes.data.recentServices);
+            }
+            if (statsRes.data) {
+                setServiceStats(statsRes.data);
             }
         } catch (error) {
             console.error("Error fetching services:", error);
@@ -180,7 +188,7 @@ export const DataProvider = ({ children }) => {
             stats, setStats, fetchStats,
             products, setProducts, productsMeta, setProductsMeta, fetchProducts,
             customers, setCustomers, customersMeta, setCustomersMeta, customerStats, fetchCustomers,
-            recentServices, setRecentServices, fetchRecentServices,
+            recentServices, setRecentServices, serviceStats, fetchRecentServices,
             notifications, setNotifications, fetchNotifications,
             unreadCount, setUnreadCount, fetchUnreadCount,
             loading, refreshAll

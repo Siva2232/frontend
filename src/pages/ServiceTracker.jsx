@@ -15,7 +15,7 @@ import { useToast } from '../components/Toast';
 const ServiceTracker = () => {
   const [searchParams] = useSearchParams();
   const { show, showSuccess, showError } = useToast();
-  const { recentServices, loading: dataLoading, fetchRecentServices } = useData();
+  const { recentServices, serviceStats, loading: dataLoading, fetchRecentServices } = useData();
   const { verifyPassword } = useAuth();
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [loading, setLoading] = useState(false);
@@ -434,14 +434,12 @@ const ServiceTracker = () => {
             {/* status tiles moved here */}
           <div className="mt-6 mb-8 flex flex-wrap gap-4">
             {[
-              { label: 'All Services', status: 'all', icon: List, color: 'text-slate-700', bg: 'bg-slate-50' },
-              { label: 'Processing', status: 'In Progress', icon: Clock, color: 'text-blue-700', bg: 'bg-blue-50' },
-              { label: 'Returned to Customer', status: 'Returned', icon: CheckCircle, color: 'text-green-700', bg: 'bg-green-50' },
-              { label: 'Pending', status: 'Received', icon: Clock, color: 'text-yellow-700', bg: 'bg-yellow-50' },
+              { label: 'All Services', status: 'all', icon: List, color: 'text-slate-700', bg: 'bg-slate-50', count: serviceStats.total },
+              { label: 'Processing', status: 'In Progress', icon: Clock, color: 'text-blue-700', bg: 'bg-blue-50', count: serviceStats.inProgress },
+              { label: 'Returned to Customer', status: 'Returned', icon: CheckCircle, color: 'text-green-700', bg: 'bg-green-50', count: serviceStats.returned },
+              { label: 'Pending', status: 'Received', icon: Clock, color: 'text-yellow-700', bg: 'bg-yellow-50', count: serviceStats.received },
             ].map(tile => {
-              const count = tile.status === 'all'
-                ? recentServices.length
-                : recentServices.filter(r => r.status === tile.status).length;
+              const count = tile.count || 0;
               const active = statusFilter === tile.status;
               return (
                 <button
