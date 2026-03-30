@@ -34,7 +34,7 @@ const PrivacyPolicy = () => {
         <h2 className="text-xl font-bold mt-8 mb-3">5. Contact</h2>
         <p className="text-slate-700">For privacy questions, email: <a href="mailto:service@lancasteraudio.com" className="text-blue-600 underline">service@lancasteraudio.com</a>.</p>
 
-        <p className="mt-8 text-sm text-slate-500">Last updated: {new Date().toLocaleDateString()}</p>
+        <p className="mt-8 text-sm text-slate-500">Last updated: April 1, 2026</p>
       </main>
       <Footer />
     </div>

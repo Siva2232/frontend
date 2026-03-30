@@ -227,7 +227,7 @@ const Customers = () => {
         c.serialNumber?.toLowerCase().includes(q) ||
         c.modelNumber?.toLowerCase().includes(q) ||
         c.purchaseShopName?.toLowerCase().includes(q) ||
-        c.phone?.includes(q) ||
+        String(c.phone || "").includes(q) ||
         c.carModelName?.toLowerCase().includes(q)
       );
     }
