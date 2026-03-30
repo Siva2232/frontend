@@ -1387,8 +1387,9 @@ const Products = () => {
                 {/* Jump to Page Search */}
                 <div className="flex items-center gap-2 ml-4 pl-4 border-l border-slate-200">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Go to:</span>
-                  <div className="relative">
+                  <div className="flex items-center gap-1.5">
                     <input
+                      id="jump-to-page-input"
                       type="number"
                       min="1"
                       max={totalPages}
@@ -1404,6 +1405,20 @@ const Products = () => {
                         }
                       }}
                     />
+                    <button
+                      onClick={() => {
+                        const input = document.getElementById('jump-to-page-input');
+                        const val = parseInt(input.value);
+                        if (val >= 1 && val <= totalPages) {
+                          paginate(val);
+                          input.value = '';
+                        }
+                      }}
+                      className="p-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-sm shadow-blue-100 flex items-center justify-center group"
+                      title="Jump to page"
+                    >
+                      <Search size={14} className="group-hover:scale-110 transition-transform" />
+                    </button>
                   </div>
                 </div>
               </div>
