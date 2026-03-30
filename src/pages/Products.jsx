@@ -28,13 +28,20 @@ import {
   FileStack,
   ChevronRight,
   ChevronLeft,
-  MoreVertical
+  MoreVertical,
+  ChevronDown,
+  Plus
 } from "lucide-react";
 
 const Products = () => {
   const { show, showSuccess, showError } = useToast();
   const { admin, verifyPassword } = useContext(AuthContext);
   const { products, productsMeta, loading: dataLoading, fetchProducts } = useData();
+
+  const [models, setModels] = useState([]);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isAddingModel, setIsAddingModel] = useState(false);
+  const [newModelName, setNewModelName] = useState("");
 
   const [bulkForm, setBulkForm] = useState({
     productName: "",
@@ -86,6 +93,34 @@ const Products = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [searchDebounce, setSearchDebounce] = useState(null);
+
+  const fetchModels = async () => {
+    try {
+      const { data } = await API.get("/models");
+      setModels(data);
+    } catch (err) {
+      console.error("Failed to fetch models:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchModels();
+  }, []);
+
+  const handleAddModel = async () => {
+    if (!newModelName.trim()) return;
+    try {
+      const { data } = await API.post("/models", { name: newModelName.trim() });
+      setModels(prev => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)));
+      setBulkForm(prev => ({ ...prev, modelNumber: data.name }));
+      setNewModelName("");
+      setIsAddingModel(false);
+      setIsDropdownOpen(false);
+      showSuccess("Model added successfully");
+    } catch (err) {
+      showError(err.response?.data?.message || "Failed to add model");
+    }
+  };
 
   // Search + pagination
   const filteredProducts = products.filter((p) => {
@@ -275,6 +310,7 @@ const Products = () => {
 
           // Fetch only the first page with a small limit to avoid loading all products at once
           fetchProducts({ page: 1, limit: itemsPerPage });
+          fetchModels(); // Refresh models list
           setIsBulkPrintOpen(true); // Open bulk print view automatically
         } catch (err) {
           const msg = err.response?.data?.message || "Bulk generation failed";
@@ -729,14 +765,93 @@ const Products = () => {
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Model Number</label>
                   <div className="relative group">
-                    <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors w-5 h-5" />
-                    <input
-                      type="text"
-                      placeholder="MOD-BULK"
-                      className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-blue-500 outline-none transition-all font-bold"
-                      onChange={(e) => setBulkForm({ ...bulkForm, modelNumber: e.target.value })}
-                      value={bulkForm.modelNumber}
-                    />
+                    <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors w-5 h-5 z-10" />
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                        className="w-full pl-12 pr-10 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-blue-500 outline-none transition-all font-bold text-left flex items-center justify-between"
+                      >
+                        <span className={bulkForm.modelNumber ? "text-slate-900" : "text-slate-400"}>
+                          {bulkForm.modelNumber || "Select or Add Model"}
+                        </span>
+                        <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                      </button>
+
+                      {isDropdownOpen && (
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                          <div className="max-h-60 overflow-y-auto p-2 space-y-1">
+                            {models.length > 0 ? (
+                              models.map((m) => (
+                                <button
+                                  key={m._id}
+                                  type="button"
+                                  onClick={() => {
+                                    setBulkForm({ ...bulkForm, modelNumber: m.name });
+                                    setIsDropdownOpen(false);
+                                  }}
+                                  className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-bold transition-colors ${
+                                    bulkForm.modelNumber === m.name 
+                                      ? 'bg-blue-50 text-blue-600' 
+                                      : 'hover:bg-slate-50 text-slate-700'
+                                  }`}
+                                >
+                                  {m.name}
+                                </button>
+                              ))
+                            ) : (
+                              <div className="px-4 py-3 text-xs text-slate-400 italic text-center">No models saved yet</div>
+                            )}
+                          </div>
+                          
+                          <div className="border-t border-slate-100 p-2 bg-slate-50/50">
+                            {isAddingModel ? (
+                              <div className="space-y-2 p-1">
+                                <input
+                                  type="text"
+                                  placeholder="Enter model name..."
+                                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 font-bold"
+                                  value={newModelName}
+                                  onChange={(e) => setNewModelName(e.target.value)}
+                                  autoFocus
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      handleAddModel();
+                                    }
+                                  }}
+                                />
+                                <div className="flex gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={handleAddModel}
+                                    className="flex-1 py-2 bg-blue-600 text-white text-[10px] font-black uppercase tracking-wider rounded-lg hover:bg-blue-700"
+                                  >
+                                    Save Model
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setIsAddingModel(false)}
+                                    className="px-3 py-2 bg-slate-200 text-slate-600 text-[10px] font-black uppercase tracking-wider rounded-lg hover:bg-slate-300"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => setIsAddingModel(true)}
+                                className="w-full py-2.5 flex items-center justify-center gap-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
+                              >
+                                <Plus className="w-4 h-4" />
+                                <span className="text-xs font-black uppercase tracking-widest">Add New Model</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
