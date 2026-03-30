@@ -25,46 +25,6 @@ const ServiceTracker = () => {
   const [isManualServiceModalOpen, setIsManualServiceModalOpen] = useState(false);
   const [customDates, setCustomDates] = useState({ start: '', end: '' });
   const [activeMenu, setActiveMenu] = useState(null);
-  const [tileStats, setTileStats] = useState({
-    received: 0,
-    inProgress: 0,
-    returned: 0,
-    highPriority: 0,
-    today: 0
-  });
-  const [activeTile, setActiveTile] = useState('all');
-
-  const fetchTileStats = async () => {
-    try {
-      const { data } = await API.get('/service/stats');
-      setTileStats(data);
-    } catch (err) {
-      console.error("Error fetching tile stats", err);
-    }
-  };
-
-  const fetchFilteredServices = async (type) => {
-    setLoading(true);
-    try {
-      const { data } = await API.get(`/service/filter?type=${type}`);
-      setFilteredRecent(data.data);
-      setCurrentPage(1);
-    } catch (err) {
-      showError("Failed to fetch filtered records");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleTileClick = (type) => {
-    setActiveTile(type);
-    setData(null); // Clear search view
-    if (type === 'all') {
-      fetchRecentServices();
-    } else {
-      fetchFilteredServices(type);
-    }
-  };
 
   const downloadCsv = (rows, filename = 'service-tracker.csv') => {
     if (!rows || !rows.length) return;
@@ -160,7 +120,6 @@ const ServiceTracker = () => {
         handleSearch({ preventDefault: () => {} });
       }
       fetchRecentServices();
-      fetchTileStats();
       setDeleteModal({ isOpen: false, recordId: null, password: "", isSubmitting: false });
     } catch (err) {
       showError(err.response?.data?.message || "Delete failed");
@@ -232,7 +191,6 @@ const ServiceTracker = () => {
     if (recentServices.length === 0) {
       fetchRecentServices();
     }
-    fetchTileStats();
   }, []);
 
   // recompute filtered list whenever source or filters change
@@ -379,7 +337,6 @@ const ServiceTracker = () => {
           setShowNewEntry(false);
           setSearchQuery(newEntry.serialNumber);
           fetchRecentServices();
-          fetchTileStats();
 
           setTimeout(() => {
             setLoading(true);
@@ -454,7 +411,6 @@ const ServiceTracker = () => {
         handleSearch({ preventDefault: () => {} });
       }
       fetchRecentServices();
-      fetchTileStats();
       closeStatusModal();
     } catch (err) {
       showError("Update failed");
@@ -478,31 +434,33 @@ const ServiceTracker = () => {
             {/* status tiles moved here */}
           <div className="mt-6 mb-8 flex flex-wrap gap-4">
             {[
-              { label: 'Received', status: 'received', icon: Clock, color: 'text-blue-700', bg: 'bg-blue-50', count: tileStats.received },
-              { label: 'In Progress', status: 'in-progress', icon: Loader2, color: 'text-amber-700', bg: 'bg-amber-50', count: tileStats.inProgress },
-              { label: 'Returned', status: 'returned', icon: CheckCircle2, color: 'text-emerald-700', bg: 'bg-emerald-50', count: tileStats.returned },
-              { label: 'High Priority', status: 'high-priority', icon: Clock, color: 'text-rose-700', bg: 'bg-rose-50', count: tileStats.highPriority },
-              { label: 'New Today', status: 'today', icon: Calendar, color: 'text-indigo-700', bg: 'bg-indigo-50', count: tileStats.today },
+              { label: 'All Services', status: 'all', icon: List, color: 'text-slate-700', bg: 'bg-slate-50' },
+              { label: 'Processing', status: 'In Progress', icon: Clock, color: 'text-blue-700', bg: 'bg-blue-50' },
+              { label: 'Returned to Customer', status: 'Returned', icon: CheckCircle, color: 'text-green-700', bg: 'bg-green-50' },
+              { label: 'Pending', status: 'Received', icon: Clock, color: 'text-yellow-700', bg: 'bg-yellow-50' },
             ].map(tile => {
-              const active = activeTile === tile.status;
+              const count = tile.status === 'all'
+                ? recentServices.length
+                : recentServices.filter(r => r.status === tile.status).length;
+              const active = statusFilter === tile.status;
               return (
                 <button
                   key={tile.label}
-                  onClick={() => handleTileClick(active ? 'all' : tile.status)}
-                  className={`w-full bg-white p-5 rounded-2xl border transition-all flex items-center gap-4 flex-1 min-w-[180px] hover:shadow-md ${
-                    active ? 'border-neutral-900 shadow-lg ring-2 ring-neutral-900/5' : 'border-neutral-200 shadow-sm'
+                  onClick={() => setStatusFilter(active ? 'all' : tile.status)}
+                  className={`w-full bg-white p-5 rounded-2xl border transition-shadow flex items-center gap-4 flex-1 min-w-[120px] ${
+                    active ? 'border-neutral-900 shadow-lg' : 'border-neutral-200 shadow-sm'
                   }`}
                 >
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
                     active ? 'bg-neutral-900 text-white' : `${tile.bg} ${tile.color}`
                   }`}>
-                    <tile.icon size={24} className={active ? '' : tile.color} />
+                    <tile.icon size={24} />
                   </div>
-                  <div className="text-left">
-                    <p className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.15em] mb-0.5">
+                  <div>
+                    <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">
                       {tile.label}
                     </p>
-                    <p className="text-2xl font-black text-neutral-900 leading-none">{tile.count}</p>
+                    <p className="text-2xl font-bold text-neutral-900">{count}</p>
                   </div>
                 </button>
               );
