@@ -475,7 +475,7 @@ const Navbar = () => {
       )}
 
       {showSignOutModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60  mt-[100px] md:">
           <div className="w-full max-w-sm rounded-xl border border-neutral-800 bg-neutral-950 p-5 shadow-2xl">
             <h3 className="text-lg font-semibold text-white">Confirm Sign Out</h3>
             <p className="mt-2 text-sm text-neutral-300">Are you sure you want to sign out?</p>
