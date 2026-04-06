@@ -18,7 +18,8 @@ import {
   Bell,
   Wrench,
   Loader2,
-  CheckCircle2 
+  CheckCircle2,
+  Settings,
 } from "lucide-react";
 
 const Navbar = () => {
@@ -410,6 +411,14 @@ const Navbar = () => {
                         </p>
                       </div>
                       <div className="p-2">
+                        <Link
+                          to="/settings"
+                          onClick={() => setProfileOpen(false)}
+                          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-neutral-300 hover:bg-neutral-800/60 transition-colors"
+                        >
+                          <Settings className="size-4" />
+                          Settings
+                        </Link>
                         <button
                           onClick={requestSignOut}
                           className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-red-400 hover:bg-red-950/40 transition-colors"

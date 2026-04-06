@@ -13,6 +13,7 @@ const ServiceTracker = lazy(() => import("../pages/ServiceTracker"));
 const ServiceDashboard = lazy(() => import("../pages/ServiceDashboard"));
 const PrivacyPolicy = lazy(() => import("../pages/PrivacyPolicy"));
 const Terms = lazy(() => import("../pages/Terms"));
+const Settings = lazy(() => import("../pages/Settings"));
 
 /* Components */
 import ProtectedRoute from "../components/ProtectedRoute";
@@ -84,6 +85,15 @@ export default function AppRoutes() {
 
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<Terms />} />
+
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <Settings />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Redirect unknown routes */}
         <Route path="*" element={<Navigate to="/" replace />} />

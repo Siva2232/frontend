@@ -3,10 +3,10 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import API from "../api/axios";
 import {
   ShieldCheck,
-  MessageCircle,
   ArrowUpRight,
   Headphones,
 } from "lucide-react";
+import { FaWhatsapp } from "react-icons/fa";
 import Navbar from "../layouts/CustomerNavbar";
 import Footer from "../layouts/Footer";
 import heroImage from "../assets/image.png";
@@ -25,7 +25,7 @@ const supportCategories = [
   {
     title: "WhatsApp Support",
     description: "Chat with our team instantly",
-    icon: MessageCircle,
+    icon: FaWhatsapp,
     color: "from-green-500/10 to-emerald-600/5",
     link: () => "https://wa.me/+919567269840?text=Hello%2C+I+need+help+with+my+Lancaster+product", // ← CHANGE THIS NUMBER
     highlight: true,

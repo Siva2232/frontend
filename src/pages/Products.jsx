@@ -848,66 +848,73 @@ const Products = () => {
                                   }}
                                 />
 
-                                {/* Live Label Preview */}
-                                <div className="rounded-xl border border-slate-200 bg-slate-50 overflow-hidden">
-                                  <div className="flex items-center justify-between px-2.5 py-1.5 border-b border-slate-200 bg-white">
-                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Label Preview · 50mm × 15mm</span>
-                                    <span className={`text-[9px] font-black uppercase tracking-wide ${newModelName.length > 22 ? 'text-amber-500' : 'text-emerald-500'}`}>
-                                      {newModelName.length} chars {newModelName.length > 22 ? '· may wrap' : '· fits'}
-                                    </span>
+                                {/* Live Label Preview — exact same UI as the right-panel preview */}
+                                <div className="bg-white shadow-xl shadow-slate-200/50 rounded-[1.25rem] border border-slate-100 p-4">
+                                  <div className="flex items-center justify-between mb-3 px-1">
+                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Live Layout Preview</h3>
+                                    <span className="text-[9px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full uppercase">50mm x 15mm</span>
                                   </div>
-                                  <div className="p-2 flex items-center justify-center">
-                                    {/* Scaled label: real is 50mm×15mm, we show ~3.3× scale */}
+
+                                  <div className="flex justify-center bg-slate-50 p-4 rounded-2xl border border-dashed border-slate-200">
                                     <div
-                                      className="bg-white border border-slate-300 rounded flex items-stretch overflow-hidden shadow-sm"
-                                      style={{ width: '165px', height: '50px' }}
+                                      className="bg-white shadow-lg overflow-hidden flex items-center"
+                                      style={{
+                                        width: '50mm',
+                                        height: '15mm',
+                                        padding: '0 1mm',
+                                        display: 'flex',
+                                        backgroundColor: '#fff',
+                                        boxSizing: 'border-box'
+                                      }}
                                     >
-                                      {/* Text column */}
-                                      <div
-                                        className="flex flex-col justify-center pl-[5px] pr-[3px] overflow-hidden flex-1 min-w-0"
-                                        style={{ gap: '0px' }}
-                                      >
-                                        <span
-                                          className="font-bold truncate text-black leading-tight"
-                                          style={{ fontFamily: 'monospace', fontSize: '9.5px', letterSpacing: '0.3px' }}
-                                        >
-                                          SR/No: {bulkForm.prefix || 'XXXXXXXX'}
-                                        </span>
-                                        {newModelName ? (
-                                          <>
-                                            <span
-                                              className="font-bold text-black leading-tight"
-                                              style={{ fontSize: '8.5px', wordBreak: 'break-word', whiteSpace: 'normal' }}
-                                            >
-                                              {newModelName.split(' ').slice(0, 2).join(' ')}
-                                            </span>
-                                            {newModelName.split(' ').length > 2 && (
-                                              <span
-                                                className="font-bold text-black leading-tight"
-                                                style={{ fontSize: '8.5px', wordBreak: 'break-word', whiteSpace: 'normal' }}
-                                              >
-                                                {newModelName.split(' ').slice(2).join(' ')}
-                                              </span>
-                                            )}
-                                          </>
-                                        ) : (
-                                          <span className="text-slate-300 italic" style={{ fontSize: '8px' }}>model name here</span>
-                                        )}
+                                      <div style={{
+                                        flex: 1,
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        justifyContent: 'center',
+                                        overflow: 'hidden',
+                                        paddingRight: '1mm'
+                                      }}>
+                                        <div style={{
+                                          fontFamily: "'Dot Matrix', monospace",
+                                          fontSize: '15px',
+                                          letterSpacing: '0.5px',
+                                          whiteSpace: 'nowrap',
+                                          color: '#000',
+                                          lineHeight: '1.1',
+                                          marginBottom: '1px'
+                                        }}>
+                                          SR/No:{bulkForm.prefix || "2605XXXX"}
+                                        </div>
+                                        <div style={{
+                                          fontFamily: "Tahoma, Geneva, sans-serif",
+                                          fontSize: '13px',
+                                          lineHeight: '1.1',
+                                          whiteSpace: 'normal',
+                                          wordBreak: 'break-word',
+                                          color: '#000',
+                                          maxWidth: '35mm'
+                                        }}>
+                                          {newModelName || <span style={{ color: '#ccc' }}>Model Number</span>}
+                                        </div>
                                       </div>
-                                      {/* QR placeholder column */}
-                                      <div
-                                        className="flex-shrink-0 flex items-center justify-center bg-slate-100 m-[3px] rounded"
-                                        style={{ width: '42px', height: '42px' }}
-                                      >
-                                        <QrCode className="text-slate-400" style={{ width: '24px', height: '24px' }} />
+                                      <div style={{
+                                        flex: '0 0 13mm',
+                                        height: '100%',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        paddingRight: '1mm'
+                                      }}>
+                                        <div className="w-[12.5mm] h-[12.5mm] bg-slate-50 rounded flex items-center justify-center border border-slate-100">
+                                          <QrCode className="w-6 h-6 text-slate-200" />
+                                        </div>
                                       </div>
                                     </div>
                                   </div>
-                                  {newModelName.length > 22 && (
-                                    <div className="px-2.5 pb-2 text-[9px] text-amber-600 font-bold flex items-center gap-1">
-                                      ⚠ Long name — second line will wrap. Consider abbreviating.
-                                    </div>
-                                  )}
+                                  <p className="mt-2 text-[9px] text-slate-400 font-medium italic text-center">
+                                    This mirrors the exact print spacing and font scale.
+                                  </p>
                                 </div>
 
                                 <div className="flex gap-2">
