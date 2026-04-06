@@ -88,6 +88,12 @@ const Products = () => {
   });
 
   const [activeDropdown, setActiveDropdown] = useState(null);
+
+  const [modelDeleteModal, setModelDeleteModal] = useState({
+    isOpen: false,
+    isLoading: false,
+    model: null, // { _id, name }
+  });
   const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0, flipUp: false });
 
   // Pagination State
@@ -809,21 +815,33 @@ const Products = () => {
                           <div className="max-h-60 overflow-y-auto p-2 space-y-1">
                             {models.length > 0 ? (
                               models.map((m) => (
-                                <button
-                                  key={m._id}
-                                  type="button"
-                                  onClick={() => {
-                                    setBulkForm({ ...bulkForm, modelNumber: m.name });
-                                    setIsDropdownOpen(false);
-                                  }}
-                                  className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-bold transition-colors ${
-                                    bulkForm.modelNumber === m.name 
-                                      ? 'bg-blue-50 text-blue-600' 
-                                      : 'hover:bg-slate-50 text-slate-700'
-                                  }`}
-                                >
-                                  {m.name}
-                                </button>
+                                <div key={m._id} className="group flex items-center rounded-xl transition-colors hover:bg-slate-50">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setBulkForm({ ...bulkForm, modelNumber: m.name });
+                                      setIsDropdownOpen(false);
+                                    }}
+                                    className={`flex-1 text-left px-4 py-2.5 text-sm font-bold transition-colors rounded-xl ${
+                                      bulkForm.modelNumber === m.name
+                                        ? 'text-blue-600'
+                                        : 'text-slate-700'
+                                    }`}
+                                  >
+                                    {m.name}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setModelDeleteModal({ isOpen: true, isLoading: false, model: m });
+                                    }}
+                                    className="opacity-0 group-hover:opacity-100 mr-2 p-1.5 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all"
+                                    title="Delete model"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
                               ))
                             ) : (
                               <div className="px-4 py-3 text-xs text-slate-400 italic text-center">No models saved yet</div>
@@ -1785,6 +1803,33 @@ const Products = () => {
         isLoading={deleteModal.isLoading}
         password={deleteModal.password}
         onPasswordChange={(value) => setDeleteModal(prev => ({ ...prev, password: value }))}
+      />
+
+      <ConfirmationModal
+        isOpen={modelDeleteModal.isOpen}
+        onClose={() => setModelDeleteModal({ isOpen: false, isLoading: false, model: null })}
+        onConfirm={async () => {
+          const m = modelDeleteModal.model;
+          if (!m) return;
+          setModelDeleteModal(prev => ({ ...prev, isLoading: true }));
+          try {
+            await API.delete(`/models/${m._id}`);
+            setModels(prev => prev.filter(x => x._id !== m._id));
+            if (bulkForm.modelNumber === m.name) {
+              setBulkForm(prev => ({ ...prev, modelNumber: '' }));
+            }
+            showSuccess(`"${m.name}" deleted`);
+            setModelDeleteModal({ isOpen: false, isLoading: false, model: null });
+          } catch (err) {
+            showError(err.response?.data?.message || 'Failed to delete model');
+            setModelDeleteModal(prev => ({ ...prev, isLoading: false }));
+          }
+        }}
+        title="Delete Model"
+        message={`Are you sure you want to delete the model "${modelDeleteModal.model?.name}"? This cannot be undone.`}
+        type="danger"
+        confirmText="Delete Model"
+        isLoading={modelDeleteModal.isLoading}
       />
     </div>
   );
