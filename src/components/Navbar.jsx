@@ -30,8 +30,26 @@ const Navbar = () => {
   const [profileOpen, setProfileOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
+  const [showSignOutModal, setShowSignOutModal] = useState(false);
   const { notifications, unreadCount, loading, fetchNotifications, fetchUnreadCount, setNotifications, setUnreadCount } = useData();
   const firstFetch = useRef(true); // avoids toast on initial mount
+
+  const requestSignOut = () => {
+    setShowSignOutModal(true);
+    setProfileOpen(false);
+    setMobileMenuOpen(false);
+    setNotificationOpen(false);
+  };
+
+  const confirmSignOut = () => {
+    logout();
+    setShowSignOutModal(false);
+    showSuccess("Signed out");
+  };
+
+  const cancelSignOut = () => {
+    setShowSignOutModal(false);
+  };
 
   const notificationRef = useRef(null);
 
@@ -393,10 +411,7 @@ const Navbar = () => {
                       </div>
                       <div className="p-2">
                         <button
-                          onClick={() => {
-                            logout();
-                            showSuccess("Signed out");
-                          }}
+                          onClick={requestSignOut}
                           className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-red-400 hover:bg-red-950/40 transition-colors"
                         >
                           <LogOut className="size-4" />
@@ -448,14 +463,34 @@ const Navbar = () => {
 
             <div className="pt-6">
               <button
-                onClick={() => {
-                  logout();
-                  setMobileMenuOpen(false);
-                }}
+                onClick={requestSignOut}
                 className="w-full flex items-center justify-center gap-3 py-4 rounded-xl bg-gradient-to-r from-red-950/70 to-red-900/40 text-red-300 font-medium hover:from-red-900/70 hover:to-red-800/50 transition-all border border-red-900/40"
               >
                 <LogOut className="size-5" />
                 Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showSignOutModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-sm rounded-xl border border-neutral-800 bg-neutral-950 p-5 shadow-2xl">
+            <h3 className="text-lg font-semibold text-white">Confirm Sign Out</h3>
+            <p className="mt-2 text-sm text-neutral-300">Are you sure you want to sign out?</p>
+            <div className="mt-4 flex gap-2">
+              <button
+                onClick={confirmSignOut}
+                className="flex-1 rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-400 transition-colors"
+              >
+                Yes, sign out
+              </button>
+              <button
+                onClick={cancelSignOut}
+                className="flex-1 rounded-lg border border-neutral-700 bg-neutral-900 px-4 py-2 text-sm font-semibold text-neutral-200 hover:bg-neutral-800 transition-colors"
+              >
+                Cancel
               </button>
             </div>
           </div>

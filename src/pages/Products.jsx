@@ -380,17 +380,22 @@ const Products = () => {
         <script>
           window.onload = () => {
             const images = Array.from(document.images || []);
-            const loaders = images.map((img) => {
+            const imageLoaders = images.map((img) => {
               if (img.complete && img.naturalWidth > 0) return Promise.resolve();
               return new Promise((resolve) => {
                 img.onload = img.onerror = () => resolve();
               });
             });
-            Promise.all(loaders).then(() => {
+            const fontReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+            const safetyTimeout = new Promise(resolve => setTimeout(resolve, 2000));
+            Promise.race([
+              Promise.all([Promise.all(imageLoaders), fontReady]),
+              safetyTimeout
+            ]).then(() => {
               setTimeout(() => {
                 window.print();
                 window.close();
-              }, 700);
+              }, 200);
             });
           };
         </script>
@@ -533,17 +538,22 @@ const Products = () => {
   <script>
     window.onload = () => {
       const images = Array.from(document.images || []);
-      const loaders = images.map((img) => {
+      const imageLoaders = images.map((img) => {
         if (img.complete && img.naturalWidth > 0) return Promise.resolve();
         return new Promise((resolve) => {
           img.onload = img.onerror = () => resolve();
         });
       });
-      Promise.all(loaders).then(() => {
+      const fontReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+      const safetyTimeout = new Promise(resolve => setTimeout(resolve, 2000));
+      Promise.race([
+        Promise.all([Promise.all(imageLoaders), fontReady]),
+        safetyTimeout
+      ]).then(() => {
         setTimeout(() => {
           window.print();
           window.close();
-        }, 700);
+        }, 200);
       });
     };
   </script>
